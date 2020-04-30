@@ -7,7 +7,7 @@ class Monad:
     def bind(self, x, f):
         raise NotImplementedError
 
-    def ret(x):
+    def ret(self, x):
         return x
 
     def do(self, it):
@@ -15,7 +15,7 @@ class Monad:
             try:
                 z = it.send(y)
             except StopIteration:
-                return y
+                return self.ret(y)
             return self.bind(z, _do)
 
         return _do(None)
@@ -35,6 +35,19 @@ class Result(Monad):
         return f(x)
 
 
+class List(Monad):
+    def bind(self, x, f):
+        def g():
+            for y in x:
+                for z in f(y):
+                    yield z
+
+        return list(g())
+
+    def ret(self, x):
+        return [x]
+
+
 def options():
     x = yield 1
     y = yield 2
@@ -47,5 +60,12 @@ def results():
     yield x + y
 
 
+def lists():
+    x = yield [1]
+    y = yield [2, 3]
+    yield [x + y]
+
+
 print(Option().do(options()))
 print(Result().do(results()))
+print(List().do(lists()))
