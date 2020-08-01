@@ -16,7 +16,7 @@ class Monad:
         return x
 
     @classmethod
-    def do(cls, it_func):
+    def do(cls, it_func, *args, **kwargs):
         def f(y, it):
             try:
                 z, it2 = it.send(y)
@@ -24,7 +24,7 @@ class Monad:
                 return cls.ret(y)
             return cls.bind(z, partial(f, it=it2))
 
-        return f(None, StatelessIterator(it_func))
+        return f(None, StatelessIterator(lambda: it_func(*args, **kwargs)))
 
 
 class Option(Monad):
