@@ -1,8 +1,6 @@
 import abc
 import sys
 
-from typepy import List
-
 from do import Monad
 
 
@@ -79,6 +77,10 @@ class Parser(MonadPlus):
             l2 = yield self.many()
             l1 = xs
         yield Parser.ret(l1 + l2)
+
+    @classmethod
+    def build(cls, non_positional, *positional):
+        return Parser.do(lambda: non_positional.interleave(*positional))
 
     def __add__(self, p):
         return Parser(lambda cs: self.parse(cs) + p.parse(cs))
@@ -163,8 +165,8 @@ class Option(DoParser):
             return x in [f"-{short}", f"--{long}"]
 
         def g():
-            yield Item()
-            c2 = yield Sat(pred)
+            yield Sat(pred)
+            c2 = yield Item()
             key = dest or long
             try:
                 value = c2 if pre is None else pre(c2)
@@ -196,5 +198,10 @@ def finite_parser():
 
 if __name__ == "__main__":
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", pre=int)
-    p = Parser.do(lambda: p.interleave(Argument("a"), Argument("b")))
+    print(
+        Parser.do(lambda: p.interleave(Argument("a"), Argument("b"))).parse(
+            ["first", "--verbose", "--quiet", "second", "--quiet"]
+        )
+    )
+
     print(p.parse(sys.argv[1:]))
