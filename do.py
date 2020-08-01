@@ -1,24 +1,8 @@
 #! /usr/bin/env python
 import abc
-from copy import deepcopy
 from functools import partial
-from itertools import tee
 
-
-class StatelessIterator:
-    def __init__(self, it_func, inputs=None):
-        self.it_func = it_func
-        self.inputs = inputs or []
-
-    def send(self, x):
-        it = self.it_func()
-        inputs = self.inputs
-        for inp in inputs:
-            it.send(inp)
-        return it.send(x), StatelessIterator(self.it_func, inputs + [x])
-
-    def __next__(self):
-        return self.send(None)
+from stateless_iterator import StatelessIterator
 
 
 class Monad:
@@ -33,7 +17,6 @@ class Monad:
 
     @classmethod
     def do(cls, it_func):
-
         def f(y, it):
             try:
                 z, it2 = it.send(y)
@@ -84,6 +67,19 @@ class IO(Monad):
     def ret(cls, x):
         if x is not None:
             return x()
+
+    @classmethod
+    def do(cls, it_func):
+        it = it_func()
+
+        def f(y):
+            try:
+                z = it.send(y)
+            except StopIteration:
+                return cls.ret(y)
+            return cls.bind(z, f)
+
+        return f(None)
 
 
 def options():

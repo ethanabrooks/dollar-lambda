@@ -85,7 +85,7 @@ class Sat(Parser):
                 yield self.zero()
 
         def f(cs):
-            return Parser.do(g()).parse(cs)
+            return Parser.do(g).parse(cs)
 
         super().__init__(f)
 
@@ -98,11 +98,13 @@ class Eq(Sat):
 def parser():
     p = Eq("--hello")
     res1 = yield p
-    import ipdb; ipdb.set_trace()
+    import ipdb
+
+    ipdb.set_trace()
     return True
 
 
 if __name__ == "__main__":
-    p = Parser.do(parser())
+    p = Parser.do(parser)
     print(p.parse(["--hello"]))
     print(p.parse("--hell"))
