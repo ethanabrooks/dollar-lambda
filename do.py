@@ -1,42 +1,68 @@
 #! /usr/bin/env python
 import abc
+from copy import deepcopy
+from functools import partial
+from itertools import tee
+
+
+class StatelessIterator:
+    def __init__(self, it_func, inputs=None):
+        self.it_func = it_func
+        self.inputs = inputs or []
+
+    def send(self, x):
+        it = self.it_func()
+        inputs = self.inputs
+        for inp in inputs:
+            it.send(inp)
+        return it.send(x), StatelessIterator(self.it_func, inputs + [x])
+
+    def __next__(self):
+        return self.send(None)
 
 
 class Monad:
+    @classmethod
     @abc.abstractmethod
-    def bind(self, x, f):
+    def bind(cls, x, f):
         raise NotImplementedError
 
-    def ret(self, x):
+    @classmethod
+    def ret(cls, x):
         return x
 
-    def do(self, it):
-        def _do(y):
-            try:
-                z = it.send(y)
-            except StopIteration:
-                return self.ret(y)
-            return self.bind(z, _do)
+    @classmethod
+    def do(cls, it_func):
 
-        return _do(None)
+        def f(y, it):
+            try:
+                z, it2 = it.send(y)
+            except StopIteration:
+                return cls.ret(y)
+            return cls.bind(z, partial(f, it=it2))
+
+        return f(None, StatelessIterator(it_func))
 
 
 class Option(Monad):
-    def bind(self, x, f):
+    @classmethod
+    def bind(cls, x, f):
         if x is None:
             return None
         return f(x)
 
 
 class Result(Monad):
-    def bind(self, x, f):
+    @classmethod
+    def bind(cls, x, f):
         if type(x) is type and issubclass(x, Exception):
             return x
         return f(x)
 
 
 class List(Monad):
-    def bind(self, x, f):
+    @classmethod
+    def bind(cls, x, f):
         def g():
             for y in x:
                 for z in f(y):
@@ -44,8 +70,20 @@ class List(Monad):
 
         return list(g())
 
-    def ret(self, x):
+    @classmethod
+    def ret(cls, x):
         return [x]
+
+
+class IO(Monad):
+    @classmethod
+    def bind(cls, x, f):
+        return f(x())
+
+    @classmethod
+    def ret(cls, x):
+        if x is not None:
+            return x()
 
 
 def options():
@@ -66,6 +104,14 @@ def lists():
     yield [x + y]
 
 
-print(Option().do(options()))
-print(Result().do(results()))
-print(List().do(lists()))
+def io():
+    x = yield lambda: input("go:")
+    y = yield lambda: input("go:")
+    yield lambda: print(x + y)
+
+
+if __name__ == "__main__":
+    print(Option.do(options))
+    print(Result.do(results))
+    print(List.do(lists))
+    IO().do(io)
