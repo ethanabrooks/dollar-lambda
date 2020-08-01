@@ -168,12 +168,14 @@ class Argument(Parser):
 
 def parser():
     x1 = yield Argument("hello")
-    # x2 = yield Option("world", type=int)
+    x2 = yield Option("world", type=int)
     x3 = yield Flag("verbose")
+    yield Parser.ret(dict(**x1, **x2, **x3))
 
 
 if __name__ == "__main__":
     p = Parser.do(parser)
     print(p.parse(["hello"]))
-    print(p.parse(["hello", "--verbose"]))
-    # print.parse(["hello", "--world", "1", "--verbose"]))
+    print(p.parse(["hello", "--world", "1"]))
+    print(p.parse(["hello", "--world", "1", "--verbose"]))
+    print(p.parse(["hello", "--world", "1", "-v"]))
