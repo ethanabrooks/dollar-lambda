@@ -3,7 +3,7 @@ class StatelessIterator:
         self.generator = generator
         self.inputs = inputs or []
 
-    def send(self, x):
+    def send(self, x):  # TODO: caching?
         it = self.generator()
         inputs = self.inputs
         for inp in inputs:
