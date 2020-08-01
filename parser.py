@@ -125,7 +125,8 @@ class Flag(Parser):
         def g():
             c = yield MaybeItem()
             k = dest or long
-            yield self.ret({k: value if c in [f"-{short}", f"--{long}"] else not value})
+            v = value if c in [f"-{short}", f"--{long}"] else not value
+            yield self.ret({k: v})
 
         def f(cs):
             return Parser.do(g).parse(cs)
