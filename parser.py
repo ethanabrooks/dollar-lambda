@@ -24,6 +24,14 @@ class Parser(MonadPlus):
     def parse(self, cs: str):
         return self.f(cs)
 
+    def parse_args(self, cs: str):
+        parsed = self.parse(cs)
+        try:
+            (parsed), *_ = parsed
+        except ValueError:
+            return []
+        return parsed[0]
+
     @classmethod
     def bind(cls, p, f):
         """
@@ -48,6 +56,10 @@ class Parser(MonadPlus):
     @classmethod
     def zero(cls):
         return Parser(lambda cs: [])
+
+    @classmethod
+    def build(cls, non_positional, *positional):
+        return Parser.do(lambda: non_positional.interleave(*positional))
 
     def many(self):
         return self.many1() | (self.ret([]))
@@ -77,10 +89,6 @@ class Parser(MonadPlus):
             l2 = yield self.many()
             l1 = xs
         yield Parser.ret(l1 + l2)
-
-    @classmethod
-    def build(cls, non_positional, *positional):
-        return Parser.do(lambda: non_positional.interleave(*positional))
 
     def __add__(self, p):
         return Parser(lambda cs: self.parse(cs) + p.parse(cs))
@@ -199,9 +207,9 @@ def finite_parser():
 if __name__ == "__main__":
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", pre=int)
     print(
-        Parser.do(lambda: p.interleave(Argument("a"), Argument("b"))).parse(
+        Parser.do(lambda: p.interleave(Argument("a"), Argument("b"))).parse_args(
             ["first", "--verbose", "--quiet", "second", "--quiet"]
         )
     )
 
-    print(p.parse(sys.argv[1:]))
+    # print(p.parse(sys.argv[1:]))

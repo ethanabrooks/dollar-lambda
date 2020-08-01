@@ -4,10 +4,10 @@ Arguments
 ```python
 from parser import Argument
 
-print(Argument("name").parse(["Ethan"]))
+print(Argument("name").parse_args(["Ethan"]))
 ```
 
-    [(('name', 'Ethan'), [])]
+    ('name', 'Ethan')
 
 
 Flags
@@ -16,10 +16,10 @@ Flags
 ```python
 from parser import Flag
 
-print(Flag("verbose").parse(["--verbose"]))
+print(Flag("verbose").parse_args(["--verbose"]))
 ```
 
-    [(('verbose', True), [])]
+    ('verbose', True)
 
 
 Options
@@ -28,17 +28,17 @@ Options
 ```python
 from parser import Option
 
-print(Option("value").parse(["--value", "x"]))
+print(Option("value").parse_args(["--value", "x"]))
 ```
 
-    [(('value', 'x'), [])]
+    ('value', 'x')
 
 
 Failure
 
 
 ```python
-print(Option("value").parse(["--value"]))
+print(Option("value").parse_args(["--value"]))
 ```
 
     []
@@ -49,18 +49,18 @@ Alternatives (or "Sums")
 
 ```python
 p = Flag("verbose") | Option("value")
-print(p.parse(["--verbose"]))
+print(p.parse_args(["--verbose"]))
 ```
 
-    [(('verbose', True), [])]
+    ('verbose', True)
 
 
 
 ```python
-print(p.parse(["--value", "x"]))
+print(p.parse_args(["--value", "x"]))
 ```
 
-    [(('value', 'x'), [])]
+    ('value', 'x')
 
 
 Sequencing
@@ -68,10 +68,10 @@ Sequencing
 
 ```python
 p = Argument("first") >> Argument("second")
-print(p.parse(["a", "b"]))
+print(p.parse_args(["a", "b"]))
 ```
 
-    [([('first', 'a'), ('second', 'b')], [])]
+    [('first', 'a'), ('second', 'b')]
 
 
 This is shorthand for the following:
@@ -85,10 +85,10 @@ def g():
     x2 = yield Argument('second')
     yield Parser.ret([x1, x2])
 
-print(Parser.do(g).parse(["a", "b"]))
+print(Parser.do(g).parse_args(["a", "b"]))
 ```
 
-    [([('first', 'a'), ('second', 'b')], [])]
+    [('first', 'a'), ('second', 'b')]
 
 
 Variable arguments
@@ -96,43 +96,43 @@ Variable arguments
 
 ```python
 p = Argument("many").many()
-print(p.parse(["a", "b"]))
+print(p.parse_args(["a", "b"]))
 ```
 
-    [([('many', 'a'), ('many', 'b')], [])]
+    [('many', 'a'), ('many', 'b')]
 
 
 
 ```python
 p = (Flag("verbose") | Flag("quiet")).many()
-print(p.parse(["--verbose", "--quiet"]))
+print(p.parse_args(["--verbose", "--quiet"]))
 ```
 
-    [([('verbose', True), ('quiet', True)], [])]
+    [('verbose', True), ('quiet', True)]
 
 
 
 ```python
-print(p.parse(["--quiet", "--verbose"]))
+print(p.parse_args(["--quiet", "--verbose"]))
 ```
 
-    [([('quiet', True), ('verbose', True)], [])]
+    [('quiet', True), ('verbose', True)]
 
 
 
 ```python
-print(p.parse(["--quiet"]))
+print(p.parse_args(["--quiet"]))
 ```
 
-    [([('quiet', True)], [])]
+    [('quiet', True)]
 
 
 
 ```python
-print(p.parse(["--quiet", "--quiet", "--quiet"]))
+print(p.parse_args(["--quiet", "--quiet", "--quiet"]))
 ```
 
-    [([('quiet', True), ('quiet', True), ('quiet', True)], [])]
+    [('quiet', True), ('quiet', True), ('quiet', True)]
 
 
 Combine sequences and sums
@@ -141,10 +141,10 @@ Combine sequences and sums
 ```python
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
 p = p1 >> Argument("a")
-print(p.parse(["--verbose", "value"]))
+print(p.parse_args(["--verbose", "value"]))
 ```
 
-    [([('verbose', True), ('a', 'value')], [])]
+    [('verbose', True), ('a', 'value')]
 
 
 What about doing this many times?
@@ -153,10 +153,10 @@ What about doing this many times?
 ```python
 p2 = p1.many()
 p = p2 >> Argument("a")
-print(p.parse(["--verbose", "value"]))
+print(p.parse_args(["--verbose", "value"]))
 ```
 
-    [([[('verbose', True)], ('a', 'value')], [])]
+    [[('verbose', True)], ('a', 'value')]
 
 
 The result is awkwardly nested. To deal with this, we use `Parser.do`:
@@ -168,10 +168,10 @@ def g():
     x = yield Argument('a')
     yield Parser.ret(xs + [x])
 
-print(Parser.do(g).parse(["--verbose", "--quiet", "value"]))
+print(Parser.do(g).parse_args(["--verbose", "--quiet", "value"]))
 ```
 
-    [([('verbose', True), ('quiet', True), ('a', 'value')], [])]
+    [('verbose', True), ('quiet', True), ('a', 'value')]
 
 
 A common pattern is to alternate checking for positional arguments with checking for non-positional arguments:
@@ -186,10 +186,10 @@ def g():
     xs3 = yield p2
     yield Parser.ret(xs1 + [x1] + xs2  + [x2] + xs3)
 
-print(Parser.do(g).parse(["a", "--verbose", "b", "--quiet"]))
+print(Parser.do(g).parse_args(["a", "--verbose", "b", "--quiet"]))
 ```
 
-    [([('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)], [])]
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
 
 
 A simpler way to do this is with the `interleave` method:
@@ -200,10 +200,10 @@ def g():
     return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
         Argument('first'), Argument('second'))
 
-print(Parser.do(g).parse(["a", "--verbose", "b", "--quiet"]))
+print(Parser.do(g).parse_args(["a", "--verbose", "b", "--quiet"]))
 ```
 
-    [([('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)], [])]
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
 
 
 or `build`:
@@ -216,8 +216,8 @@ print(Parser.build(
     Flag("yes"),
     Argument('first'),
     Argument('second')
-).parse(["a", "--verbose", "b", "--quiet"]))
+).parse_args(["a", "--verbose", "b", "--quiet"]))
 ```
 
-    [([('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)], [])]
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
 
