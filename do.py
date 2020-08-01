@@ -16,7 +16,7 @@ class Monad:
         return x
 
     @classmethod
-    def do(cls, it_func, *args, **kwargs):
+    def do(cls, generator, *args, **kwargs):
         def f(y, it):
             try:
                 z, it2 = it.send(y)
@@ -24,7 +24,10 @@ class Monad:
                 return cls.ret(y)
             return cls.bind(z, partial(f, it=it2))
 
-        return f(None, StatelessIterator(lambda: it_func(*args, **kwargs)))
+        def gen():
+            return generator(*args, **kwargs)
+
+        return f(None, StatelessIterator(gen))
 
 
 class Option(Monad):
@@ -69,8 +72,8 @@ class IO(Monad):
             return x()
 
     @classmethod
-    def do(cls, it_func):
-        it = it_func()
+    def do(cls, generator):
+        it = generator()
 
         def f(y):
             try:
