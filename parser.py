@@ -65,6 +65,21 @@ class Parser(MonadPlus):
 
         return Parser(f)
 
+    def interleave(self, *positional):
+        """
+        :type positional: Parser
+        """
+        xs = yield self.many()
+        try:
+            head, *tail = positional
+            x = yield head
+            l1 = xs + [x]
+            l2 = yield Parser.do(lambda: self.interleave(*tail))
+        except ValueError:
+            l2 = yield self.many()
+            l1 = xs
+        yield Parser.ret(l1 + l2)
+
     def __add__(self, p):
         return Parser(lambda cs: self.parse(cs) + p.parse(cs))
 
@@ -169,19 +184,6 @@ class Argument(DoParser):
         super().__init__(g)
 
 
-def build_parser(non_positional: Parser, *positional: Parser):
-    xs = yield non_positional.many()
-    try:
-        head, *tail = positional
-        x = yield head
-        l1 = xs + [x]
-        l2 = yield Parser.do(lambda: build_parser(non_positional, *tail))
-    except ValueError:
-        l2 = yield non_positional.many()
-        l1 = xs
-    yield Parser.ret(l1 + l2)
-
-
 def finite_parser():
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", pre=int)
     x0 = yield p.many()
@@ -194,5 +196,5 @@ def finite_parser():
 
 if __name__ == "__main__":
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", pre=int)
-    p = Parser.do(lambda: build_parser(p, Argument("a"), Argument("b")))
+    p = Parser.do(lambda: p.interleave(Argument("a"), Argument("b")))
     print(p.parse(sys.argv[1:]))
