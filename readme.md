@@ -222,4 +222,3 @@ print(Parser.build(
 ```
 
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
-
