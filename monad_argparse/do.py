@@ -1,55 +1,96 @@
 #! /usr/bin/env python
 import abc
+import typing
+from abc import ABC
 from functools import partial
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
-from monad_argparse.stateless_iterator import StatelessIterator
+from monad_argparse.stateless_iterator import A, B, StatelessIterator
+
+MA = TypeVar("MA")
+MB = TypeVar("MB")
 
 
-class Monad:
+class Monad(Generic[A, MA, MB]):
     @classmethod
     @abc.abstractmethod
-    def bind(cls, x, f):
+    def bind(cls, x: MA, f: Callable[[A], MB]) -> MB:
         raise NotImplementedError
 
     @classmethod
-    def ret(cls, x):
-        return x
-
-    @classmethod
-    def do(cls, generator, *args, **kwargs):
-        def f(y, it):
+    def do(
+        cls,
+        generator: Callable[[], Generator[A, Tuple[B, StatelessIterator], None]],
+        *args,
+        **kwargs,
+    ):
+        def f(y: Optional[A], it: StatelessIterator) -> MB:
             try:
                 z, it2 = it.send(y)
             except StopIteration:
+                if y is None:
+                    raise RuntimeError("Cannot use an empty iterator with do.")
                 return cls.ret(y)
             return cls.bind(z, partial(f, it=it2))
 
-        def gen():
+        def gen() -> Generator[A, Tuple[B, StatelessIterator], None]:
             return generator(*args, **kwargs)
 
         return f(None, StatelessIterator(gen))
 
-
-class Option(Monad):
     @classmethod
-    def bind(cls, x, f):
+    @abc.abstractmethod
+    def ret(cls, x: A) -> MB:
+        raise NotImplementedError
+
+
+class BaseMonad(Monad[A, MA, Union[A, MB]], ABC):
+    @classmethod
+    def ret(cls, x: A) -> Union[A, MB]:
+        return x
+
+
+class Option(BaseMonad[A, Optional[A], Optional[B]]):
+    @classmethod
+    def bind(  # type: ignore[override]
+        cls,
+        x: Optional[A],
+        f: Callable[[A], Optional[B]],
+    ) -> Optional[B]:
         if x is None:
             return None
         return f(x)
 
 
-class Result(Monad):
+class Result(BaseMonad[A, Union[A, Type[Exception]], Union[A, Type[Exception]]]):
     @classmethod
-    def bind(cls, x, f):
+    def bind(  # type: ignore[override]
+        cls,
+        x: Union[A, Type[Exception]],
+        f: Callable[[A], Type[Exception]],
+    ) -> Union[A, Type[Exception]]:
         if type(x) is type and issubclass(x, Exception):
             return x
-        return f(x)
+        y = f(x)  # type: ignore[arg-type]
+        return y
 
 
-class List(Monad):
+class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
     @classmethod
-    def bind(cls, x, f):
-        def g():
+    def bind(  # type: ignore[override]
+        cls, x: typing.List[A], f: Callable[[A], typing.List[B]]
+    ) -> typing.List[B]:
+        def g() -> Generator[B, None, None]:
             for y in x:
                 for z in f(y):
                     yield z
@@ -57,32 +98,37 @@ class List(Monad):
         return list(g())
 
     @classmethod
-    def ret(cls, x):
+    def ret(cls, x: A) -> Union[typing.List[A], typing.List[B]]:
         return [x]
 
 
-class IO(Monad):
+class IO(BaseMonad[A, Callable[[], A], MB]):
     @classmethod
-    def bind(cls, x, f):
+    def bind(cls, x: Callable[[], A], f: Callable[[A], None]) -> None:  # type: ignore[override]
         return f(x())
 
     @classmethod
-    def ret(cls, x):
-        if x is not None:
-            return x()
+    def do(  # type: ignore[override]
+        cls,
+        generator: Callable[[Any], Generator[Callable[[], A], Optional[A], None]],
+        *args,
+        **kwargs,
+    ):
+        it = generator(*args, **kwargs)
 
-    @classmethod
-    def do(cls, generator):
-        it = generator()
-
-        def f(y):
+        def f(y: Optional[A]) -> None:
             try:
                 z = it.send(y)
             except StopIteration:
-                return cls.ret(y)
+                return None
+
             return cls.bind(z, f)
 
         return f(None)
+
+    @classmethod
+    def ret(cls, x):
+        raise RuntimeError("IO does not use ret method.")
 
 
 def options():
@@ -104,13 +150,15 @@ def lists():
 
 
 def io():
-    x = yield lambda: input("go:")
-    y = yield lambda: input("go:")
+    x = yield lambda: print("1") or 1
+    y = yield lambda: print("2") or 2
     yield lambda: print(x + y)
 
 
-if __name__ == "__main__":
-    print(Option.do(options))
-    print(Result.do(results))
-    print(List.do(lists))
-    IO().do(io)
+#
+#
+# if __name__ == "__main__":
+#     print(Option.do(options))
+#     print(Result.do(results))
+#     print(List.do(lists))
+#     IO().do(io)

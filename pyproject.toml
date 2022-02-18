@@ -5,7 +5,7 @@ description = ""
 authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.10"
 jupyter = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
@@ -16,6 +16,10 @@ pre-commit = "^2.17.0"
 jupyter = "^1.0.0"
 jupytext = "^1.13.7"
 jupyter-http-over-ws = "^0.0.8"
+pyright = "^0.0.13"
+mypy = "^0.931"
+pytype = "^2022.2.17"
+pyre-check = "^0.9.10"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
