@@ -2,9 +2,8 @@ Based on [Monadic Parser Combinators](https://www.cs.nott.ac.uk/~pszgmh/monparsi
 
 Arguments
 
-
 ```python
-from parser import Argument
+from monad_argparse.parser import Argument
 
 print(Argument("name").parse_args(["Ethan"]))
 ```
@@ -14,9 +13,8 @@ print(Argument("name").parse_args(["Ethan"]))
 
 Flags
 
-
 ```python
-from parser import Flag
+from monad_argparse.parser import Flag
 
 print(Flag("verbose").parse_args(["--verbose"]))
 ```
@@ -26,9 +24,8 @@ print(Flag("verbose").parse_args(["--verbose"]))
 
 Options
 
-
 ```python
-from parser import Option
+from monad_argparse.parser import Option
 
 print(Option("value").parse_args(["--value", "x"]))
 ```
@@ -78,14 +75,15 @@ print(p.parse_args(["a", "b"]))
 
 This is shorthand for the following:
 
-
 ```python
-from parser import Parser
+from monad_argparse.parser import Parser
+
 
 def g():
     x1 = yield Argument('first')
     x2 = yield Argument('second')
     yield Parser.ret([x1, x2])
+
 
 print(Parser.do(g).parse_args(["a", "b"]))
 ```

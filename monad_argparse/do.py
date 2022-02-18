@@ -2,7 +2,7 @@
 import abc
 from functools import partial
 
-from stateless_iterator import StatelessIterator
+from monad_argparse.stateless_iterator import StatelessIterator
 
 
 class Monad:

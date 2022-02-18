@@ -1,6 +1,7 @@
 import abc
+from typing import List
 
-from do import Monad
+from monad_argparse.do import Monad
 
 
 class MonadZero(Monad):
@@ -20,10 +21,10 @@ class Parser(MonadPlus):
     def __init__(self, f):
         self.f = f
 
-    def parse(self, cs: str):
+    def parse(self, cs: List[str]):
         return self.f(cs)
 
-    def parse_args(self, cs: str):
+    def parse_args(self, cs: List[str]):
         parsed = self.parse(cs)
         try:
             (parsed), *_ = parsed
