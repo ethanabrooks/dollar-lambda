@@ -1,24 +1,34 @@
 import abc
-from typing import Any, Callable, Generator, List, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-from monad_argparse.monad import Monad
+from monad_argparse.monad import M, Monad
 from monad_argparse.stateless_iterator import StatelessIterator
 
 A = TypeVar("A", contravariant=True)
-MA = TypeVar("MA", contravariant=True)
+MA = TypeVar("MA")
 MB = TypeVar("MB", covariant=True)
 
 
 class MonadZero(Monad[A, MA, MB]):
     @classmethod
     @abc.abstractmethod
-    def zero(cls):
+    def zero(cls) -> MA:
         raise NotImplementedError
 
 
 class MonadPlus(MonadZero[A, MA, MB]):
     @abc.abstractmethod
-    def __add__(self, other: "MonadPlus"):
+    def __add__(self, other: MA) -> MA:
         raise NotImplementedError
 
 
@@ -59,7 +69,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     def __init__(self, f: Callable[[List[str]], List[Pair]]):
         self.f = f
 
-    def __add__(  # type: ignore[override]  # pyre-ignore[14]
+    def __add__(
         self,
         other: "Parser",
     ) -> "Parser":
@@ -209,6 +219,15 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     def zero(cls) -> "Parser":
         empty: List[Tuple[Any, List[str]]] = []
         return Parser(lambda cs: empty)
+
+
+class P(M, Generic[A]):
+    def __ge__(self, f: Callable[[A], Parser]):  # type: ignore[override]
+        return Parser.bind(self.a, f)
+
+    @classmethod
+    def return_(cls, a: A) -> "P[Parser]":
+        return P(Parser.return_(a))
 
 
 class Item(Parser):
