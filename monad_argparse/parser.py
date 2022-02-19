@@ -18,22 +18,22 @@ class MonadPlus(MonadZero[A, MA, MB]):
         raise NotImplementedError
 
 
-StrList = List[str]
+Pair = Tuple[A, List[str]]
 
 
 class Parser(MonadPlus[Any, "Parser", "Parser"]):
     """
-    >>> def g():
+    >>> def f():
     ...     x1 = yield Argument("first")
     ...     x2 = yield Argument("second")
     ...     yield Parser.ret([x1, x2])
     ...
-    >>> Parser.do(g).parse_args("a", "b")
+    >>> Parser.do(f).parse_args("a", "b")
     [('first', 'a'), ('second', 'b')]
     >>>
     >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
     >>> p2 = p1.many()
-    >>> def g():
+    >>> def f():
     ...     xs1 = yield p2
     ...     x1 = yield Argument("first")
     ...     xs2 = yield p2
@@ -41,18 +41,18 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     ...     xs3 = yield p2
     ...     yield Parser.ret(xs1 + [x1] + xs2 + [x2] + xs3)
     ...
-    >>> Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
+    >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
-    >>> def g():
+    >>> def f():
     ...     return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
     ...         Argument("first"), Argument("second")
     ...     )
 
-    >>> Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
+    >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
     """
 
-    def __init__(self, f: Callable[[StrList], List[Tuple[A, StrList]]]):
+    def __init__(self, f: Callable[[List[str]], List[Pair]]):
         self.f = f
 
     def __add__(  # type: ignore[override]  # pyre-ignore[14]
@@ -72,8 +72,8 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         ('value', 'x')
         """
 
-        def f(cs: StrList) -> List[Tuple[Any, StrList]]:
-            x: List[Tuple[Any, StrList]] = (self + p).parse(cs)
+        def f(cs: List[str]) -> List[Tuple[Any, List[str]]]:
+            x: List[Tuple[Any, List[str]]] = (self + p).parse(cs)
             return [x[0]] if x else []
 
         return Parser(f)
@@ -106,13 +106,13 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     @classmethod
     def bind(cls, x: "Parser", f: Callable[[A], "Parser"]):
-        def g(cs: StrList) -> Generator[Tuple[A, StrList], None, None]:
+        def g(cs: List[str]) -> Generator[Pair, None, None]:
             a: A
             for (a, _cs) in x.parse(cs):
                 f1: Parser = f(a)
                 yield from f1.parse(_cs)
 
-        def h(cs: StrList) -> List[Tuple[A, StrList]]:
+        def h(cs: List[str]) -> List[Pair]:
             return list(g(cs))
 
         return Parser(h)
@@ -133,7 +133,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     def interleave(
         self, *positional: "Parser"
     ) -> Generator[
-        "Parser", Union[List[Tuple[Any, StrList]], Tuple[Any, StrList]], None
+        "Parser", Union[List[Tuple[Any, List[str]]], Tuple[Any, List[str]]], None
     ]:
         xs = yield self.many()
         assert isinstance(xs, list)
@@ -170,7 +170,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     def many1(self):
         def g() -> Generator[
-            "Parser", Union[Tuple[Any, StrList], List[Tuple[Any, StrList]]], None
+            "Parser", Union[Tuple[Any, List[str]], List[Tuple[Any, List[str]]]], None
         ]:
             a = yield self
             assert isinstance(a, tuple)
@@ -183,11 +183,11 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
         return Parser(f)
 
-    def parse(self, cs: StrList) -> List[Tuple[Any, StrList]]:
+    def parse(self, cs: List[str]) -> List[Tuple[Any, List[str]]]:
         return self.f(cs)
 
     def parse_args(self, *args: str) -> List[Any]:
-        parsed: List[Tuple[List[Any], StrList]] = self.parse(list(args))
+        parsed: List[Tuple[List[Any], List[str]]] = self.parse(list(args))
         try:
             (a, _), *_ = parsed
         except ValueError:
@@ -196,27 +196,27 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     @classmethod
     def ret(cls, x: A) -> "Parser":
-        def f(cs: StrList) -> List[Tuple[A, StrList]]:
+        def f(cs: List[str]) -> List[Pair]:
             return [(x, cs)]
 
         return Parser(f)
 
     @classmethod
     def zero(cls) -> "Parser":
-        empty: List[Tuple[Any, StrList]] = []
+        empty: List[Tuple[Any, List[str]]] = []
         return Parser(lambda cs: empty)
 
 
 class Item(Parser):
     def __init__(self):
-        def g(cs: StrList) -> List[Tuple[str, StrList]]:
+        def f(cs: List[str]) -> List[Tuple[str, List[str]]]:
             try:
                 c, *cs = cs
                 return [(c, cs)]
             except ValueError:
                 return []
 
-        super().__init__(g)
+        super().__init__(f)
 
 
 class Sat(Parser):
@@ -228,7 +228,7 @@ class Sat(Parser):
             else:
                 yield self.zero()
 
-        def f(cs: StrList) -> List[Tuple[Any, StrList]]:
+        def f(cs: List[str]) -> List[Tuple[Any, List[str]]]:
             return Parser.do(g).parse(cs)
 
         super().__init__(f)
