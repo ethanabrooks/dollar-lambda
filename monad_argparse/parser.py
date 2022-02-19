@@ -22,6 +22,36 @@ StrList = List[str]
 
 
 class Parser(MonadPlus[Any, "Parser", "Parser"]):
+    """
+    >>> def g():
+    ...     x1 = yield Argument("first")
+    ...     x2 = yield Argument("second")
+    ...     yield Parser.ret([x1, x2])
+    ...
+    >>> Parser.do(g).parse_args("a", "b")
+    [('first', 'a'), ('second', 'b')]
+    >>>
+    >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
+    >>> p2 = p1.many()
+    >>> def g():
+    ...     xs1 = yield p2
+    ...     x1 = yield Argument("first")
+    ...     xs2 = yield p2
+    ...     x2 = yield Argument("second")
+    ...     xs3 = yield p2
+    ...     yield Parser.ret(xs1 + [x1] + xs2 + [x2] + xs3)
+    ...
+    >>> Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
+    >>> def g():
+    ...     return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
+    ...         Argument("first"), Argument("second")
+    ...     )
+
+    >>> Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
+    """
+
     def __init__(self, f: Callable[[StrList], List[Tuple[A, StrList]]]):
         self.f = f
 
@@ -32,6 +62,16 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         return Parser(lambda cs: self.parse(cs) + other.parse(cs))
 
     def __or__(self, p: "Parser") -> "Parser":
+        """
+        >>> p = Flag("verbose") | Option("value")
+        >>> p.parse_args("--verbose")
+        ('verbose', True)
+        >>> p.parse_args("--verbose", "--value", "x")  # TODO: shouldn't this throw an error?
+        ('verbose', True)
+        >>> p.parse_args("--value", "x")
+        ('value', 'x')
+        """
+
         def f(cs: StrList) -> List[Tuple[Any, StrList]]:
             x: List[Tuple[Any, StrList]] = (self + p).parse(cs)
             return [x[0]] if x else []
@@ -39,6 +79,24 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         return Parser(f)
 
     def __rshift__(self, p: "Parser") -> "Parser":
+        """
+        >>> p = Argument("first") >> Argument("second")
+        >>> p.parse_args("a", "b")
+        [('first', 'a'), ('second', 'b')]
+        >>> p.parse_args("a")
+        []
+        >>> p.parse_args("b")
+        []
+        >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
+        >>> p = p1 >> Argument("a")
+        >>> p.parse_args("--verbose", "value")
+        [('verbose', True), ('a', 'value')]
+        >>> p.parse_args("--verbose")
+        []
+        >>> p.parse_args("value")
+        []
+        """
+
         def g() -> Generator[Any, Tuple[Any, StatelessIterator], None]:
             x1 = yield self
             x2 = yield p
@@ -61,6 +119,15 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     @classmethod
     def build(cls, non_positional, *positional):
+        """
+        >>> p = Parser.build(
+        ...     Flag("verbose") | Flag("quiet") | Flag("yes"),
+        ...     Argument("first"),
+        ...     Argument("second"),
+        ... )
+        >>> p.parse_args("a", "--verbose", "b", "--quiet")
+        [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
+        """
         return Parser.do(lambda: non_positional.interleave(*positional))
 
     def interleave(
@@ -88,6 +155,17 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         yield Parser.ret(l1 + l2)
 
     def many(self) -> "Parser":
+        """
+        >>> p = Argument("as-many-as-you-like").many()
+        >>> p.parse_args("a", "b")
+        [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+        >>> p = Flag("verbose") | Flag("quiet")
+        >>> p = p.many()  # parse zero or more copies
+        >>> p.parse_args("--quiet", "--quiet", "--quiet")
+        [('quiet', True), ('quiet', True), ('quiet', True)]
+        >>> p.parse_args("--verbose", "--quiet", "--quiet")
+        [('verbose', True), ('quiet', True), ('quiet', True)]
+        """
         return self.many1() | (self.ret([]))
 
     def many1(self):
@@ -108,8 +186,8 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     def parse(self, cs: StrList) -> List[Tuple[Any, StrList]]:
         return self.f(cs)
 
-    def parse_args(self, args: StrList) -> List[Any]:
-        parsed: List[Tuple[List[Any], StrList]] = self.parse(args)
+    def parse_args(self, *args: str) -> List[Any]:
+        parsed: List[Tuple[List[Any], StrList]] = self.parse(list(args))
         try:
             (a, _), *_ = parsed
         except ValueError:
@@ -169,7 +247,30 @@ class DoParser(Parser):
         super().__init__(f)
 
 
+class Argument(DoParser):
+    """
+    >>> Argument("name").parse_args("Alice")
+    ('name', 'Alice')
+    >>> Argument("name").parse_args()  # TODO: add ability to throw error on parse failure
+    []
+    """
+
+    def __init__(self, dest):
+        def g() -> Generator[Parser, str, None]:
+            c = yield Item()
+            yield self.ret((dest, c))
+
+        super().__init__(g)
+
+
 class Flag(DoParser):
+    """
+    >>> Flag("verbose").parse_args("--verbose")
+    ('verbose', True)
+    >>> Flag("verbose").parse_args() # TODO: fix this
+    []
+    """
+
     def __init__(
         self,
         long: str,
@@ -188,6 +289,13 @@ class Flag(DoParser):
 
 
 class Option(DoParser):
+    """
+    >>> Option("value").parse_args("--value", "x")
+    ('value', 'x')
+    >>> Option("value").parse_args("--value")
+    []
+    """
+
     def __init__(
         self,
         long: str,
@@ -211,16 +319,6 @@ class Option(DoParser):
         super().__init__(g)
 
 
-class Argument(DoParser):
-    def __init__(self, dest):
-        def g() -> Generator[Parser, str, None]:
-            c = yield Item()
-            yield self.ret((dest, c))
-
-        super().__init__(g)
-
-
-#
 def finite_parser():
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", convert=int)
     x0 = yield p.many()
