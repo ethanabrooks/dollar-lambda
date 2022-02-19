@@ -9,6 +9,12 @@ repos:
     rev: v0.931
     hooks:
       - id: mypy
+  - repo: local
+    hooks:
+      - id: doctest
+        name: doctest
+        entry: ./test.py
+        language: python
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
