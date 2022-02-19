@@ -9,6 +9,7 @@ repos:
     rev: v0.931
     hooks:
       - id: mypy
+        args: ["--show-error-codes"]
   - repo: local
     hooks:
       - id: doctest
@@ -19,7 +20,7 @@ repos:
     rev: 4.0.1
     hooks:
       - id: flake8
-        args: ["monad_argparse"]
+        args: ["--exclude=readme.py"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
