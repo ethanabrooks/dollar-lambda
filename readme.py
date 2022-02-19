@@ -14,7 +14,9 @@
 # ---
 
 # %% [markdown]
-# # An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
+# # Monad Argparse
+#
+# ### An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
 
 # %% [markdown] pycharm={"name": "#%% md\n"}
 # Arguments

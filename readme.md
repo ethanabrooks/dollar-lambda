@@ -1,31 +1,25 @@
----
-jupyter:
-  jupytext:
-    formats: ipynb,py:percent,md
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.13.7
-  kernelspec:
-    display_name: Python 3 (ipykernel)
-    language: python
-    name: python3
----
+# Monad Argparse
 
-# An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
+### An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
 
-<!-- #region pycharm={"name": "#%% md\n"} -->
 Arguments
-<!-- #endregion -->
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 from monad_argparse import Argument
 
 Argument("name").parse_args("Ethan")
 ```
 
+
+
+
+    [('name', 'Ethan')]
+
+
+
 Flags
+
 
 ```python
 from monad_argparse import Flag
@@ -33,41 +27,89 @@ from monad_argparse import Flag
 Flag("verbose").parse_args("--verbose")
 ```
 
+
+
+
+    [('verbose', True)]
+
+
+
 Options
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 from monad_argparse import Option
 
 Option("value").parse_args("--value", "x")
 ```
 
+
+
+
+    [('value', 'x')]
+
+
+
 Failure
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 Option("value").parse_args("--value")
 ```
 
+
+
+
+    []
+
+
+
 Alternatives (or "Sums")
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 p = Flag("verbose") | Option("value")
 p.parse_args("--verbose")
 ```
 
-```python pycharm={"name": "#%%\n"}
+
+
+
+    [('verbose', True)]
+
+
+
+
+```python
 p.parse_args("--value", "x")
 ```
 
+
+
+
+    [('value', 'x')]
+
+
+
 Sequencing
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 p = Argument("first") >> Argument("second")
 p.parse_args("a", "b")
 ```
 
+
+
+
+    [('first', 'a'), ('second', 'b')]
+
+
+
 This is shorthand for the following:
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 from monad_argparse import Parser
 
 
@@ -80,49 +122,113 @@ def g():
 Parser.do(g).parse_args("a", "b")
 ```
 
+
+
+
+    [[('first', 'a')], [('second', 'b')]]
+
+
+
 Variable arguments
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 p = Argument("many").many()
 p.parse_args("a", "b")
 ```
 
-```python pycharm={"name": "#%%\n"}
+
+
+
+    [('many', 'a'), ('many', 'b')]
+
+
+
+
+```python
 p = (Flag("verbose") | Flag("quiet")).many()
 p.parse_args("--verbose", "--quiet")
 ```
 
-```python pycharm={"name": "#%%\n"}
+
+
+
+    [('verbose', True), ('quiet', True)]
+
+
+
+
+```python
 p.parse_args("--quiet", "--verbose")
 ```
 
-```python pycharm={"name": "#%%\n"}
+
+
+
+    [('quiet', True), ('verbose', True)]
+
+
+
+
+```python
 p.parse_args("--quiet")
 ```
 
-```python pycharm={"name": "#%%\n"}
+
+
+
+    [('quiet', True)]
+
+
+
+
+```python
 p.parse_args("--quiet", "--quiet", "--quiet")
 ```
 
+
+
+
+    [('quiet', True), ('quiet', True), ('quiet', True)]
+
+
+
 Combine sequences and sums
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
 p = p1 >> Argument("a")
 p.parse_args("--verbose", "value")
 ```
 
+
+
+
+    [('verbose', True), ('a', 'value')]
+
+
+
 What about doing this many times?
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 p2 = p1.many()
 p = p2 >> Argument("a")
 p.parse_args("--verbose", "value")
 ```
 
+
+
+
+    [('verbose', True), ('a', 'value')]
+
+
+
 The result is awkwardly nested. To deal with this, we use `Parser.do`:
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 def g():  # type: ignore[no-redef]
     xs = yield p2
     x = yield Argument("a")
@@ -132,9 +238,17 @@ def g():  # type: ignore[no-redef]
 Parser.do(g).parse_args("--verbose", "--quiet", "value")
 ```
 
+
+
+
+    [('verbose', True), ('quiet', True), [('a', 'value')]]
+
+
+
 A common pattern is to alternate checking for positional arguments with checking for non-positional arguments:
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 def g():  # type: ignore[no-redef]
     xs1 = yield p2
     x1 = yield Argument("first")
@@ -147,9 +261,17 @@ def g():  # type: ignore[no-redef]
 Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
 ```
 
+
+
+
+    [[('first', 'a')], ('verbose', True), [('second', 'b')], ('quiet', True)]
+
+
+
 A simpler way to do this is with the `interleave` method:
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 def g():  # type: ignore[no-redef]
     return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
         Argument("first"), Argument("second")
@@ -159,10 +281,23 @@ def g():  # type: ignore[no-redef]
 Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
 ```
 
+
+
+
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
+
+
+
 or `build`:
 
-```python pycharm={"name": "#%%\n"}
+
+```python
 Parser.build(
     Flag("verbose") | Flag("quiet") | Flag("yes"), Argument("first"), Argument("second")
 ).parse_args("a", "--verbose", "b", "--quiet")
 ```
+
+
+
+
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
