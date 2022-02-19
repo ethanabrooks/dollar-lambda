@@ -1,0 +1,5 @@
+- add --help
+- handle parse errors
+- write docs
+- improve types
+- add Tap-style convenience class

@@ -1,0 +1,5 @@
+- run unittests in pre-commmit
+- Add informative errors
+- add --help print-outs
+- add Tap-style interface
+- improve typing
