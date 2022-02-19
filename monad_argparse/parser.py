@@ -1,7 +1,7 @@
 import abc
 from typing import Any, Callable, Generator, List, Optional, Tuple, Union
 
-from monad_argparse.do import MA, MB, Monad
+from monad_argparse.monad import MA, MB, Monad
 from monad_argparse.stateless_iterator import A, StatelessIterator
 
 
