@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 import abc
 import typing
 from abc import ABC

@@ -75,7 +75,7 @@ from monad_argparse import Parser
 def g():
     x1 = yield Argument("first")
     x2 = yield Argument("second")
-    yield Parser.return_([x1, x2])
+    yield Parser.return_(x1 + x2)
 
 
 Parser.do(g).parse_args("a", "b")
@@ -124,7 +124,7 @@ p.parse_args("--verbose", "value")
 def g():  # type: ignore[no-redef]
     xs = yield p2
     x = yield Argument("a")
-    yield Parser.return_(xs + [x])
+    yield Parser.return_(xs + x)
 
 
 Parser.do(g).parse_args("--verbose", "--quiet", "value")
@@ -140,28 +140,7 @@ def g():  # type: ignore[no-redef]
     xs2 = yield p2
     x2 = yield Argument("second")
     xs3 = yield p2
-    yield Parser.return_(xs1 + [x1] + xs2 + [x2] + xs3)
+    yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
 
 
 Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
-
-
-# %% [markdown]
-# A simpler way to do this is with the `interleave` method:
-
-# %% pycharm={"name": "#%%\n"}
-def g():  # type: ignore[no-redef]
-    return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
-        Argument("first"), Argument("second")
-    )
-
-
-Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
-
-# %% [markdown]
-# or `build`:
-
-# %% pycharm={"name": "#%%\n"}
-Parser.build(
-    Flag("verbose") | Flag("quiet") | Flag("yes"), Argument("first"), Argument("second")
-).parse_args("a", "--verbose", "b", "--quiet")

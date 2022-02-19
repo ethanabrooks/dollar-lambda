@@ -60,7 +60,7 @@ Option("value").parse_args("--value")
 
 
 
-    []
+    RuntimeError('Item failed')
 
 
 
@@ -116,7 +116,7 @@ from monad_argparse import Parser
 def g():
     x1 = yield Argument("first")
     x2 = yield Argument("second")
-    yield Parser.return_([x1, x2])
+    yield Parser.return_(x1 + x2)
 
 
 Parser.do(g).parse_args("a", "b")
@@ -125,7 +125,7 @@ Parser.do(g).parse_args("a", "b")
 
 
 
-    [[('first', 'a')], [('second', 'b')]]
+    [('first', 'a'), ('second', 'b')]
 
 
 
@@ -232,7 +232,7 @@ The result is awkwardly nested. To deal with this, we use `Parser.do`:
 def g():  # type: ignore[no-redef]
     xs = yield p2
     x = yield Argument("a")
-    yield Parser.return_(xs + [x])
+    yield Parser.return_(xs + x)
 
 
 Parser.do(g).parse_args("--verbose", "--quiet", "value")
@@ -241,7 +241,7 @@ Parser.do(g).parse_args("--verbose", "--quiet", "value")
 
 
 
-    [('verbose', True), ('quiet', True), [('a', 'value')]]
+    [('verbose', True), ('quiet', True), ('a', 'value')]
 
 
 
@@ -255,46 +255,10 @@ def g():  # type: ignore[no-redef]
     xs2 = yield p2
     x2 = yield Argument("second")
     xs3 = yield p2
-    yield Parser.return_(xs1 + [x1] + xs2 + [x2] + xs3)
+    yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
 
 
 Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
-```
-
-
-
-
-    [[('first', 'a')], ('verbose', True), [('second', 'b')], ('quiet', True)]
-
-
-
-A simpler way to do this is with the `interleave` method:
-
-
-```python
-def g():  # type: ignore[no-redef]
-    return (Flag("verbose") | Flag("quiet") | Flag("yes")).interleave(
-        Argument("first"), Argument("second")
-    )
-
-
-Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
-```
-
-
-
-
-    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
-
-
-
-or `build`:
-
-
-```python
-Parser.build(
-    Flag("verbose") | Flag("quiet") | Flag("yes"), Argument("first"), Argument("second")
-).parse_args("a", "--verbose", "b", "--quiet")
 ```
 
 
