@@ -12,10 +12,10 @@ repos:
         args: ["--show-error-codes"]
   - repo: local
     hooks:
-      - id: doctest
-        name: doctest
-        entry: ./test.py
-        language: python
+      - id: test
+        name: test
+        entry: ./test.sh
+        language: script
   - repo: https://github.com/pycqa/flake8
     rev: 4.0.1
     hooks:

@@ -1,10 +1,16 @@
 #! /usr/bin/env python
+
+import doctest
+import unittest
+
 from monad_argparse import monad, parser
 
-if __name__ == "__main__":
-    import doctest
 
-    fail_count, _ = doctest.testmod(monad)
-    assert fail_count == 0
-    fail_count, _ = doctest.testmod(parser)
-    assert fail_count == 0
+def load_tests(_, tests, __):
+    tests.addTests(doctest.DocTestSuite(monad))
+    tests.addTests(doctest.DocTestSuite(parser))
+    return tests
+
+
+if __name__ == "__main__":
+    unittest.main()

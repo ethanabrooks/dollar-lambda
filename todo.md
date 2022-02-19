@@ -1,4 +1,5 @@
 - add --help
+- test monad laws
 - handle parse errors
 - write docs
 - improve types

@@ -14,9 +14,19 @@ MB = TypeVar("MB", covariant=True)
 
 
 class Monad(Generic[A, MA, MB]):
+    """
+    Monad laws
+    return a >>= f = f a
+    p >>= return = p
+    p >>= (\a -> (f a >>= g)) = (p >>= (\a -> f a)) >>= g
+    """
+
     @classmethod
     @abc.abstractmethod
     def bind(cls, x: MA, f: Callable[[A], MB]) -> MB:
+        """
+        (>>=) :: m a -> (a -> m b) -> m b
+        """
         raise NotImplementedError
 
     @classmethod
@@ -40,6 +50,9 @@ class Monad(Generic[A, MA, MB]):
     @classmethod
     @abc.abstractmethod
     def return_(cls, a: A) -> MB:
+        """
+        return :: a -> m a
+        """
         raise NotImplementedError
 
 
