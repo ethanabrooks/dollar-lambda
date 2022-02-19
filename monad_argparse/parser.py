@@ -1,5 +1,15 @@
 import abc
-from typing import Any, Callable, Generator, Generic, List, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from monad_argparse.do import MA, MB, Monad
 from monad_argparse.stateless_iterator import A, B, StatelessIterator
@@ -14,7 +24,7 @@ class MonadZero(Monad[A, MA, MB]):
 
 class MonadPlus(MonadZero[A, MA, MB]):
     @abc.abstractmethod
-    def __add__(self, other):
+    def __add__(self, other: "MonadPlus"):
         raise NotImplementedError
 
 
@@ -25,18 +35,21 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     def __init__(self, f: Callable[[StrList], List[Tuple[A, StrList]]]):
         self.f = f
 
-    def __add__(self, p: "Parser") -> "Parser":
-        return Parser(lambda cs: self.parse(cs) + p.parse(cs))
+    def __add__(  # type: ignore[override]  # pyre-ignore[14]
+        self,
+        other: "Parser",
+    ) -> "Parser":
+        return Parser(lambda cs: self.parse(cs) + other.parse(cs))
 
     def __or__(self, p: "Parser") -> "Parser":
-        def f(cs: StrList) -> List[Tuple[A, StrList]]:
+        def f(cs: StrList) -> List[Tuple[Any, StrList]]:
             x: List[Tuple[Any, StrList]] = (self + p).parse(cs)
             return [x[0]] if x else []
 
         return Parser(f)
 
     def __rshift__(self, p: "Parser") -> "Parser":
-        def g() -> Generator[Any, Tuple[A, StatelessIterator], None]:
+        def g() -> Generator[Any, Tuple[Any, StatelessIterator], None]:
             x1 = yield self
             x2 = yield p
             yield self.ret([x1] + [x2])
@@ -44,10 +57,10 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         return Parser.do(g)
 
     @classmethod
-    def bind(cls, p: "Parser", f: Callable[[A], "Parser"]):
+    def bind(cls, x: "Parser", f: Callable[[A], "Parser"]):
         def g(cs: StrList) -> Generator[Tuple[A, StrList], None, None]:
             a: A
-            for (a, _cs) in p.parse(cs):
+            for (a, _cs) in x.parse(cs):
                 f1: Parser = f(a)
                 yield from f1.parse(_cs)
 
@@ -60,16 +73,28 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     def build(cls, non_positional, *positional):
         return Parser.do(lambda: non_positional.interleave(*positional))
 
-    def interleave(self, *positional: "Parser"):
+    def interleave(
+        self, *positional: "Parser"
+    ) -> Generator[
+        "Parser", Union[List[Tuple[Any, StrList]], Tuple[Any, StrList]], None
+    ]:
         xs = yield self.many()
+        assert isinstance(xs, list)
         try:
             head, *tail = positional
             x = yield head
+            assert isinstance(x, tuple)
             l1 = xs + [x]
-            l2 = yield Parser.do(lambda: self.interleave(*tail))
+
+            def generator() -> Generator["Parser", Tuple[Any, Any], None]:
+                return self.interleave(*tail)
+
+            l2 = yield Parser.do(generator)
         except ValueError:
             l2 = yield self.many()
             l1 = xs
+            assert isinstance(l1, list)
+        assert isinstance(l2, list)
         yield Parser.ret(l1 + l2)
 
     def many(self) -> "Parser":
@@ -77,7 +102,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     def many1(self):
         def g() -> Generator[
-            "Parser", Union[Tuple[A, StrList], List[Tuple[A, StrList]]], None
+            "Parser", Union[Tuple[Any, StrList], List[Tuple[Any, StrList]]], None
         ]:
             a = yield self
             assert isinstance(a, tuple)
@@ -90,15 +115,15 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
         return Parser(f)
 
-    def parse(self, cs: StrList) -> List[Tuple[A, StrList]]:
+    def parse(self, cs: StrList) -> List[Tuple[Any, StrList]]:
         return self.f(cs)
 
-    def parse_args(self, args: StrList) -> A:
-        parsed: List[Tuple[A, StrList]] = self.parse(args)
-        # try:
-        (a, _), *_ = parsed
-        # except ValueError:
-        #     return []
+    def parse_args(self, args: StrList) -> List[Any]:
+        parsed: List[Tuple[List[Any], StrList]] = self.parse(args)
+        try:
+            (a, _), *_ = parsed
+        except ValueError:
+            return []
         return a
 
     @classmethod
@@ -128,14 +153,14 @@ class Item(Parser):
 
 class Sat(Parser):
     def __init__(self, predicate: Callable[[Any], bool]):
-        def g() -> Generator[Parser, Tuple[B, StatelessIterator], None]:
+        def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
             c = yield Item()
             if predicate(c):
                 yield self.ret(c)
             else:
                 yield self.zero()
 
-        def f(cs: StrList) -> List[Tuple[A, StrList]]:
+        def f(cs: StrList) -> List[Tuple[Any, StrList]]:
             return Parser.do(g).parse(cs)
 
         super().__init__(f)
@@ -156,12 +181,16 @@ class DoParser(Parser):
 
 class Flag(DoParser):
     def __init__(
-        self, long: str, short: str = None, dest: str = None, value: bool = True
+        self,
+        long: str,
+        short: Optional[str] = None,
+        dest: Optional[str] = None,
+        value: bool = True,
     ):
         def predicate(x: str) -> bool:
             return x in [f"-{short}", f"--{long}"]
 
-        def g() -> Generator[Parser, Tuple[B, StatelessIterator], None]:
+        def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
             yield Sat(predicate)
             yield self.ret(((dest or long), value))
 
@@ -172,9 +201,9 @@ class Option(DoParser):
     def __init__(
         self,
         long: str,
-        short: str = None,
-        convert: Callable[[str], Any] = None,
-        dest: str = None,
+        short: Optional[str] = None,
+        convert: Optional[Callable[[str], Any]] = None,
+        dest: Optional[str] = None,
     ):
         def predicate(x: str):
             return x in [f"-{short}", f"--{long}"]

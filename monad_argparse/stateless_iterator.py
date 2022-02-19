@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Generic, Iterator, List, TypeVar
+from typing import Callable, Generator, Generic, Iterator, List, Optional, TypeVar
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -8,7 +8,7 @@ class StatelessIterator(Generic[A, B]):
     def __init__(
         self,
         generator: Callable[[], Generator[A, B, None]],
-        inputs: List[B] = None,
+        inputs: Optional[List[B]] = None,
     ):
         self.generator = generator
         self.inputs = inputs or []

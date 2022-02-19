@@ -30,7 +30,7 @@ class Monad(Generic[A, MA, MB]):
     @classmethod
     def do(
         cls,
-        generator: Callable[[], Generator[A, Tuple[B, StatelessIterator], None]],
+        generator: Callable[[], Generator[A, Any, None]],
         *args,
         **kwargs,
     ):
@@ -43,7 +43,7 @@ class Monad(Generic[A, MA, MB]):
                 return cls.ret(y)
             return cls.bind(z, partial(f, it=it2))
 
-        def gen() -> Generator[A, Tuple[B, StatelessIterator], None]:
+        def gen() -> Generator[A, Tuple[Any, StatelessIterator], None]:
             return generator(*args, **kwargs)
 
         return f(None, StatelessIterator(gen))
