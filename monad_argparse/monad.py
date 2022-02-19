@@ -3,17 +3,7 @@ import abc
 import typing
 from abc import ABC
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Generic,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Callable, Generator, Generic, Optional, Type, TypeVar, Union
 
 from monad_argparse.stateless_iterator import StatelessIterator
 
@@ -30,36 +20,32 @@ class Monad(Generic[A, MA, MB]):
         raise NotImplementedError
 
     @classmethod
-    def do(
-        cls,
-        generator: Callable[[], Generator[A, Any, None]],
-        *args,
-        **kwargs,
-    ):
-        def f(y: Optional[A], it: StatelessIterator) -> MB:
+    def do(cls, generator: Callable[[], Generator[MA, A, None]]):
+        def f(y: Optional[A], it: StatelessIterator[MA, A]) -> MB:
             try:
-                z, it2 = it.send(y)
+                z: MA
+                it2: StatelessIterator[MA, A]
+                if y is None:
+                    z, it2 = it.__next__()
+                else:
+                    z, it2 = it.send(y)
             except StopIteration:
                 if y is None:
                     raise RuntimeError("Cannot use an empty iterator with do.")
-                return cls.ret(y)
+                return cls.return_(y)
             return cls.bind(z, partial(f, it=it2))
 
-        def gen() -> Generator[A, Tuple[Any, StatelessIterator], None]:
-            # noinspection PyArgumentList
-            return generator(*args, **kwargs)
-
-        return f(None, StatelessIterator(gen))
+        return f(None, StatelessIterator(generator))
 
     @classmethod
     @abc.abstractmethod
-    def ret(cls, x: A) -> MB:
+    def return_(cls, x: A) -> MB:
         raise NotImplementedError
 
 
 class BaseMonad(Monad[A, MA, Union[A, MB]], ABC):
     @classmethod
-    def ret(cls, x: A) -> Union[A, MB]:
+    def return_(cls, x: A) -> Union[A, MB]:
         return x
 
 
@@ -159,7 +145,7 @@ class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
         return list(g())
 
     @classmethod
-    def ret(cls, x: A) -> Union[typing.List[A], typing.List[B]]:
+    def return_(cls, x: A) -> Union[typing.List[A], typing.List[B]]:
         return [x]
 
 
@@ -191,7 +177,7 @@ class IO(BaseMonad[A, Callable[[], A], MB]):
     @classmethod
     def do(  # type: ignore[override]
         cls,
-        generator: Callable[[Any], Generator[Callable[[], A], Optional[A], None]],
+        generator: Callable[[], Generator[Callable[[], A], Optional[A], None]],
         *args,
         **kwargs,
     ):
@@ -208,5 +194,5 @@ class IO(BaseMonad[A, Callable[[], A], MB]):
         return f(None)
 
     @classmethod
-    def ret(cls, x):
+    def return_(cls, x):
         raise RuntimeError("IO does not use ret method.")

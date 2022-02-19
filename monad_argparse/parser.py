@@ -1,10 +1,12 @@
 import abc
 from typing import Any, Callable, Generator, List, Optional, Tuple, TypeVar, Union
 
-from monad_argparse.monad import MA, MB, Monad
+from monad_argparse.monad import Monad
 from monad_argparse.stateless_iterator import StatelessIterator
 
 A = TypeVar("A", contravariant=True)
+MA = TypeVar("MA", contravariant=True)
+MB = TypeVar("MB", covariant=True)
 
 
 class MonadZero(Monad[A, MA, MB]):
@@ -23,12 +25,12 @@ class MonadPlus(MonadZero[A, MA, MB]):
 Pair = Tuple[A, List[str]]
 
 
-class Parser(MonadPlus[Any, "Parser", "Parser"]):
+class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     """
     >>> def f():
     ...     x1 = yield Argument("first")
     ...     x2 = yield Argument("second")
-    ...     yield Parser.ret([x1, x2])
+    ...     yield Parser.return_([x1, x2])
     ...
     >>> Parser.do(f).parse_args("a", "b")
     [('first', 'a'), ('second', 'b')]
@@ -41,7 +43,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
     ...     xs2 = yield p2
     ...     x2 = yield Argument("second")
     ...     xs3 = yield p2
-    ...     yield Parser.ret(xs1 + [x1] + xs2 + [x2] + xs3)
+    ...     yield Parser.return_(xs1 + [x1] + xs2 + [x2] + xs3)
     ...
     >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -99,10 +101,10 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         []
         """
 
-        def g() -> Generator[Any, Tuple[Any, StatelessIterator], None]:
+        def g() -> Generator[Any, List[Tuple[Any, StatelessIterator]], None]:
             x1 = yield self
             x2 = yield p
-            yield self.ret([x1] + [x2])
+            yield self.return_([x1] + [x2])
 
         return Parser.do(g)
 
@@ -134,9 +136,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
     def interleave(
         self, *positional: "Parser"
-    ) -> Generator[
-        "Parser", Union[List[Tuple[Any, List[str]]], Tuple[Any, List[str]]], None
-    ]:
+    ) -> Generator["Parser", List[Tuple[Any, List[str]]], None]:
         xs = yield self.many()
         assert isinstance(xs, list)
         try:
@@ -145,7 +145,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
             assert isinstance(x, tuple)
             l1 = xs + [x]
 
-            def generator() -> Generator["Parser", Tuple[Any, Any], None]:
+            def generator() -> Generator["Parser", List[Tuple[Any, Any]], None]:
                 return self.interleave(*tail)
 
             l2 = yield Parser.do(generator)
@@ -154,7 +154,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
             l1 = xs
             assert isinstance(l1, list)
         assert isinstance(l2, list)
-        yield Parser.ret(l1 + l2)
+        yield Parser.return_(l1 + l2)
 
     def many(self) -> "Parser":
         """
@@ -168,7 +168,8 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         >>> p.parse_args("--verbose", "--quiet", "--quiet")
         [('verbose', True), ('quiet', True), ('quiet', True)]
         """
-        return self.many1() | (self.ret([]))
+        empty: List[Tuple[Any, Any]] = []
+        return self.many1() | (self.return_(empty))
 
     def many1(self):
         def g() -> Generator[
@@ -178,7 +179,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
             assert isinstance(a, tuple)
             aa = yield self.many()
             assert isinstance(aa, list)
-            yield self.ret([a] + aa)
+            yield self.return_([a] + aa)
 
         def f(cs):
             # noinspection PyTypeChecker
@@ -198,7 +199,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
         return a
 
     @classmethod
-    def ret(cls, x: A) -> "Parser":
+    def return_(cls, x: A) -> "Parser":
         def f(cs: List[str]) -> List[Pair]:
             return [(x, cs)]
 
@@ -212,7 +213,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
 
 class Item(Parser):
     def __init__(self):
-        def f(cs: List[str]) -> List[Tuple[str, List[str]]]:
+        def f(cs: List[str]) -> List[Pair]:
             try:
                 c, *cs = cs
                 return [(c, cs)]
@@ -224,10 +225,10 @@ class Item(Parser):
 
 class Sat(Parser):
     def __init__(self, predicate: Callable[[Any], bool]):
-        def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
+        def g() -> Generator[Parser, List[Tuple[Any, StatelessIterator]], None]:
             c = yield Item()
             if predicate(c):
-                yield self.ret(c)
+                yield self.return_(c)
             else:
                 yield self.zero()
 
@@ -261,7 +262,7 @@ class Argument(DoParser):
     def __init__(self, dest):
         def g() -> Generator[Parser, str, None]:
             c = yield Item()
-            yield self.ret((dest, c))
+            yield self.return_((dest, c))
 
         super().__init__(g)
 
@@ -286,7 +287,7 @@ class Flag(DoParser):
 
         def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
             yield Sat(predicate)
-            yield self.ret(((dest or long), value))
+            yield self.return_(((dest or long), value))
 
         super().__init__(g)
 
@@ -313,11 +314,8 @@ class Option(DoParser):
             yield Sat(predicate)
             c2 = yield Item()
             key = dest or long
-            try:
-                value = c2 if convert is None else convert(c2)
-                yield self.ret((key, value))
-            except Exception:
-                yield self.zero()
+            value = c2 if convert is None else convert(c2)
+            yield self.return_((key, value))
 
         super().__init__(g)
 
@@ -329,15 +327,15 @@ def finite_parser():
     x2 = yield p.many()
     x3 = yield Argument("b")
     x4 = yield p.many()
-    yield Parser.ret(x0 + [x1] + x2 + [x3] + x4)
+    yield Parser.return_(x0 + [x1] + x2 + [x3] + x4)
 
 
 if __name__ == "__main__":
     p = Flag("verbose", "v") | Flag("quiet", "q") | Option("num", "n", convert=int)
-    print(
-        Parser.do(lambda: p.interleave(Argument("a"), Argument("b"))).parse_args(
-            ["first", "--verbose", "--quiet", "second", "--quiet"]
-        )
-    )
+    # print(
+    #     Parser.do(lambda: p.interleave(Argument("a"), Argument("b"))).parse_args(
+    #         ["first", "--verbose", "--quiet", "second", "--quiet"]
+    #     )
+    # )
 
     # print(p.parse(sys.argv[1:]))
