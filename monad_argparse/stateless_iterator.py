@@ -1,7 +1,7 @@
 from typing import Callable, Generator, Generic, List, Optional, TypeVar
 
-A = TypeVar("A")
-B = TypeVar("B")
+A = TypeVar("A", contravariant=True)
+B = TypeVar("B", covariant=True)
 
 
 class StatelessIterator(Generic[A, B]):

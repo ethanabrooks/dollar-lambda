@@ -1,8 +1,10 @@
 import abc
-from typing import Any, Callable, Generator, List, Optional, Tuple, Union
+from typing import Any, Callable, Generator, List, Optional, Tuple, TypeVar, Union
 
 from monad_argparse.monad import MA, MB, Monad
-from monad_argparse.stateless_iterator import A, StatelessIterator
+from monad_argparse.stateless_iterator import StatelessIterator
+
+A = TypeVar("A", contravariant=True)
 
 
 class MonadZero(Monad[A, MA, MB]):

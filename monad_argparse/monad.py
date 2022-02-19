@@ -15,10 +15,12 @@ from typing import (
     Union,
 )
 
-from monad_argparse.stateless_iterator import A, B, StatelessIterator
+from monad_argparse.stateless_iterator import StatelessIterator
 
-MA = TypeVar("MA")
-MB = TypeVar("MB")
+A = TypeVar("A", contravariant=True)
+B = TypeVar("B", covariant=True)
+MA = TypeVar("MA", contravariant=True)
+MB = TypeVar("MB", covariant=True)
 
 
 class Monad(Generic[A, MA, MB]):
