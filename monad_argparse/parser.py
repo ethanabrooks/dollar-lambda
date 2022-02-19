@@ -1,15 +1,5 @@
 import abc
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Generic,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generator, Generic, List, Optional, Tuple, TypeVar
 
 from monad_argparse.monad import M, Monad
 from monad_argparse.stateless_iterator import StatelessIterator
@@ -40,7 +30,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     >>> def f():
     ...     x1 = yield Argument("first")
     ...     x2 = yield Argument("second")
-    ...     yield Parser.return_([x1, x2])
+    ...     yield Parser.return_(x1 + x2)
     ...
     >>> Parser.do(f).parse_args("a", "b")
     [('first', 'a'), ('second', 'b')]
@@ -53,7 +43,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     ...     xs2 = yield p2
     ...     x2 = yield Argument("second")
     ...     xs3 = yield p2
-    ...     yield Parser.return_(xs1 + [x1] + xs2 + [x2] + xs3)
+    ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
     ...
     >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -79,11 +69,11 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
         """
         >>> p = Flag("verbose") | Option("value")
         >>> p.parse_args("--verbose")
-        ('verbose', True)
+        [('verbose', True)]
         >>> p.parse_args("--verbose", "--value", "x")  # TODO: shouldn't this throw an error?
-        ('verbose', True)
+        [('verbose', True)]
         >>> p.parse_args("--value", "x")
-        ('value', 'x')
+        [('value', 'x')]
         """
 
         def f(cs: List[str]) -> List[Tuple[Any, List[str]]]:
@@ -114,7 +104,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
         def g() -> Generator[Any, List[Tuple[Any, StatelessIterator]], None]:
             x1 = yield self
             x2 = yield p
-            yield self.return_([x1] + [x2])
+            yield self.return_([*x1, *x2])
 
         return Parser.do(g)
 
@@ -152,8 +142,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
         try:
             head, *tail = positional
             x = yield head
-            assert isinstance(x, tuple)
-            l1 = aa + [x]
+            l1 = aa + x
 
             def generator() -> Generator["Parser", List[Tuple[Any, Any]], None]:
                 return self.interleave(*tail)
@@ -182,14 +171,11 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
         return self.many1() | (self.return_(empty))
 
     def many1(self):
-        def g() -> Generator[
-            "Parser", Union[Tuple[Any, List[str]], List[Tuple[Any, List[str]]]], None
-        ]:
+        def g() -> Generator["Parser", List[Tuple[Any, List[str]]], None]:
             a = yield self
-            assert isinstance(a, tuple)
             aa = yield self.many()
             assert isinstance(aa, list)
-            yield self.return_([a] + aa)
+            yield self.return_(a + aa)
 
         def f(cs):
             # noinspection PyTypeChecker
@@ -273,7 +259,7 @@ class DoParser(Parser):
 class Argument(DoParser):
     """
     >>> Argument("name").parse_args("Alice")
-    ('name', 'Alice')
+    [('name', 'Alice')]
     >>> Argument("name").parse_args()  # TODO: add ability to throw error on parse failure
     []
     """
@@ -281,7 +267,7 @@ class Argument(DoParser):
     def __init__(self, dest):
         def g() -> Generator[Parser, str, None]:
             c = yield Item()
-            yield self.return_((dest, c))
+            yield self.return_([(dest, c)])
 
         super().__init__(g)
 
@@ -289,7 +275,7 @@ class Argument(DoParser):
 class Flag(DoParser):
     """
     >>> Flag("verbose").parse_args("--verbose")
-    ('verbose', True)
+    [('verbose', True)]
     >>> Flag("verbose").parse_args() # TODO: fix this
     []
     """
@@ -306,7 +292,7 @@ class Flag(DoParser):
 
         def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
             yield Sat(predicate)
-            yield self.return_(((dest or long), value))
+            yield self.return_([((dest or long), value)])
 
         super().__init__(g)
 
@@ -314,7 +300,7 @@ class Flag(DoParser):
 class Option(DoParser):
     """
     >>> Option("value").parse_args("--value", "x")
-    ('value', 'x')
+    [('value', 'x')]
     >>> Option("value").parse_args("--value")
     []
     """
@@ -334,7 +320,7 @@ class Option(DoParser):
             c2 = yield Item()
             key = dest or long
             value = c2 if convert is None else convert(c2)
-            yield self.return_((key, value))
+            yield self.return_([(key, value)])
 
         super().__init__(g)
 
