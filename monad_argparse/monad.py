@@ -61,6 +61,23 @@ class BaseMonad(Monad[A, MA, Union[A, MB]], ABC):
 
 
 class Option(BaseMonad[A, Optional[A], Optional[B]]):
+    """
+    >>> def options():
+    ...     x = yield 1
+    ...     y = yield 2
+    ...     yield x + y
+    ...
+    >>> Option.do(options)
+    3
+    >>> def options():
+    ...     x = yield 1
+    ...     y = yield None
+    ...     yield x + y
+    ...
+    >>> print(Option.do(options))  # added `print` in order to get None to show up
+    None
+    """
+
     @classmethod
     def bind(  # type: ignore[override]
         cls,
@@ -73,19 +90,60 @@ class Option(BaseMonad[A, Optional[A], Optional[B]]):
 
 
 class Result(BaseMonad[A, Union[A, Type[Exception]], Union[A, Type[Exception]]]):
+    """
+    >>> def results():
+    ...     x = yield 1
+    ...     y = yield 2
+    ...     yield x + y
+    ...
+    >>> Result.do(results)
+    3
+    >>> def results():
+    ...     x = yield 1
+    ...     y = yield RuntimeError("Oh no!")
+    ...     yield x + y
+    ...
+    >>> Result.do(results)
+    RuntimeError('Oh no!')
+    """
+
     @classmethod
     def bind(  # type: ignore[override]
         cls,
-        x: Union[A, Type[Exception]],
-        f: Callable[[A], Type[Exception]],
-    ) -> Union[A, Type[Exception]]:
-        if type(x) is type and issubclass(x, Exception):
+        x: Union[A, Exception],
+        f: Callable[[A], Exception],
+    ) -> Union[A, Exception]:
+        if isinstance(x, Exception):
             return x
         y = f(x)  # type: ignore[arg-type]
         return y
 
 
 class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
+    """
+    >>> def lists():
+    ...     x = yield []
+    ...     y = yield [2, 3]
+    ...     yield [x + y]
+    ...
+    >>> List.do(lists)
+    []
+    >>> def lists():
+    ...     x = yield [1]
+    ...     y = yield [2, 3]
+    ...     yield [x + y]
+    ...
+    >>> List.do(lists)
+    [3, 4]
+    >>> def lists():
+    ...     x = yield [1, 2]
+    ...     y = yield [2, 3]
+    ...     yield [x + y]
+    ...
+    >>> List.do(lists)
+    [3, 4, 4, 5]
+    """
+
     @classmethod
     def bind(  # type: ignore[override]
         cls, x: typing.List[A], f: Callable[[A], typing.List[B]]
@@ -103,6 +161,26 @@ class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
 
 
 class IO(BaseMonad[A, Callable[[], A], MB]):
+    """
+    >>> def returns_1_with_side_effects():
+    ...     print("foo")
+    ...     return 1
+    ...
+    >>> def returns_2_with_side_effects():
+    ...     print("bar")
+    ...     return 2
+
+    >>> def io():
+    ...     x = yield returns_1_with_side_effects
+    ...     y = yield returns_2_with_side_effects
+    ...     yield lambda: print(x + y)
+    ...
+    >>> IO.do(io)
+    foo
+    bar
+    3
+    """
+
     @classmethod
     def bind(cls, x: Callable[[], A], f: Callable[[A], None]) -> None:  # type: ignore[override]
         return f(x())
@@ -129,36 +207,3 @@ class IO(BaseMonad[A, Callable[[], A], MB]):
     @classmethod
     def ret(cls, x):
         raise RuntimeError("IO does not use ret method.")
-
-
-def options():
-    x = yield 1
-    y = yield 2
-    yield x + y
-
-
-def results():
-    x = yield 1
-    y = yield RuntimeError
-    yield x + y
-
-
-def lists():
-    x = yield [1]
-    y = yield [2, 3]
-    yield [x + y]
-
-
-def io():
-    x = yield lambda: print("1") or 1
-    y = yield lambda: print("2") or 2
-    yield lambda: print(x + y)
-
-
-#
-#
-# if __name__ == "__main__":
-#     print(Option.do(options))
-#     print(Result.do(results))
-#     print(List.do(lists))
-#     IO().do(io)
