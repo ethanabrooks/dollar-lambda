@@ -181,6 +181,7 @@ class Parser(MonadPlus[Any, "Parser", "Parser"]):
             yield self.ret([a] + aa)
 
         def f(cs):
+            # noinspection PyTypeChecker
             return Parser.do(g).parse(cs)
 
         return Parser(f)

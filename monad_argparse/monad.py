@@ -46,6 +46,7 @@ class Monad(Generic[A, MA, MB]):
             return cls.bind(z, partial(f, it=it2))
 
         def gen() -> Generator[A, Tuple[Any, StatelessIterator], None]:
+            # noinspection PyArgumentList
             return generator(*args, **kwargs)
 
         return f(None, StatelessIterator(gen))
