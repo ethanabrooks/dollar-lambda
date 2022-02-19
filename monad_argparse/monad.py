@@ -21,32 +21,32 @@ class Monad(Generic[A, MA, MB]):
 
     @classmethod
     def do(cls, generator: Callable[[], Generator[MA, A, None]]):
-        def f(y: Optional[A], it: StatelessIterator[MA, A]) -> MB:
+        def f(a: Optional[A], it: StatelessIterator[MA, A]) -> MB:
             try:
-                z: MA
+                ma: MA
                 it2: StatelessIterator[MA, A]
-                if y is None:
-                    z, it2 = it.__next__()
+                if a is None:
+                    ma, it2 = it.__next__()
                 else:
-                    z, it2 = it.send(y)
+                    ma, it2 = it.send(a)
             except StopIteration:
-                if y is None:
+                if a is None:
                     raise RuntimeError("Cannot use an empty iterator with do.")
-                return cls.return_(y)
-            return cls.bind(z, partial(f, it=it2))
+                return cls.return_(a)
+            return cls.bind(ma, partial(f, it=it2))
 
         return f(None, StatelessIterator(generator))
 
     @classmethod
     @abc.abstractmethod
-    def return_(cls, x: A) -> MB:
+    def return_(cls, a: A) -> MB:
         raise NotImplementedError
 
 
 class BaseMonad(Monad[A, MA, Union[A, MB]], ABC):
     @classmethod
-    def return_(cls, x: A) -> Union[A, MB]:
-        return x
+    def return_(cls, a: A) -> Union[A, MB]:
+        return a
 
 
 class Option(BaseMonad[A, Optional[A], Optional[B]]):
@@ -145,8 +145,8 @@ class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
         return list(g())
 
     @classmethod
-    def return_(cls, x: A) -> Union[typing.List[A], typing.List[B]]:
-        return [x]
+    def return_(cls, a: A) -> Union[typing.List[A], typing.List[B]]:
+        return [a]
 
 
 class IO(BaseMonad[A, Callable[[], A], MB]):
@@ -194,5 +194,5 @@ class IO(BaseMonad[A, Callable[[], A], MB]):
         return f(None)
 
     @classmethod
-    def return_(cls, x):
+    def return_(cls, a):
         raise RuntimeError("IO does not use ret method.")

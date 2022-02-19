@@ -137,13 +137,13 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
     def interleave(
         self, *positional: "Parser"
     ) -> Generator["Parser", List[Tuple[Any, List[str]]], None]:
-        xs = yield self.many()
-        assert isinstance(xs, list)
+        aa = yield self.many()
+        assert isinstance(aa, list)
         try:
             head, *tail = positional
             x = yield head
             assert isinstance(x, tuple)
-            l1 = xs + [x]
+            l1 = aa + [x]
 
             def generator() -> Generator["Parser", List[Tuple[Any, Any]], None]:
                 return self.interleave(*tail)
@@ -151,7 +151,7 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
             l2 = yield Parser.do(generator)
         except ValueError:
             l2 = yield self.many()
-            l1 = xs
+            l1 = aa
             assert isinstance(l1, list)
         assert isinstance(l2, list)
         yield Parser.return_(l1 + l2)
@@ -199,9 +199,9 @@ class Parser(MonadPlus[List[Any], "Parser", "Parser"]):
         return a
 
     @classmethod
-    def return_(cls, x: A) -> "Parser":
+    def return_(cls, a: A) -> "Parser":
         def f(cs: List[str]) -> List[Pair]:
-            return [(x, cs)]
+            return [(a, cs)]
 
         return Parser(f)
 
