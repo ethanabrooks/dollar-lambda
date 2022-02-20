@@ -208,16 +208,16 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         >>> p = Argument("as-many-as-you-like").many()
         >>> p.parse_args("a")
         [('as-many-as-you-like', 'a')]
+        >>> p = Argument("as-many-as-you-like").many()
+        >>> p.parse_args("a", "b")
+        [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+        >>> p = Flag("verbose") | Flag("quiet")
+        >>> p = p.many()  # parse zero or more copies
+        >>> p.parse_args("--quiet", "--quiet", "--quiet")
+        [('quiet', True), ('quiet', True), ('quiet', True)]
+        >>> p.parse_args("--verbose", "--quiet", "--quiet")
+        [('verbose', True), ('quiet', True), ('quiet', True)]
         """
-        # >>> p = Argument("as-many-as-you-like").many()
-        # >>> p.parse_args("a", "b")
-        # [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-        # >>> p = Flag("verbose") | Flag("quiet")
-        # >>> p = p.many()  # parse zero or more copies
-        # >>> p.parse_args("--quiet", "--quiet", "--quiet")
-        # [('quiet', True), ('quiet', True), ('quiet', True)]
-        # >>> p.parse_args("--verbose", "--quiet", "--quiet")
-        # [('verbose', True), ('quiet', True), ('quiet', True)]
         return self.many1() | self.return_([])
 
     def many1(self):
