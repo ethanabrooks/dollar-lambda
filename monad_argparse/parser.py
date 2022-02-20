@@ -111,21 +111,19 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
     ...
     >>> Parser.do(f).parse_args("a", "b")
     [('first', 'a'), ('second', 'b')]
+    >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
+    >>> p2 = p1.many()
+    >>> def f():
+    ...     xs1 = yield p2
+    ...     x1 = yield Argument("first")
+    ...     xs2 = yield p2
+    ...     x2 = yield Argument("second")
+    ...     xs3 = yield p2
+    ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+    ...
+    >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
+    [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
     """
-
-    # >>>
-    # >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
-    # >>> p2 = p1.many()
-    # >>> def f():
-    # ...     xs1 = yield p2
-    # ...     x1 = yield Argument("first")
-    # ...     xs2 = yield p2
-    # ...     x2 = yield Argument("second")
-    # ...     xs3 = yield p2
-    # ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
-    # ...
-    # >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
-    # [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
 
     def __init__(self, f: Callable[[List[str]], Result[A]]):
         self.f = f
