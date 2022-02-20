@@ -1,4 +1,4 @@
-- Add informative errors
 - add --help print-outs
 - add Tap-style interface
 - improve typing
+- deal with nonpositional arguments
