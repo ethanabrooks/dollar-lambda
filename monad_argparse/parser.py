@@ -57,6 +57,12 @@ class Ok(Generic[A]):
 
 
 @dataclass
+class ArgumentError(Exception):
+    token: Optional[str] = None
+    description: Optional[str] = None
+
+
+@dataclass
 class Result(BaseMonad[A, "Result", "Result"]):
     get: Union[Ok[A], Exception]
 
@@ -161,17 +167,17 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         >>> p.parse_args("a", "b")
         [('first', 'a'), ('second', 'b')]
         >>> p.parse_args("a")
-        RuntimeError('Item failed')
+        ArgumentError(token=None, description='Missing: second')
         >>> p.parse_args("b")
-        RuntimeError('Item failed')
+        ArgumentError(token=None, description='Missing: second')
         >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
         >>> p = p1 >> Argument("a")
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
         >>> p.parse_args("--verbose")
-        RuntimeError('Item failed')
+        ArgumentError(token=None, description='Missing: a')
         >>> p.parse_args("value")
-        RuntimeError('Zero')
+        ArgumentError(token='value', description='matches --verbose')
         """
 
         def g() -> Generator[Any, List[KeyValue[A]], None]:
@@ -242,8 +248,11 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         return Parser(f)
 
     @classmethod
-    def zero(cls) -> "Parser":
-        return Parser(lambda cs: Result(RuntimeError("Zero")))
+    def zero(cls, error: Exception = None) -> "Parser":
+        if error is None:
+            error = RuntimeError("zero")
+        result: Result[A] = Result(error)
+        return Parser(lambda cs: result)
 
 
 class P(M, Generic[A]):
@@ -256,25 +265,25 @@ class P(M, Generic[A]):
 
 
 class Item(Parser):
-    def __init__(self):
+    def __init__(self, description: str):
         def f(cs: List[str]) -> Result[str]:
             try:
                 c, *cs = cs
                 return Result.ok(parsed=[c], remainder=cs)
             except ValueError:
-                return Result(RuntimeError("Item failed"))
+                return Result(ArgumentError(description=f"Missing{description}"))
 
         super().__init__(f)
 
 
 class Sat(Parser, Generic[A]):
-    def __init__(self, predicate: Callable[[A], bool]):
-        def g() -> Generator[Parser, A, None]:
-            c = yield Item()
-            if predicate(c):
-                yield self.return_([c])
+    def __init__(self, predicate: Callable[[List[str]], bool], description: str):
+        def g() -> Generator[Parser, List[str], None]:
+            cs = [c] = yield Item(description)
+            if predicate(cs):
+                yield self.return_(cs)
             else:
-                yield self.zero()
+                yield self.zero(ArgumentError(token=c, description=description))
 
         def f(cs: List[str]) -> Result:
             return Parser.do(g).parse(cs)
@@ -284,7 +293,7 @@ class Sat(Parser, Generic[A]):
 
 class Eq(Sat):
     def __init__(self, s):
-        super().__init__(lambda s1: s == s1)
+        super().__init__(lambda s1: s == s1, description=f"equals {s}")
 
 
 class DoParser(Parser):
@@ -300,12 +309,12 @@ class Argument(DoParser):
     >>> Argument("name").parse_args("Alice")
     [('name', 'Alice')]
     >>> Argument("name").parse_args()
-    RuntimeError('Item failed')
+    ArgumentError(token=None, description='Missing: name')
     """
 
-    def __init__(self, dest):
+    def __init__(self, dest: str):
         def g() -> Generator[Parser, List[str], None]:
-            [c] = yield Item()
+            [c] = yield Item(f": {dest}")
             yield self.return_([KeyValue(dest, c)])
 
         super().__init__(g)
@@ -316,7 +325,7 @@ class Flag(DoParser):
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
     >>> Flag("verbose").parse_args() # TODO: fix this
-    RuntimeError('Item failed')
+    ArgumentError(token=None, description='Missingmatches --verbose')
     >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
     """
@@ -328,6 +337,8 @@ class Flag(DoParser):
         dest: Optional[str] = None,
         value: bool = True,
     ):
+        assert short or long
+
         def predicate(xs: List[str]) -> bool:
             [x] = xs
             if short is not None and x == f"-{short}":
@@ -337,7 +348,14 @@ class Flag(DoParser):
             return False
 
         def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
-            yield Sat[List[str]](predicate)
+            def flags():
+                if short:
+                    yield f"-{short}"
+                if long:
+                    yield f"--{long}"
+
+            description = f"matches {' or '.join(list(flags()))}"
+            yield Sat[List[str]](predicate, description=description)
             yield self.return_([KeyValue((dest or long), value)])
 
         super().__init__(g)
@@ -348,7 +366,7 @@ class Option(DoParser):
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
     >>> Option("value").parse_args("--value")
-    RuntimeError('Item failed')
+    ArgumentError(token=None, description='Missing argument for --value')
     """
 
     def __init__(
@@ -367,8 +385,15 @@ class Option(DoParser):
             return False
 
         def g() -> Generator[Parser, List[str], None]:
-            yield Sat[List[str]](predicate)
-            [c2] = yield Item()
+            def flags():
+                if short:
+                    yield f"-{short}"
+                if long:
+                    yield f"--{long}"
+
+            description = f"matches {' or '.join(list(flags()))}"
+            yield Sat[List[str]](predicate, description=description)
+            [c2] = yield Item(f" argument for {next(flags())}")
             key = dest or long
             value = c2 if convert is None else convert(c2)
             yield self.return_([KeyValue(key, value)])
