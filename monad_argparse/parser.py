@@ -322,6 +322,27 @@ class Argument(DoParser):
         super().__init__(g)
 
 
+def matches_short_or_long(
+    x: str,
+    *_,
+    short: Optional[str] = None,
+    long: Optional[str] = None,
+) -> bool:
+    x
+    if short is not None and x == f"-{short}":
+        return True
+    if long is not None and x == f"--{long}":
+        return True
+    return False
+
+
+def flags(short: Optional[str] = None, long: Optional[str] = None):
+    if short:
+        yield f"-{short}"
+    if long:
+        yield f"--{long}"
+
+
 class Flag(DoParser):
     """
     >>> Flag("verbose").parse_args("--verbose")
@@ -341,23 +362,12 @@ class Flag(DoParser):
     ):
         assert short or long
 
-        def predicate(xs: List[str]) -> bool:
-            [x] = xs
-            if short is not None and x == f"-{short}":
-                return True
-            if long is not None and x == f"--{long}":
-                return True
-            return False
-
         def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
-            def flags():
-                if short:
-                    yield f"-{short}"
-                if long:
-                    yield f"--{long}"
-
-            description = f"matches {' or '.join(list(flags()))}"
-            yield Sat[List[str]](predicate, description=description)
+            description = f"matches {' or '.join(list(flags(short, long)))}"
+            yield Sat[List[str]](
+                lambda x: matches_short_or_long(*x, short=short, long=long),
+                description=description,
+            )
             yield self.return_([KeyValue((dest or long), value)])
 
         super().__init__(g)
@@ -378,24 +388,13 @@ class Option(DoParser):
         convert: Optional[Callable[[str], Any]] = None,
         dest: Optional[str] = None,
     ):
-        def predicate(xs: List[str]) -> bool:
-            [x] = xs
-            if short is not None and x == f"-{short}":
-                return True
-            if long is not None and x == f"--{long}":
-                return True
-            return False
-
         def g() -> Generator[Parser, List[str], None]:
-            def flags():
-                if short:
-                    yield f"-{short}"
-                if long:
-                    yield f"--{long}"
-
-            description = f"matches {' or '.join(list(flags()))}"
-            yield Sat[List[str]](predicate, description=description)
-            [c2] = yield Item(f" argument for {next(flags())}")
+            description = f"matches {' or '.join(list(flags(short, long)))}"
+            yield Sat[List[str]](
+                lambda x: matches_short_or_long(*x, short=short, long=long),
+                description=description,
+            )
+            [c2] = yield Item(f" argument for {next(flags(short, long))}")
             key = dest or long
             value = c2 if convert is None else convert(c2)
             yield self.return_([KeyValue(key, value)])
