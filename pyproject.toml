@@ -18,6 +18,7 @@ jupyter-http-over-ws = "^0.0.8"
 mypy = "^0.931"
 pyre-check = "^0.9.10"
 flake8 = "^4.0.1"
+pdoc3 = "^0.10.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

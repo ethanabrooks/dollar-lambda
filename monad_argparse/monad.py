@@ -40,17 +40,21 @@ class M(ABC, Generic[A]):
 
 class Monad(Generic[A, MA, MB]):
     """
-    Monad laws
+    Monad laws:
+    ```haskell
     return a >>= f = f a
     p >>= return = p
-    p >>= (\a -> (f a >>= g)) = (p >>= (\a -> f a)) >>= g
+    p >>= (\\a -> (f a >>= g)) = (p >>= (\\a -> f a)) >>= g
+    ```
     """
 
     @classmethod
     @abc.abstractmethod
     def bind(cls, x: MA, f: Callable[[A], MB]) -> MB:
         """
+        ```haskell
         (>>=) :: m a -> (a -> m b) -> m b
+        ```
         """
         raise NotImplementedError
 
@@ -76,7 +80,9 @@ class Monad(Generic[A, MA, MB]):
     @abc.abstractmethod
     def return_(cls, a: A) -> MB:
         """
+        ```haskell
         return :: a -> m a
+        ```
         """
         raise NotImplementedError
 

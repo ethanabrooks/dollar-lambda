@@ -5,3 +5,4 @@ __pycache__
 .pyre
 .pyre
 readme.ipynb
+.DS_Store
