@@ -1,6 +1,6 @@
 import abc
 from dataclasses import asdict, dataclass
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import (
     Any,
     Callable,
@@ -9,13 +9,13 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Tuple,
     TypeVar,
     Union,
     cast,
 )
 
-from monad_argparse.monad import BaseMonad, M, Monad
+from monad_argparse.monad import Monad
+from monad_argparse.nonempty_list import NonemptyList
 from monad_argparse.stateless_iterator import StatelessIterator
 
 A = TypeVar("A", contravariant=True)
@@ -52,9 +52,21 @@ class KeyValueTuple(NamedTuple):
 
 
 @dataclass
-class Ok(Generic[A]):
-    parsed: List[A]
-    remainder: List[str]
+class Parsed(Generic[A]):
+    get: A
+
+    def __repr__(self):
+        return f"Parsed({self.get})"
+
+    def __add__(self, other: "Parsed[List[A]]"):
+        assert isinstance(self.get, list)
+        return Parsed(self.get + other.get)
+
+
+@dataclass
+class Parse(Generic[A]):
+    parsed: Parsed[A]
+    unparsed: List[str]
 
 
 @dataclass
@@ -64,45 +76,61 @@ class ArgumentError(Exception):
 
 
 @dataclass
-class Result(BaseMonad[A, "Result", "Result"]):
+class Ok(Generic[A]):
+    get: A
+
+    def __repr__(self):
+        return f"Ok({self.get})"
+
+
+@dataclass
+class Result(MonadPlus[A, "Result", "Result"], Generic[A]):
     get: Union[Ok[A], Exception]
 
+    def __add__(self, other: "Result[B]") -> "Result":
+        if isinstance(self.get, Ok):
+            return self
+        if isinstance(other.get, Ok):
+            return other
+        return Result(RuntimeError("__add__"))
+
+    def __ge__(self, other: Callable[[A], "Result"]) -> "Result":
+        return Result.bind(self, other)
+
+    def __repr__(self):
+        return f"Result({self.get})"
+
+    def __rshift__(self, other: "Result[B]") -> "Result[Any]":
+        def result():
+            # noinspection PyTypeChecker
+            o1: List[Ok[A]] = yield self
+            # noinspection PyTypeChecker
+            o2: List[Ok[B]] = yield other
+            yield o1 + o2
+
+        return Result.do(result)
+
     @classmethod
-    def bind(  # type: ignore[override]
+    def bind(
         cls,
         x: "Result[A]",
-        f: Callable[[Ok[A]], "Result[B]"],
+        f: Callable[[A], "Result[B]"],
     ) -> "Result[B]":
         y = x.get
         if isinstance(y, Exception):
             return cast(Result[B], x)
-        return f(y)
-
-    def is_error(self):
-        return isinstance(self.get, Exception)
-
-    def is_ok(self):
-        return not self.is_error()
-
-    @staticmethod
-    def ok(parsed: List[A], remainder: List[str]):
-        assert isinstance(parsed, list)
-        return Result(Ok(parsed, remainder))
+        return f(y.get)
 
     @classmethod
-    def return_(cls, a: Union[Ok[A], Exception]) -> "Result[A]":  # type: ignore[override]
-        return Result(a)
+    def return_(cls, a: A) -> "Result[A]":
+        return Result(Ok(a))
 
-    def __rshift__(self, other: "Result"):
-        def result():
-            o1 = yield self
-            o2 = yield other
-            yield Ok(parsed=o1.parsed + o2.parsed, remainder=o2.remainder)
-
-        return Result.do(result)
+    @classmethod
+    def zero(cls) -> "Result[A]":
+        return Result(ArgumentError(description="zero"))
 
 
-class Parser(MonadPlus[A, "Parser", "Parser"]):
+class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
     """
     >>> def f():
     ...     x1 = yield Argument("first")
@@ -125,23 +153,24 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
     """
 
-    def __init__(self, f: Callable[[List[str]], Result[A]]):
+    def __init__(self, f: Callable[[List[str]], Result[NonemptyList[Parse[A]]]]):
         self.f = f
 
     def __add__(
         self,
-        other: "Parser",
-    ) -> "Parser":
-        def f(cs: List[str]) -> Result[A]:
-            results = first, _ = [self.parse(cs), other.parse(cs)]
-            for result in results:
-                if result.is_ok():
-                    return result
-            return first
+        other: "Parser[A]",
+    ) -> "Parser[A]":
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[A]]]:
+            result = self.parse(cs)
+            choices: Result[NonemptyList[Parse[A]]] = result + other.parse(cs)
+            if isinstance(choices.get, Ok):
+                return Result(Ok(NonemptyList(choices.get.get.head)))
+            else:
+                return result  # TODO: better argument handling here
 
         return Parser(f)
 
-    def __or__(self, p: "Parser") -> "Parser":
+    def __or__(self, p: "Parser[A]") -> "Parser[A]":
         """
         >>> p = Flag("verbose") | Option("option")
         >>> p.parse_args("--verbose")
@@ -152,15 +181,12 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         [('option', 'x')]
         """
 
-        def f(cs: List[str]) -> Result[A]:
-            def results():
-                yield (self + p).parse(cs)
-
-            return Result.do(results)
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[A]]]:
+            return (self + p).parse(cs)
 
         return Parser(f)
 
-    def __rshift__(self, p: "Parser") -> "Parser":
+    def __rshift__(self, p: "Parser[List[B]]") -> "Parser[List[B]]":
         """
         >>> p = Argument("first") >> Argument("second")
         >>> p.parse_args("a", "b")
@@ -173,33 +199,66 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         >>> p = p1 >> Argument("a")
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
-        >>> p.parse_args("--verbose")
-        ArgumentError(token=None, description='Missing: a')
         >>> p.parse_args("value")
-        ArgumentError(token='value', description='matches --verbose')
+        ArgumentError(token='matches --verbose', description='matches --verbose')
         """
+        # >>> p.parse_args("--verbose")
+        # ArgumentError(token=None, description='Missing: a')
 
-        def g() -> Generator[Any, List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield p
-            yield self.return_(r1 + r2)
+        def g() -> Generator[Any, Parsed[List[B]], None]:
+            # noinspection PyTypeChecker
+            p1: Parsed[List[B]] = yield self
+            # noinspection PyTypeChecker
+            p2: Parsed[List[B]] = yield p
+            yield p.return_(Parsed(p1.get + p2.get))
 
         return Parser.do(g)
 
     @classmethod
-    def bind(cls, x: "Parser", f: Callable[[List[B]], "Parser"]) -> "Parser":  # type: ignore[override]
-        def g(cs: List[str]) -> Result[B]:
-            def results() -> Generator[Result[B], Ok[B], None]:
-                parse = x.parse(cs)
-                out: Ok[B] = yield parse
-                parser = f(out.parsed)
-                yield parser.parse(out.remainder)
+    def bind(cls, x: "Parser", f: Callable[[Parsed[A]], "Parser[A]"]) -> "Parser[A]":
+        def apply_parser(parse: Parse[A]) -> Result[NonemptyList[Parse[A]]]:
+            return f(parse.parsed).parse(parse.unparsed)
 
-            return Result.do(results)
+        def get_successful(
+            parses: NonemptyList[Parse[A]],
+        ) -> Generator[Parse[A], None, None]:
+            for parse in parses:
+                result: Result[NonemptyList[Parse[A]]] = apply_parser(parse)
+                if isinstance(result.get, Ok):  # Exclude failed parses
+                    yield from result.get.get
+
+        def h(parses: NonemptyList[Parse[A]]) -> Result[NonemptyList[Parse[A]]]:
+            successful_parses = NonemptyList.make(*get_successful(parses))
+            if successful_parses:
+                return Result(Ok(successful_parses))
+            return apply_parser(parses.head)
+
+        def g(cs: List[str]) -> Result[NonemptyList[Parse[A]]]:
+            return x.parse(cs) >= h
 
         return Parser(g)
 
-    def many(self) -> "Parser":
+    @classmethod
+    def do(cls, generator: Callable[[], Generator["Parser", Parsed[A], None]]):
+        def f(
+            a: Optional[Parsed[A]], it: StatelessIterator["Parser", Parsed[A]]
+        ) -> "Parser":
+            try:
+                ma: Parser
+                it2: StatelessIterator["Parser", Parsed[A]]
+                if a is None:
+                    ma, it2 = it.__next__()
+                else:
+                    ma, it2 = it.send(a)
+            except StopIteration:
+                if a is None:
+                    raise RuntimeError("Cannot use an empty iterator with do.")
+                return cls.return_(a)
+            return cls.bind(ma, partial(f, it=it2))
+
+        return f(None, StatelessIterator(generator))
+
+    def many(self) -> "Parser[List[A]]":
         """
         >>> p = Argument("as-many-as-you-like").many()
         >>> p.parse_args()
@@ -217,13 +276,15 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
         >>> p.parse_args("--verbose", "--quiet", "--quiet")
         [('verbose', True), ('quiet', True), ('quiet', True)]
         """
-        return self.many1() | self.return_([])
+        return self.many1() | Parser[List[A]].return_(Parsed([]))
 
     def many1(self):
-        def g() -> Generator["Parser", List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield self.many()
-            yield self.return_(r1 + r2)
+        def g() -> Generator["Parser", Parsed, None]:
+            # noinspection PyTypeChecker
+            r1: Parsed[List[A]] = yield self
+            # noinspection PyTypeChecker
+            r2: Parsed[List[A]] = yield self.many()
+            yield Parser[List[A]].return_(Parsed(r1.get + r2.get))
 
         @lru_cache()
         def f(cs: tuple):
@@ -236,57 +297,59 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
 
     def parse_args(self, *args: str) -> Union[List[KeyValueTuple], Exception]:
         result = self.parse(list(args)).get
-        if isinstance(result, Ok):
-            return [KeyValueTuple(**asdict(kv)) for kv in result.parsed]
-        return result
+        if isinstance(result, Exception):
+            return result
+        parse: NonemptyList[Parse[List[KeyValue]]] = result.get
+        head: Parse[List[KeyValue]] = parse.head
+        parsed: Parsed[List[KeyValue]] = head.parsed
+        pairs: List[KeyValue] = parsed.get
+        return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
     @classmethod
-    def return_(cls, a: List[B]) -> "Parser":  # type: ignore[override]
-        def f(cs: List[str]) -> Result[B]:
-            return Result.ok(parsed=a, remainder=cs)
+    def return_(cls, a: Parsed[A]) -> "Parser":
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[A]]]:
+            return Result(Ok(NonemptyList(Parse(a, cs))))
 
         return Parser(f)
 
     @classmethod
-    def zero(cls, error: Exception = None) -> "Parser":
+    def zero(cls, error: Optional[Exception] = None) -> "Parser[A]":
         if error is None:
             error = RuntimeError("zero")
-        result: Result[A] = Result(error)
+        result: Result[NonemptyList[Parse[A]]] = Result(error)
         return Parser(lambda cs: result)
 
 
-class P(M, Generic[A]):
-    def __ge__(self, f: Callable[[List[A]], Parser]):  # type: ignore[override]
-        return Parser.bind(self.a, f)
-
-    @classmethod
-    def return_(cls, a: List[A]) -> "P[Parser]":
-        return P(Parser.return_(a))
-
-
-class Item(Parser):
-    def __init__(self, description: str):
-        def f(cs: List[str]) -> Result[str]:
-            try:
+class Item(Parser[List[KeyValue[str]]]):
+    def __init__(self, name: str, description: Optional[str] = None):
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
                 c, *cs = cs
-                return Result.ok(parsed=[c], remainder=cs)
-            except ValueError:
-                return Result(ArgumentError(description=f"Missing{description}"))
+                return Result(
+                    Ok(
+                        NonemptyList(
+                            Parse(parsed=Parsed([KeyValue(name, c)]), unparsed=cs)
+                        )
+                    )
+                )
+            return Result(ArgumentError(description=f"Missing: {description or name}"))
 
         super().__init__(f)
 
 
-class Sat(Parser, Generic[A]):
-    def __init__(self, predicate: Callable[[List[str]], bool], description: str):
-        def g() -> Generator[Parser, List[str], None]:
-            cs = [c] = yield Item(description)
-            if predicate(cs):
-                yield self.return_(cs)
+class Sat(Parser[List[KeyValue[str]]]):
+    def __init__(self, predicate: Callable[[str], bool], description: str):
+        def g() -> Generator[Parser, Parsed[List[KeyValue[str]]], None]:
+            # noinspection PyTypeChecker
+            parsed = yield Item(description)
+            [kv] = parsed.get
+            if predicate(kv.value):
+                yield self.return_(parsed)
             else:
-                yield self.zero(ArgumentError(token=c, description=description))
+                yield self.zero(ArgumentError(token=kv.key, description=description))
 
-        def f(cs: List[str]) -> Result:
-            return Parser.do(g).parse(cs)
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            return Parser[List[KeyValue[str]]].do(g).parse(cs)
 
         super().__init__(f)
 
@@ -296,15 +359,15 @@ class Eq(Sat):
         super().__init__(lambda s1: s == s1, description=f"equals {s}")
 
 
-class DoParser(Parser):
-    def __init__(self, g):
-        def f(cs):
+class DoParser(Parser[A]):
+    def __init__(self, g: Callable[[], Generator[Parser, Parsed[A], None]]):
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[A]]]:
             return Parser.do(g).parse(cs)
 
         super().__init__(f)
 
 
-class Argument(DoParser):
+class Argument(DoParser[A]):
     """
     >>> Argument("name").parse_args("Alice")
     [('name', 'Alice')]
@@ -313,16 +376,14 @@ class Argument(DoParser):
     """
 
     def __init__(self, dest: str):
-        def g() -> Generator[Parser, List[str], None]:
-            [c] = yield Item(f": {dest}")
-            yield self.return_([KeyValue(dest, c)])
+        def g() -> Generator[Parser, Parsed, None]:
+            yield Item(dest)
 
         super().__init__(g)
 
 
 def matches_short_or_long(
     x: str,
-    *_,
     short: Optional[str] = None,
     long: Optional[str] = None,
 ) -> bool:
@@ -346,7 +407,7 @@ class Flag(DoParser):
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
     >>> Flag("verbose").parse_args() # TODO: fix this
-    ArgumentError(token=None, description='Missingmatches --verbose')
+    ArgumentError(token=None, description='Missing: matches --verbose')
     >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
     """
@@ -360,13 +421,13 @@ class Flag(DoParser):
     ):
         assert short or long
 
-        def g() -> Generator[Parser, Tuple[Any, StatelessIterator], None]:
+        def g() -> Generator[Parser, Parsed, None]:
             description = f"matches {' or '.join(list(flags(short, long)))}"
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            yield self.return_([KeyValue((dest or long), value)])
+            yield self.return_(Parsed([KeyValue((dest or long), value)]))
 
         super().__init__(g)
 
@@ -376,25 +437,26 @@ class Option(DoParser):
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
     >>> Option("value").parse_args("--value")
-    ArgumentError(token=None, description='Missing argument for --value')
+    ArgumentError(token=None, description='Missing: argument for --value')
     """
 
     def __init__(
         self,
         long: str,
         short: Optional[str] = None,
-        convert: Optional[Callable[[str], Any]] = None,
+        convert: Optional[Callable[[A], Any]] = None,
         dest: Optional[str] = None,
     ):
-        def g() -> Generator[Parser, List[str], None]:
+        def g() -> Generator[Parser, Parsed[List[KeyValue]], None]:
             description = f"matches {' or '.join(list(flags(short, long)))}"
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            [c2] = yield Item(f" argument for {next(flags(short, long))}")
+            parsed = yield Item(f"argument for {next(flags(short, long))}")
+            [kv] = parsed.get
             key = dest or long
-            value = c2 if convert is None else convert(c2)
-            yield self.return_([KeyValue(key, value)])
+            value = kv.value if convert is None else convert(kv.value)
+            yield self.return_(Parsed([KeyValue(key, value)]))
 
         super().__init__(g)
