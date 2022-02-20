@@ -1,5 +1,6 @@
 import abc
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -226,10 +227,11 @@ class Parser(MonadPlus[A, "Parser", "Parser"]):
             r2 = yield self.many()
             yield self.return_(r1 + r2)
 
-        def f(cs):
-            return Parser.do(g).parse(cs)
+        @lru_cache()
+        def f(cs: tuple):
+            return Parser.do(g).parse(list(cs))
 
-        return Parser(f)
+        return Parser(lambda cs: f(tuple(cs)))
 
     def parse(self, cs: List[str]) -> Result:
         return self.f(cs)
