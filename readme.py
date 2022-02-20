@@ -115,32 +115,3 @@ p.parse_args("--verbose", "value")
 p2 = p1.many()
 p = p2 >> Argument("a")
 p.parse_args("--verbose", "value")
-
-
-# %% [markdown]
-# The result is awkwardly nested. To deal with this, we use `Parser.do`:
-
-# %% pycharm={"name": "#%%\n"}
-def g():  # type: ignore[no-redef]
-    xs = yield p2
-    x = yield Argument("a")
-    yield Parser.return_(xs + x)
-
-
-Parser.do(g).parse_args("--verbose", "--quiet", "value")
-
-
-# %% [markdown]
-# A common pattern is to alternate checking for positional arguments with checking for non-positional arguments:
-
-# %% pycharm={"name": "#%%\n"}
-def g():  # type: ignore[no-redef]
-    xs1 = yield p2
-    x1 = yield Argument("first")
-    xs2 = yield p2
-    x2 = yield Argument("second")
-    xs3 = yield p2
-    yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
-
-
-Parser.do(g).parse_args("a", "--verbose", "b", "--quiet")
