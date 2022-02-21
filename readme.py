@@ -75,7 +75,7 @@ from monad_argparse import Parser
 def g():
     x1 = yield Argument("first")
     x2 = yield Argument("second")
-    yield Parser.return_(x1 + x2)
+    yield Parser.return_(x1 >> x2)
 
 
 Parser.do(g).parse_args("a", "b")

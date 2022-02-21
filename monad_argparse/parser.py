@@ -58,7 +58,7 @@ class Parsed(Generic[A]):
     def __repr__(self):
         return f"Parsed({self.get})"
 
-    def __add__(self, other: "Parsed[List[A]]"):
+    def __rshift__(self, other: "Parsed[List[A]]"):
         assert isinstance(self.get, list)
         return Parsed(self.get + other.get)
 
@@ -135,7 +135,7 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
     >>> def f():
     ...     x1 = yield Argument("first")
     ...     x2 = yield Argument("second")
-    ...     yield Parser.return_(x1 + x2)
+    ...     yield Parser.return_(x1 >> x2)
     ...
     >>> Parser.do(f).parse_args("a", "b")
     [('first', 'a'), ('second', 'b')]
@@ -147,7 +147,7 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
     ...     xs2 = yield p2
     ...     x2 = yield Argument("second")
     ...     xs3 = yield p2
-    ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+    ...     yield Parser.return_(xs1 >> x1 >> xs2 >> x2 >> xs3)
     ...
     >>> Parser.do(f).parse_args("a", "--verbose", "b", "--quiet")
     [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
