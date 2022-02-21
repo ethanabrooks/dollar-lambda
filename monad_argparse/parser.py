@@ -200,7 +200,7 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
         >>> p.parse_args("value")
-        ArgumentError(token='matches --verbose', description='matches --verbose')
+        ArgumentError(token='--verbose', description='--verbose')
         >>> p.parse_args("--verbose")
         ArgumentError(token=None, description='Missing: a')
         """
@@ -435,7 +435,7 @@ class Flag(DoParser):
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
     >>> Flag("verbose").parse_args() # TODO: fix this
-    ArgumentError(token=None, description='Missing: matches --verbose')
+    ArgumentError(token=None, description='Missing: --verbose')
     >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
     """
@@ -450,7 +450,7 @@ class Flag(DoParser):
         assert short or long
 
         def g() -> Generator[Parser, Parsed, None]:
-            description = f"matches {' or '.join(list(flags(short, long)))}"
+            description = f"{' or '.join(list(flags(short, long)))}"
             yield Sat(
                 lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
