@@ -322,6 +322,33 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
         return Parser(lambda cs: result)
 
 
+class Check(Parser[List[A]]):
+    """
+    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args("c")
+    []
+    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args()
+    []
+    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args("d")
+    ArgumentError(token='d', description='Does not start with c: d')
+    """
+
+    def __init__(self, predicate: Callable[[str], bool], description: str):
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[A]]]]:
+            if cs:
+                c, *_ = cs
+                if predicate(c):
+                    return Result(
+                        Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs)))
+                    )
+                else:
+                    return Result(
+                        ArgumentError(token=c, description=f"{description}: {c}")
+                    )
+            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
+
+        super().__init__(f)
+
+
 class Empty(Parser[List[A]]):
     """
     >>> Empty().parse_args()
@@ -339,7 +366,7 @@ class Empty(Parser[List[A]]):
     """
 
     def __init__(self):
-        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[A]]]]:
             if cs:
                 c, *_ = cs
                 return Result(
