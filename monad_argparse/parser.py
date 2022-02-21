@@ -201,9 +201,9 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
         [('verbose', True), ('a', 'value')]
         >>> p.parse_args("value")
         ArgumentError(token='matches --verbose', description='matches --verbose')
+        >>> p.parse_args("--verbose")
+        ArgumentError(token=None, description='Missing: a')
         """
-        # >>> p.parse_args("--verbose")
-        # ArgumentError(token=None, description='Missing: a')
 
         def g() -> Generator[Any, Parsed[List[B]], None]:
             # noinspection PyTypeChecker
