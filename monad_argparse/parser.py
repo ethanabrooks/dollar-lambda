@@ -320,6 +320,34 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
         return Parser(lambda cs: result)
 
 
+class Empty(Parser[List[A]]):
+    """
+    >>> Empty().parse_args()
+    []
+    >>> Empty().parse_args("arg")
+    ArgumentError(token='arg', description='Unexpected argument: arg')
+    >>> (Argument("arg") >> Empty()).parse_args("a")
+    [('arg', 'a')]
+    >>> (Argument("arg") >> Empty()).parse_args("a", "b")
+    ArgumentError(token='b', description='Unexpected argument: b')
+    >>> (Flag("arg").many() >> Empty()).parse_args("--arg", "--arg")
+    [('arg', True), ('arg', True)]
+    >>> (Flag("arg").many() >> Empty()).parse_args("--arg", "--arg", "x")
+    ArgumentError(token='x', description='Unexpected argument: x')
+    """
+
+    def __init__(self):
+        def f(cs: List[str]) -> Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
+                c, *_ = cs
+                return Result(
+                    ArgumentError(token=c, description=f"Unexpected argument: {c}")
+                )
+            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
+
+        super().__init__(f)
+
+
 class Item(Parser[List[KeyValue[str]]]):
     def __init__(self, name: str, description: Optional[str] = None):
         def f(cs: List[str]) -> Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
