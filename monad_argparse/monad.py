@@ -2,11 +2,11 @@ import abc
 import typing
 from abc import ABC
 from functools import partial
-from typing import Callable, Generator, Generic, Optional, TypeVar, Union
+from typing import Any, Callable, Generator, Generic, Optional, TypeVar, Union, cast
 
 from monad_argparse.stateless_iterator import StatelessIterator
 
-A = TypeVar("A", contravariant=True)
+A = TypeVar("A")
 B = TypeVar("B", covariant=True)
 MA = TypeVar("MA", contravariant=True)
 MB = TypeVar("MB", covariant=True)
@@ -14,11 +14,11 @@ C = TypeVar("C", bound="M")
 
 
 class M(ABC, Generic[A]):
-    def __init__(self, a: A):
-        self.a = self.unwrap(a)
+    def __init__(self, a):
+        self.a: A = self.unwrap(a)
 
     @abc.abstractmethod
-    def __ge__(self, f: Callable[[A], MB]):
+    def __ge__(self, f: Callable[[A], Any]):
         raise NotImplementedError
 
     def __eq__(self, other):
@@ -32,10 +32,10 @@ class M(ABC, Generic[A]):
         raise NotImplementedError
 
     @classmethod
-    def unwrap(cls: typing.Type[C], x: Union[C, A]):
-        while isinstance(x, cls):
-            x = x.a
-        return x
+    def unwrap(cls: typing.Type[C], x: Union[C, A]) -> A:
+        if isinstance(x, M):
+            return cls.unwrap(x.a)
+        return cast(A, x)
 
 
 class Monad(Generic[A, MA, MB]):

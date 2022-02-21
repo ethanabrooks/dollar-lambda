@@ -1,10 +1,10 @@
 from typing import Callable, Generic, Optional
 
-from monad_argparse.monad import MB, A, B, BaseMonad, M
+from monad_argparse.monad import A, B, BaseMonad, M
 
 
 class O(M, Generic[A]):
-    def __ge__(self, f: Callable[[A], MB]):
+    def __ge__(self, f: Callable[[A], Optional[A]]):
         return Option.bind(self.a, f)
 
     @classmethod

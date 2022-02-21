@@ -6,3 +6,4 @@ __pycache__
 .pyre
 readme.ipynb
 .DS_Store
+.venv

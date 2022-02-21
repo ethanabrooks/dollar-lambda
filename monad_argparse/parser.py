@@ -87,7 +87,7 @@ class Ok(Generic[A]):
 class Result(MonadPlus[A, "Result", "Result"], Generic[A]):
     get: Union[Ok[A], Exception]
 
-    def __add__(self, other: "Result[B]") -> "Result":
+    def __add__(self, other: "Result") -> "Result":
         if isinstance(self.get, Ok):
             return self
         if isinstance(other.get, Ok):
@@ -99,16 +99,6 @@ class Result(MonadPlus[A, "Result", "Result"], Generic[A]):
 
     def __repr__(self):
         return f"Result({self.get})"
-
-    def __rshift__(self, other: "Result[B]") -> "Result[Any]":
-        def result():
-            # noinspection PyTypeChecker
-            o1: List[Ok[A]] = yield self
-            # noinspection PyTypeChecker
-            o2: List[Ok[B]] = yield other
-            yield o1 + o2
-
-        return Result.do(result)
 
     @classmethod
     def bind(
@@ -489,7 +479,7 @@ class Flag(DoParser):
         super().__init__(g)
 
 
-class Option(DoParser):
+class Option(DoParser, Generic[A]):
     """
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
@@ -504,7 +494,7 @@ class Option(DoParser):
         convert: Optional[Callable[[A], Any]] = None,
         dest: Optional[str] = None,
     ):
-        def g() -> Generator[Parser, Parsed[List[KeyValue]], None]:
+        def g() -> Generator[Parser, Parsed[List[KeyValue[A]]], None]:
             description = f"matches {' or '.join(list(flags(short, long)))}"
             yield Sat(
                 lambda x: matches_short_or_long(x, short=short, long=long),
