@@ -166,7 +166,7 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
             if isinstance(choices.get, Ok):
                 return Result(Ok(NonemptyList(choices.get.get.head)))
             else:
-                return result  # TODO: better argument handling here
+                return result
 
         return Parser(f)
 
@@ -175,8 +175,10 @@ class Parser(MonadPlus[Parsed[A], "Parser", "Parser"], Generic[A]):
         >>> p = Flag("verbose") | Option("option")
         >>> p.parse_args("--verbose")
         [('verbose', True)]
-        >>> p.parse_args("--verbose", "--option", "x")  # TODO: shouldn't this throw an error?
+        >>> p.parse_args("--verbose", "--option", "x")
         [('verbose', True)]
+        >>> (p >> Empty()).parse_args("--verbose", "--option", "x")
+        ArgumentError(token='--option', description='Unexpected argument: --option')
         >>> p.parse_args("--option", "x")
         [('option', 'x')]
         """
@@ -434,7 +436,7 @@ class Flag(DoParser):
     """
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
-    >>> Flag("verbose").parse_args() # TODO: fix this
+    >>> Flag("verbose").parse_args()
     ArgumentError(token=None, description='Missing: --verbose')
     >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]

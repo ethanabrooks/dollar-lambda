@@ -28,7 +28,7 @@
 </summary>
 <pre><code class="python">import abc
 from dataclasses import asdict, dataclass
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import (
     Any,
     Callable,
@@ -37,13 +37,13 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Tuple,
     TypeVar,
     Union,
     cast,
 )
 
-from monad_argparse.monad import BaseMonad, M, Monad
+from monad_argparse.monad import Monad
+from monad_argparse.nonempty_list import NonemptyList
 from monad_argparse.stateless_iterator import StatelessIterator
 
 A = TypeVar(&#34;A&#34;, contravariant=True)
@@ -80,9 +80,21 @@ class KeyValueTuple(NamedTuple):
 
 
 @dataclass
-class Ok(Generic[A]):
-    parsed: List[A]
-    remainder: List[str]
+class Parsed(Generic[A]):
+    get: A
+
+    def __repr__(self):
+        return f&#34;Parsed({self.get})&#34;
+
+    def __rshift__(self, other: &#34;Parsed[List[A]]&#34;):
+        assert isinstance(self.get, list)
+        return Parsed(self.get + other.get)
+
+
+@dataclass
+class Parse(Generic[A]):
+    parsed: Parsed[A]
+    unparsed: List[str]
 
 
 @dataclass
@@ -92,50 +104,66 @@ class ArgumentError(Exception):
 
 
 @dataclass
-class Result(BaseMonad[A, &#34;Result&#34;, &#34;Result&#34;]):
+class Ok(Generic[A]):
+    get: A
+
+    def __repr__(self):
+        return f&#34;Ok({self.get})&#34;
+
+
+@dataclass
+class Result(MonadPlus[A, &#34;Result&#34;, &#34;Result&#34;], Generic[A]):
     get: Union[Ok[A], Exception]
 
+    def __add__(self, other: &#34;Result[B]&#34;) -&gt; &#34;Result&#34;:
+        if isinstance(self.get, Ok):
+            return self
+        if isinstance(other.get, Ok):
+            return other
+        return Result(RuntimeError(&#34;__add__&#34;))
+
+    def __ge__(self, other: Callable[[A], &#34;Result&#34;]) -&gt; &#34;Result&#34;:
+        return Result.bind(self, other)
+
+    def __repr__(self):
+        return f&#34;Result({self.get})&#34;
+
+    def __rshift__(self, other: &#34;Result[B]&#34;) -&gt; &#34;Result[Any]&#34;:
+        def result():
+            # noinspection PyTypeChecker
+            o1: List[Ok[A]] = yield self
+            # noinspection PyTypeChecker
+            o2: List[Ok[B]] = yield other
+            yield o1 + o2
+
+        return Result.do(result)
+
     @classmethod
-    def bind(  # type: ignore[override]
+    def bind(
         cls,
         x: &#34;Result[A]&#34;,
-        f: Callable[[Ok[A]], &#34;Result[B]&#34;],
+        f: Callable[[A], &#34;Result[B]&#34;],
     ) -&gt; &#34;Result[B]&#34;:
         y = x.get
         if isinstance(y, Exception):
             return cast(Result[B], x)
-        return f(y)
-
-    def is_error(self):
-        return isinstance(self.get, Exception)
-
-    def is_ok(self):
-        return not self.is_error()
-
-    @staticmethod
-    def ok(parsed: List[A], remainder: List[str]):
-        assert isinstance(parsed, list)
-        return Result(Ok(parsed, remainder))
+        return f(y.get)
 
     @classmethod
-    def return_(cls, a: Union[Ok[A], Exception]) -&gt; &#34;Result[A]&#34;:  # type: ignore[override]
-        return Result(a)
+    def return_(cls, a: A) -&gt; &#34;Result[A]&#34;:
+        return Result(Ok(a))
 
-    def __rshift__(self, other: &#34;Result&#34;):
-        def result():
-            o1 = yield self
-            o2 = yield other
-            yield Ok(parsed=o1.parsed + o2.parsed, remainder=o2.remainder)
-
-        return Result.do(result)
+    @classmethod
+    def zero(cls) -&gt; &#34;Result[A]&#34;:
+        return Result(ArgumentError(description=&#34;zero&#34;))
 
 
-class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
+class Parser(MonadPlus[Parsed[A], &#34;Parser&#34;, &#34;Parser&#34;], Generic[A]):
     &#34;&#34;&#34;
     &gt;&gt;&gt; def f():
     ...     x1 = yield Argument(&#34;first&#34;)
     ...     x2 = yield Argument(&#34;second&#34;)
-    ...     yield Parser.return_(x1 + x2)
+    ...     yield Parser.return_(x1 &gt;&gt; x2)
     ...
     &gt;&gt;&gt; Parser.do(f).parse_args(&#34;a&#34;, &#34;b&#34;)
     [(&#39;first&#39;, &#39;a&#39;), (&#39;second&#39;, &#39;b&#39;)]
@@ -147,48 +175,48 @@ class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
     ...     xs2 = yield p2
     ...     x2 = yield Argument(&#34;second&#34;)
     ...     xs3 = yield p2
-    ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+    ...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
     ...
     &gt;&gt;&gt; Parser.do(f).parse_args(&#34;a&#34;, &#34;--verbose&#34;, &#34;b&#34;, &#34;--quiet&#34;)
     [(&#39;first&#39;, &#39;a&#39;), (&#39;verbose&#39;, True), (&#39;second&#39;, &#39;b&#39;), (&#39;quiet&#39;, True)]
     &#34;&#34;&#34;
 
-    def __init__(self, f: Callable[[List[str]], Result[A]]):
+    def __init__(self, f: Callable[[List[str]], Result[NonemptyList[Parse[A]]]]):
         self.f = f
 
     def __add__(
         self,
-        other: &#34;Parser&#34;,
-    ) -&gt; &#34;Parser&#34;:
-        def f(cs: List[str]) -&gt; Result[A]:
-            results = first, _ = [self.parse(cs), other.parse(cs)]
-            for result in results:
-                if result.is_ok():
-                    return result
-            return first
+        other: &#34;Parser[A]&#34;,
+    ) -&gt; &#34;Parser[A]&#34;:
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            result = self.parse(cs)
+            choices: Result[NonemptyList[Parse[A]]] = result + other.parse(cs)
+            if isinstance(choices.get, Ok):
+                return Result(Ok(NonemptyList(choices.get.get.head)))
+            else:
+                return result
 
         return Parser(f)
 
-    def __or__(self, p: &#34;Parser&#34;) -&gt; &#34;Parser&#34;:
+    def __or__(self, p: &#34;Parser[A]&#34;) -&gt; &#34;Parser[A]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Flag(&#34;verbose&#34;) | Option(&#34;option&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
         [(&#39;verbose&#39;, True)]
-        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)  # TODO: shouldn&#39;t this throw an error?
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
         [(&#39;verbose&#39;, True)]
+        &gt;&gt;&gt; (p &gt;&gt; Empty()).parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        ArgumentError(token=&#39;--option&#39;, description=&#39;Unexpected argument: --option&#39;)
         &gt;&gt;&gt; p.parse_args(&#34;--option&#34;, &#34;x&#34;)
         [(&#39;option&#39;, &#39;x&#39;)]
         &#34;&#34;&#34;
 
-        def f(cs: List[str]) -&gt; Result[A]:
-            def results():
-                yield (self + p).parse(cs)
-
-            return Result.do(results)
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return (self + p).parse(cs)
 
         return Parser(f)
 
-    def __rshift__(self, p: &#34;Parser&#34;) -&gt; &#34;Parser&#34;:
+    def __rshift__(self, p: &#34;Parser[List[B]]&#34;) -&gt; &#34;Parser[List[B]]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Argument(&#34;first&#34;) &gt;&gt; Argument(&#34;second&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;)
@@ -201,33 +229,66 @@ class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
         &gt;&gt;&gt; p = p1 &gt;&gt; Argument(&#34;a&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
         [(&#39;verbose&#39;, True), (&#39;a&#39;, &#39;value&#39;)]
+        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
+        ArgumentError(token=&#39;--verbose&#39;, description=&#39;--verbose&#39;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
         ArgumentError(token=None, description=&#39;Missing: a&#39;)
-        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
-        ArgumentError(token=&#39;value&#39;, description=&#39;matches --verbose&#39;)
         &#34;&#34;&#34;
 
-        def g() -&gt; Generator[Any, List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield p
-            yield self.return_(r1 + r2)
+        def g() -&gt; Generator[Any, Parsed[List[B]], None]:
+            # noinspection PyTypeChecker
+            p1: Parsed[List[B]] = yield self
+            # noinspection PyTypeChecker
+            p2: Parsed[List[B]] = yield p
+            yield p.return_(Parsed(p1.get + p2.get))
 
         return Parser.do(g)
 
     @classmethod
-    def bind(cls, x: &#34;Parser&#34;, f: Callable[[List[B]], &#34;Parser&#34;]) -&gt; &#34;Parser&#34;:  # type: ignore[override]
-        def g(cs: List[str]) -&gt; Result[B]:
-            def results() -&gt; Generator[Result[B], Ok[B], None]:
-                parse = x.parse(cs)
-                out: Ok[B] = yield parse
-                parser = f(out.parsed)
-                yield parser.parse(out.remainder)
+    def bind(cls, x: &#34;Parser&#34;, f: Callable[[Parsed[A]], &#34;Parser[A]&#34;]) -&gt; &#34;Parser[A]&#34;:
+        def apply_parser(parse: Parse[A]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return f(parse.parsed).parse(parse.unparsed)
 
-            return Result.do(results)
+        def get_successful(
+            parses: NonemptyList[Parse[A]],
+        ) -&gt; Generator[Parse[A], None, None]:
+            for parse in parses:
+                result: Result[NonemptyList[Parse[A]]] = apply_parser(parse)
+                if isinstance(result.get, Ok):  # Exclude failed parses
+                    yield from result.get.get
+
+        def h(parses: NonemptyList[Parse[A]]) -&gt; Result[NonemptyList[Parse[A]]]:
+            successful_parses = NonemptyList.make(*get_successful(parses))
+            if successful_parses:
+                return Result(Ok(successful_parses))
+            return apply_parser(parses.head)
+
+        def g(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return x.parse(cs) &gt;= h
 
         return Parser(g)
 
-    def many(self) -&gt; &#34;Parser&#34;:
+    @classmethod
+    def do(cls, generator: Callable[[], Generator[&#34;Parser&#34;, Parsed[A], None]]):
+        def f(
+            a: Optional[Parsed[A]], it: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+        ) -&gt; &#34;Parser&#34;:
+            try:
+                ma: Parser
+                it2: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+                if a is None:
+                    ma, it2 = it.__next__()
+                else:
+                    ma, it2 = it.send(a)
+            except StopIteration:
+                if a is None:
+                    raise RuntimeError(&#34;Cannot use an empty iterator with do.&#34;)
+                return cls.return_(a)
+            return cls.bind(ma, partial(f, it=it2))
+
+        return f(None, StatelessIterator(generator))
+
+    def many(self) -&gt; &#34;Parser[List[A]]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Argument(&#34;as-many-as-you-like&#34;).many()
         &gt;&gt;&gt; p.parse_args()
@@ -245,13 +306,15 @@ class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;)
         [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
         &#34;&#34;&#34;
-        return self.many1() | self.return_([])
+        return self.many1() | Parser[List[A]].return_(Parsed([]))
 
     def many1(self):
-        def g() -&gt; Generator[&#34;Parser&#34;, List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield self.many()
-            yield self.return_(r1 + r2)
+        def g() -&gt; Generator[&#34;Parser&#34;, Parsed, None]:
+            # noinspection PyTypeChecker
+            r1: Parsed[List[A]] = yield self
+            # noinspection PyTypeChecker
+            r2: Parsed[List[A]] = yield self.many()
+            yield Parser[List[A]].return_(Parsed(r1.get + r2.get))
 
         @lru_cache()
         def f(cs: tuple):
@@ -264,57 +327,87 @@ class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
 
     def parse_args(self, *args: str) -&gt; Union[List[KeyValueTuple], Exception]:
         result = self.parse(list(args)).get
-        if isinstance(result, Ok):
-            return [KeyValueTuple(**asdict(kv)) for kv in result.parsed]
-        return result
+        if isinstance(result, Exception):
+            return result
+        parse: NonemptyList[Parse[List[KeyValue]]] = result.get
+        head: Parse[List[KeyValue]] = parse.head
+        parsed: Parsed[List[KeyValue]] = head.parsed
+        pairs: List[KeyValue] = parsed.get
+        return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
     @classmethod
-    def return_(cls, a: List[B]) -&gt; &#34;Parser&#34;:  # type: ignore[override]
-        def f(cs: List[str]) -&gt; Result[B]:
-            return Result.ok(parsed=a, remainder=cs)
+    def return_(cls, a: Parsed[A]) -&gt; &#34;Parser&#34;:
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return Result(Ok(NonemptyList(Parse(a, cs))))
 
         return Parser(f)
 
     @classmethod
-    def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
+    def zero(cls, error: Optional[Exception] = None) -&gt; &#34;Parser[A]&#34;:
         if error is None:
             error = RuntimeError(&#34;zero&#34;)
-        result: Result[A] = Result(error)
+        result: Result[NonemptyList[Parse[A]]] = Result(error)
         return Parser(lambda cs: result)
 
 
-class P(M, Generic[A]):
-    def __ge__(self, f: Callable[[List[A]], Parser]):  # type: ignore[override]
-        return Parser.bind(self.a, f)
+class Empty(Parser[List[A]]):
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; Empty().parse_args()
+    []
+    &gt;&gt;&gt; Empty().parse_args(&#34;arg&#34;)
+    ArgumentError(token=&#39;arg&#39;, description=&#39;Unexpected argument: arg&#39;)
+    &gt;&gt;&gt; (Argument(&#34;arg&#34;) &gt;&gt; Empty()).parse_args(&#34;a&#34;)
+    [(&#39;arg&#39;, &#39;a&#39;)]
+    &gt;&gt;&gt; (Argument(&#34;arg&#34;) &gt;&gt; Empty()).parse_args(&#34;a&#34;, &#34;b&#34;)
+    ArgumentError(token=&#39;b&#39;, description=&#39;Unexpected argument: b&#39;)
+    &gt;&gt;&gt; (Flag(&#34;arg&#34;).many() &gt;&gt; Empty()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;)
+    [(&#39;arg&#39;, True), (&#39;arg&#39;, True)]
+    &gt;&gt;&gt; (Flag(&#34;arg&#34;).many() &gt;&gt; Empty()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, &#34;x&#34;)
+    ArgumentError(token=&#39;x&#39;, description=&#39;Unexpected argument: x&#39;)
+    &#34;&#34;&#34;
 
-    @classmethod
-    def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
-        return P(Parser.return_(a))
-
-
-class Item(Parser):
-    def __init__(self, description: str):
-        def f(cs: List[str]) -&gt; Result[str]:
-            try:
-                c, *cs = cs
-                return Result.ok(parsed=[c], remainder=cs)
-            except ValueError:
-                return Result(ArgumentError(description=f&#34;Missing{description}&#34;))
+    def __init__(self):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
+                c, *_ = cs
+                return Result(
+                    ArgumentError(token=c, description=f&#34;Unexpected argument: {c}&#34;)
+                )
+            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
 
         super().__init__(f)
 
 
-class Sat(Parser, Generic[A]):
-    def __init__(self, predicate: Callable[[List[str]], bool], description: str):
-        def g() -&gt; Generator[Parser, List[str], None]:
-            cs = [c] = yield Item(description)
-            if predicate(cs):
-                yield self.return_(cs)
-            else:
-                yield self.zero(ArgumentError(token=c, description=description))
+class Item(Parser[List[KeyValue[str]]]):
+    def __init__(self, name: str, description: Optional[str] = None):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
+                c, *cs = cs
+                return Result(
+                    Ok(
+                        NonemptyList(
+                            Parse(parsed=Parsed([KeyValue(name, c)]), unparsed=cs)
+                        )
+                    )
+                )
+            return Result(ArgumentError(description=f&#34;Missing: {description or name}&#34;))
 
-        def f(cs: List[str]) -&gt; Result:
-            return Parser.do(g).parse(cs)
+        super().__init__(f)
+
+
+class Sat(Parser[List[KeyValue[str]]]):
+    def __init__(self, predicate: Callable[[str], bool], description: str):
+        def g() -&gt; Generator[Parser, Parsed[List[KeyValue[str]]], None]:
+            # noinspection PyTypeChecker
+            parsed = yield Item(description)
+            [kv] = parsed.get
+            if predicate(kv.value):
+                yield self.return_(parsed)
+            else:
+                yield self.zero(ArgumentError(token=kv.key, description=description))
+
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            return Parser[List[KeyValue[str]]].do(g).parse(cs)
 
         super().__init__(f)
 
@@ -324,15 +417,15 @@ class Eq(Sat):
         super().__init__(lambda s1: s == s1, description=f&#34;equals {s}&#34;)
 
 
-class DoParser(Parser):
-    def __init__(self, g):
-        def f(cs):
+class DoParser(Parser[A]):
+    def __init__(self, g: Callable[[], Generator[Parser, Parsed[A], None]]):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
             return Parser.do(g).parse(cs)
 
         super().__init__(f)
 
 
-class Argument(DoParser):
+class Argument(DoParser[A]):
     &#34;&#34;&#34;
     &gt;&gt;&gt; Argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
     [(&#39;name&#39;, &#39;Alice&#39;)]
@@ -341,16 +434,14 @@ class Argument(DoParser):
     &#34;&#34;&#34;
 
     def __init__(self, dest: str):
-        def g() -&gt; Generator[Parser, List[str], None]:
-            [c] = yield Item(f&#34;: {dest}&#34;)
-            yield self.return_([KeyValue(dest, c)])
+        def g() -&gt; Generator[Parser, Parsed, None]:
+            yield Item(dest)
 
         super().__init__(g)
 
 
 def matches_short_or_long(
     x: str,
-    *_,
     short: Optional[str] = None,
     long: Optional[str] = None,
 ) -&gt; bool:
@@ -373,8 +464,8 @@ class Flag(DoParser):
     &#34;&#34;&#34;
     &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;)
     [(&#39;verbose&#39;, True)]
-    &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args() # TODO: fix this
-    ArgumentError(token=None, description=&#39;Missingmatches --verbose&#39;)
+    &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args()
+    ArgumentError(token=None, description=&#39;Missing: --verbose&#39;)
     &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
     [(&#39;verbose&#39;, True)]
     &#34;&#34;&#34;
@@ -388,13 +479,13 @@ class Flag(DoParser):
     ):
         assert short or long
 
-        def g() -&gt; Generator[Parser, Tuple[Any, StatelessIterator], None]:
-            description = f&#34;matches {&#39; or &#39;.join(list(flags(short, long)))}&#34;
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+        def g() -&gt; Generator[Parser, Parsed, None]:
+            description = f&#34;{&#39; or &#39;.join(list(flags(short, long)))}&#34;
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            yield self.return_([KeyValue((dest or long), value)])
+            yield self.return_(Parsed([KeyValue((dest or long), value)]))
 
         super().__init__(g)
 
@@ -404,26 +495,27 @@ class Option(DoParser):
     &gt;&gt;&gt; Option(&#34;value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
     [(&#39;value&#39;, &#39;x&#39;)]
     &gt;&gt;&gt; Option(&#34;value&#34;).parse_args(&#34;--value&#34;)
-    ArgumentError(token=None, description=&#39;Missing argument for --value&#39;)
+    ArgumentError(token=None, description=&#39;Missing: argument for --value&#39;)
     &#34;&#34;&#34;
 
     def __init__(
         self,
         long: str,
         short: Optional[str] = None,
-        convert: Optional[Callable[[str], Any]] = None,
+        convert: Optional[Callable[[A], Any]] = None,
         dest: Optional[str] = None,
     ):
-        def g() -&gt; Generator[Parser, List[str], None]:
+        def g() -&gt; Generator[Parser, Parsed[List[KeyValue]], None]:
             description = f&#34;matches {&#39; or &#39;.join(list(flags(short, long)))}&#34;
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            [c2] = yield Item(f&#34; argument for {next(flags(short, long))}&#34;)
+            parsed = yield Item(f&#34;argument for {next(flags(short, long))}&#34;)
+            [kv] = parsed.get
             key = dest or long
-            value = c2 if convert is None else convert(c2)
-            yield self.return_([KeyValue(key, value)])
+            value = kv.value if convert is None else convert(kv.value)
+            yield self.return_(Parsed([KeyValue(key, value)]))
 
         super().__init__(g)</code></pre>
 </details>
@@ -452,7 +544,7 @@ class Option(DoParser):
 </details>
 </dd>
 <dt id="monad_argparse.parser.matches_short_or_long"><code class="name flex">
-<span>def <span class="ident">matches_short_or_long</span></span>(<span>x: str, *_, short: Optional[str] = None, long: Optional[str] = None) ‑> bool</span>
+<span>def <span class="ident">matches_short_or_long</span></span>(<span>x: str, short: Optional[str] = None, long: Optional[str] = None) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -462,7 +554,6 @@ class Option(DoParser):
 </summary>
 <pre><code class="python">def matches_short_or_long(
     x: str,
-    *_,
     short: Optional[str] = None,
     long: Optional[str] = None,
 ) -&gt; bool:
@@ -493,7 +584,7 @@ ArgumentError(token=None, description='Missing: name')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Argument(DoParser):
+<pre><code class="python">class Argument(DoParser[A]):
     &#34;&#34;&#34;
     &gt;&gt;&gt; Argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
     [(&#39;name&#39;, &#39;Alice&#39;)]
@@ -502,9 +593,8 @@ ArgumentError(token=None, description='Missing: name')
     &#34;&#34;&#34;
 
     def __init__(self, dest: str):
-        def g() -&gt; Generator[Parser, List[str], None]:
-            [c] = yield Item(f&#34;: {dest}&#34;)
-            yield self.return_([KeyValue(dest, c)])
+        def g() -&gt; Generator[Parser, Parsed, None]:
+            yield Item(dest)
 
         super().__init__(g)</code></pre>
 </details>
@@ -561,13 +651,13 @@ ArgumentError(token=None, description='Missing: name')
 </dd>
 <dt id="monad_argparse.parser.DoParser"><code class="flex name class">
 <span>class <span class="ident">DoParser</span></span>
-<span>(</span><span>g)</span>
+<span>(</span><span>g: Callable[[], Generator[<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>, <a title="monad_argparse.parser.Parsed" href="#monad_argparse.parser.Parsed">Parsed</a>[-A], None]])</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; def f():
 ...     x1 = yield Argument(&quot;first&quot;)
 ...     x2 = yield Argument(&quot;second&quot;)
-...     yield Parser.return_(x1 + x2)
+...     yield Parser.return_(x1 &gt;&gt; x2)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;b&quot;)
 [('first', 'a'), ('second', 'b')]
@@ -579,7 +669,7 @@ ArgumentError(token=None, description='Missing: name')
 ...     xs2 = yield p2
 ...     x2 = yield Argument(&quot;second&quot;)
 ...     xs3 = yield p2
-...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;--verbose&quot;, &quot;b&quot;, &quot;--quiet&quot;)
 [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -588,9 +678,9 @@ ArgumentError(token=None, description='Missing: name')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DoParser(Parser):
-    def __init__(self, g):
-        def f(cs):
+<pre><code class="python">class DoParser(Parser[A]):
+    def __init__(self, g: Callable[[], Generator[Parser, Parsed[A], None]]):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
             return Parser.do(g).parse(cs)
 
         super().__init__(f)</code></pre>
@@ -620,6 +710,73 @@ ArgumentError(token=None, description='Missing: name')
 </li>
 </ul>
 </dd>
+<dt id="monad_argparse.parser.Empty"><code class="flex name class">
+<span>class <span class="ident">Empty</span></span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Empty().parse_args()
+[]
+&gt;&gt;&gt; Empty().parse_args(&quot;arg&quot;)
+ArgumentError(token='arg', description='Unexpected argument: arg')
+&gt;&gt;&gt; (Argument(&quot;arg&quot;) &gt;&gt; Empty()).parse_args(&quot;a&quot;)
+[('arg', 'a')]
+&gt;&gt;&gt; (Argument(&quot;arg&quot;) &gt;&gt; Empty()).parse_args(&quot;a&quot;, &quot;b&quot;)
+ArgumentError(token='b', description='Unexpected argument: b')
+&gt;&gt;&gt; (Flag(&quot;arg&quot;).many() &gt;&gt; Empty()).parse_args(&quot;--arg&quot;, &quot;--arg&quot;)
+[('arg', True), ('arg', True)]
+&gt;&gt;&gt; (Flag(&quot;arg&quot;).many() &gt;&gt; Empty()).parse_args(&quot;--arg&quot;, &quot;--arg&quot;, &quot;x&quot;)
+ArgumentError(token='x', description='Unexpected argument: x')
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Empty(Parser[List[A]]):
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; Empty().parse_args()
+    []
+    &gt;&gt;&gt; Empty().parse_args(&#34;arg&#34;)
+    ArgumentError(token=&#39;arg&#39;, description=&#39;Unexpected argument: arg&#39;)
+    &gt;&gt;&gt; (Argument(&#34;arg&#34;) &gt;&gt; Empty()).parse_args(&#34;a&#34;)
+    [(&#39;arg&#39;, &#39;a&#39;)]
+    &gt;&gt;&gt; (Argument(&#34;arg&#34;) &gt;&gt; Empty()).parse_args(&#34;a&#34;, &#34;b&#34;)
+    ArgumentError(token=&#39;b&#39;, description=&#39;Unexpected argument: b&#39;)
+    &gt;&gt;&gt; (Flag(&#34;arg&#34;).many() &gt;&gt; Empty()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;)
+    [(&#39;arg&#39;, True), (&#39;arg&#39;, True)]
+    &gt;&gt;&gt; (Flag(&#34;arg&#34;).many() &gt;&gt; Empty()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, &#34;x&#34;)
+    ArgumentError(token=&#39;x&#39;, description=&#39;Unexpected argument: x&#39;)
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
+                c, *_ = cs
+                return Result(
+                    ArgumentError(token=c, description=f&#34;Unexpected argument: {c}&#34;)
+                )
+            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
+
+        super().__init__(f)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></li>
+<li><a title="monad_argparse.parser.MonadPlus" href="#monad_argparse.parser.MonadPlus">MonadPlus</a></li>
+<li><a title="monad_argparse.parser.MonadZero" href="#monad_argparse.parser.MonadZero">MonadZero</a></li>
+<li><a title="monad_argparse.monad.Monad" href="monad.html#monad_argparse.monad.Monad">Monad</a></li>
+<li>typing.Generic</li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></b></code>:
+<ul class="hlist">
+<li><code><a title="monad_argparse.parser.Parser.bind" href="monad.html#monad_argparse.monad.Monad.bind">bind</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.many" href="#monad_argparse.parser.Parser.many">many</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.return_" href="monad.html#monad_argparse.monad.Monad.return_">return_</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt id="monad_argparse.parser.Eq"><code class="flex name class">
 <span>class <span class="ident">Eq</span></span>
 <span>(</span><span>s)</span>
@@ -628,7 +785,7 @@ ArgumentError(token=None, description='Missing: name')
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; def f():
 ...     x1 = yield Argument(&quot;first&quot;)
 ...     x2 = yield Argument(&quot;second&quot;)
-...     yield Parser.return_(x1 + x2)
+...     yield Parser.return_(x1 &gt;&gt; x2)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;b&quot;)
 [('first', 'a'), ('second', 'b')]
@@ -640,7 +797,7 @@ ArgumentError(token=None, description='Missing: name')
 ...     xs2 = yield p2
 ...     x2 = yield Argument(&quot;second&quot;)
 ...     xs3 = yield p2
-...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;--verbose&quot;, &quot;b&quot;, &quot;--quiet&quot;)
 [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -680,8 +837,8 @@ ArgumentError(token=None, description='Missing: name')
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;)
 [('verbose', True)]
-&gt;&gt;&gt; Flag(&quot;verbose&quot;).parse_args() # TODO: fix this
-ArgumentError(token=None, description='Missingmatches --verbose')
+&gt;&gt;&gt; Flag(&quot;verbose&quot;).parse_args()
+ArgumentError(token=None, description='Missing: --verbose')
 &gt;&gt;&gt; Flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;, &quot;--verbose&quot;)
 [('verbose', True)]
 </code></pre></div>
@@ -693,8 +850,8 @@ ArgumentError(token=None, description='Missingmatches --verbose')
     &#34;&#34;&#34;
     &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;)
     [(&#39;verbose&#39;, True)]
-    &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args() # TODO: fix this
-    ArgumentError(token=None, description=&#39;Missingmatches --verbose&#39;)
+    &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args()
+    ArgumentError(token=None, description=&#39;Missing: --verbose&#39;)
     &gt;&gt;&gt; Flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
     [(&#39;verbose&#39;, True)]
     &#34;&#34;&#34;
@@ -708,13 +865,13 @@ ArgumentError(token=None, description='Missingmatches --verbose')
     ):
         assert short or long
 
-        def g() -&gt; Generator[Parser, Tuple[Any, StatelessIterator], None]:
-            description = f&#34;matches {&#39; or &#39;.join(list(flags(short, long)))}&#34;
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+        def g() -&gt; Generator[Parser, Parsed, None]:
+            description = f&#34;{&#39; or &#39;.join(list(flags(short, long)))}&#34;
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            yield self.return_([KeyValue((dest or long), value)])
+            yield self.return_(Parsed([KeyValue((dest or long), value)]))
 
         super().__init__(g)</code></pre>
 </details>
@@ -740,13 +897,13 @@ ArgumentError(token=None, description='Missingmatches --verbose')
 </dd>
 <dt id="monad_argparse.parser.Item"><code class="flex name class">
 <span>class <span class="ident">Item</span></span>
-<span>(</span><span>description: str)</span>
+<span>(</span><span>name: str, description: Optional[str] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; def f():
 ...     x1 = yield Argument(&quot;first&quot;)
 ...     x2 = yield Argument(&quot;second&quot;)
-...     yield Parser.return_(x1 + x2)
+...     yield Parser.return_(x1 &gt;&gt; x2)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;b&quot;)
 [('first', 'a'), ('second', 'b')]
@@ -758,7 +915,7 @@ ArgumentError(token=None, description='Missingmatches --verbose')
 ...     xs2 = yield p2
 ...     x2 = yield Argument(&quot;second&quot;)
 ...     xs3 = yield p2
-...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;--verbose&quot;, &quot;b&quot;, &quot;--quiet&quot;)
 [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -767,14 +924,19 @@ ArgumentError(token=None, description='Missingmatches --verbose')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Item(Parser):
-    def __init__(self, description: str):
-        def f(cs: List[str]) -&gt; Result[str]:
-            try:
+<pre><code class="python">class Item(Parser[List[KeyValue[str]]]):
+    def __init__(self, name: str, description: Optional[str] = None):
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            if cs:
                 c, *cs = cs
-                return Result.ok(parsed=[c], remainder=cs)
-            except ValueError:
-                return Result(ArgumentError(description=f&#34;Missing{description}&#34;))
+                return Result(
+                    Ok(
+                        NonemptyList(
+                            Parse(parsed=Parsed([KeyValue(name, c)]), unparsed=cs)
+                        )
+                    )
+                )
+            return Result(ArgumentError(description=f&#34;Missing: {description or name}&#34;))
 
         super().__init__(f)</code></pre>
 </details>
@@ -888,6 +1050,7 @@ p &gt;&gt;= (\a -&gt; (f a &gt;&gt;= g)) = (p &gt;&gt;= (\a -&gt; f a)) &gt;&gt;
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></li>
+<li><a title="monad_argparse.parser.Result" href="#monad_argparse.parser.Result">Result</a></li>
 </ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
@@ -958,7 +1121,7 @@ def zero(cls) -&gt; MA:
 </dd>
 <dt id="monad_argparse.parser.Ok"><code class="flex name class">
 <span>class <span class="ident">Ok</span></span>
-<span>(</span><span>parsed: List[-A], remainder: List[str])</span>
+<span>(</span><span>get: -A)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Ok(<em>args, </em>*kwds)</p></div>
@@ -967,8 +1130,10 @@ def zero(cls) -&gt; MA:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Ok(Generic[A]):
-    parsed: List[A]
-    remainder: List[str]</code></pre>
+    get: A
+
+    def __repr__(self):
+        return f&#34;Ok({self.get})&#34;</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -976,11 +1141,7 @@ def zero(cls) -&gt; MA:
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="monad_argparse.parser.Ok.parsed"><code class="name">var <span class="ident">parsed</span> : List[-A]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="monad_argparse.parser.Ok.remainder"><code class="name">var <span class="ident">remainder</span> : List[str]</code></dt>
+<dt id="monad_argparse.parser.Ok.get"><code class="name">var <span class="ident">get</span> : -A</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -988,13 +1149,13 @@ def zero(cls) -&gt; MA:
 </dd>
 <dt id="monad_argparse.parser.Option"><code class="flex name class">
 <span>class <span class="ident">Option</span></span>
-<span>(</span><span>long: str, short: Optional[str] = None, convert: Optional[Callable[[str], Any]] = None, dest: Optional[str] = None)</span>
+<span>(</span><span>long: str, short: Optional[str] = None, convert: Optional[Callable[[-A], Any]] = None, dest: Optional[str] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Option(&quot;value&quot;).parse_args(&quot;--value&quot;, &quot;x&quot;)
 [('value', 'x')]
 &gt;&gt;&gt; Option(&quot;value&quot;).parse_args(&quot;--value&quot;)
-ArgumentError(token=None, description='Missing argument for --value')
+ArgumentError(token=None, description='Missing: argument for --value')
 </code></pre></div>
 <details class="source">
 <summary>
@@ -1005,26 +1166,27 @@ ArgumentError(token=None, description='Missing argument for --value')
     &gt;&gt;&gt; Option(&#34;value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
     [(&#39;value&#39;, &#39;x&#39;)]
     &gt;&gt;&gt; Option(&#34;value&#34;).parse_args(&#34;--value&#34;)
-    ArgumentError(token=None, description=&#39;Missing argument for --value&#39;)
+    ArgumentError(token=None, description=&#39;Missing: argument for --value&#39;)
     &#34;&#34;&#34;
 
     def __init__(
         self,
         long: str,
         short: Optional[str] = None,
-        convert: Optional[Callable[[str], Any]] = None,
+        convert: Optional[Callable[[A], Any]] = None,
         dest: Optional[str] = None,
     ):
-        def g() -&gt; Generator[Parser, List[str], None]:
+        def g() -&gt; Generator[Parser, Parsed[List[KeyValue]], None]:
             description = f&#34;matches {&#39; or &#39;.join(list(flags(short, long)))}&#34;
-            yield Sat[List[str]](
-                lambda x: matches_short_or_long(*x, short=short, long=long),
+            yield Sat(
+                lambda x: matches_short_or_long(x, short=short, long=long),
                 description=description,
             )
-            [c2] = yield Item(f&#34; argument for {next(flags(short, long))}&#34;)
+            parsed = yield Item(f&#34;argument for {next(flags(short, long))}&#34;)
+            [kv] = parsed.get
             key = dest or long
-            value = c2 if convert is None else convert(c2)
-            yield self.return_([KeyValue(key, value)])
+            value = kv.value if convert is None else convert(kv.value)
+            yield self.return_(Parsed([KeyValue(key, value)]))
 
         super().__init__(g)</code></pre>
 </details>
@@ -1048,58 +1210,77 @@ ArgumentError(token=None, description='Missing argument for --value')
 </li>
 </ul>
 </dd>
-<dt id="monad_argparse.parser.P"><code class="flex name class">
-<span>class <span class="ident">P</span></span>
-<span>(</span><span>a: -A)</span>
+<dt id="monad_argparse.parser.Parse"><code class="flex name class">
+<span>class <span class="ident">Parse</span></span>
+<span>(</span><span>parsed: <a title="monad_argparse.parser.Parsed" href="#monad_argparse.parser.Parsed">Parsed</a>[-A], unparsed: List[str])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Helper class that provides a standard way to create an ABC using
-inheritance.</p></div>
+<div class="desc"><p>Parse(<em>args, </em>*kwds)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class P(M, Generic[A]):
-    def __ge__(self, f: Callable[[List[A]], Parser]):  # type: ignore[override]
-        return Parser.bind(self.a, f)
-
-    @classmethod
-    def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
-        return P(Parser.return_(a))</code></pre>
+<pre><code class="python">class Parse(Generic[A]):
+    parsed: Parsed[A]
+    unparsed: List[str]</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="monad_argparse.monad.M" href="monad.html#monad_argparse.monad.M">M</a></li>
-<li>abc.ABC</li>
 <li>typing.Generic</li>
 </ul>
-<h3>Static methods</h3>
+<h3>Class variables</h3>
 <dl>
-<dt id="monad_argparse.parser.P.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: List[-A]) ‑> <a title="monad_argparse.parser.P" href="#monad_argparse.parser.P">P</a>[<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>]</span>
-</code></dt>
+<dt id="monad_argparse.parser.Parse.parsed"><code class="name">var <span class="ident">parsed</span> : <a title="monad_argparse.parser.Parsed" href="#monad_argparse.parser.Parsed">Parsed</a>[-A]</code></dt>
 <dd>
 <div class="desc"></div>
+</dd>
+<dt id="monad_argparse.parser.Parse.unparsed"><code class="name">var <span class="ident">unparsed</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="monad_argparse.parser.Parsed"><code class="flex name class">
+<span>class <span class="ident">Parsed</span></span>
+<span>(</span><span>get: -A)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parsed(<em>args, </em>*kwds)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@classmethod
-def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
-    return P(Parser.return_(a))</code></pre>
+<pre><code class="python">class Parsed(Generic[A]):
+    get: A
+
+    def __repr__(self):
+        return f&#34;Parsed({self.get})&#34;
+
+    def __rshift__(self, other: &#34;Parsed[List[A]]&#34;):
+        assert isinstance(self.get, list)
+        return Parsed(self.get + other.get)</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="monad_argparse.parser.Parsed.get"><code class="name">var <span class="ident">get</span> : -A</code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
 <dt id="monad_argparse.parser.Parser"><code class="flex name class">
 <span>class <span class="ident">Parser</span></span>
-<span>(</span><span>f: Callable[[List[str]], <a title="monad_argparse.parser.Result" href="#monad_argparse.parser.Result">Result</a>[-A]])</span>
+<span>(</span><span>f: Callable[[List[str]], <a title="monad_argparse.parser.Result" href="#monad_argparse.parser.Result">Result</a>[<a title="monad_argparse.nonempty_list.NonemptyList" href="nonempty_list.html#monad_argparse.nonempty_list.NonemptyList">NonemptyList</a>[<a title="monad_argparse.parser.Parse" href="#monad_argparse.parser.Parse">Parse</a>[-A]]]])</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; def f():
 ...     x1 = yield Argument(&quot;first&quot;)
 ...     x2 = yield Argument(&quot;second&quot;)
-...     yield Parser.return_(x1 + x2)
+...     yield Parser.return_(x1 &gt;&gt; x2)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;b&quot;)
 [('first', 'a'), ('second', 'b')]
@@ -1111,7 +1292,7 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
 ...     xs2 = yield p2
 ...     x2 = yield Argument(&quot;second&quot;)
 ...     xs3 = yield p2
-...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;--verbose&quot;, &quot;b&quot;, &quot;--quiet&quot;)
 [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -1120,12 +1301,12 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Parser(MonadPlus[A, &#34;Parser&#34;, &#34;Parser&#34;]):
+<pre><code class="python">class Parser(MonadPlus[Parsed[A], &#34;Parser&#34;, &#34;Parser&#34;], Generic[A]):
     &#34;&#34;&#34;
     &gt;&gt;&gt; def f():
     ...     x1 = yield Argument(&#34;first&#34;)
     ...     x2 = yield Argument(&#34;second&#34;)
-    ...     yield Parser.return_(x1 + x2)
+    ...     yield Parser.return_(x1 &gt;&gt; x2)
     ...
     &gt;&gt;&gt; Parser.do(f).parse_args(&#34;a&#34;, &#34;b&#34;)
     [(&#39;first&#39;, &#39;a&#39;), (&#39;second&#39;, &#39;b&#39;)]
@@ -1137,48 +1318,48 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
     ...     xs2 = yield p2
     ...     x2 = yield Argument(&#34;second&#34;)
     ...     xs3 = yield p2
-    ...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+    ...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
     ...
     &gt;&gt;&gt; Parser.do(f).parse_args(&#34;a&#34;, &#34;--verbose&#34;, &#34;b&#34;, &#34;--quiet&#34;)
     [(&#39;first&#39;, &#39;a&#39;), (&#39;verbose&#39;, True), (&#39;second&#39;, &#39;b&#39;), (&#39;quiet&#39;, True)]
     &#34;&#34;&#34;
 
-    def __init__(self, f: Callable[[List[str]], Result[A]]):
+    def __init__(self, f: Callable[[List[str]], Result[NonemptyList[Parse[A]]]]):
         self.f = f
 
     def __add__(
         self,
-        other: &#34;Parser&#34;,
-    ) -&gt; &#34;Parser&#34;:
-        def f(cs: List[str]) -&gt; Result[A]:
-            results = first, _ = [self.parse(cs), other.parse(cs)]
-            for result in results:
-                if result.is_ok():
-                    return result
-            return first
+        other: &#34;Parser[A]&#34;,
+    ) -&gt; &#34;Parser[A]&#34;:
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            result = self.parse(cs)
+            choices: Result[NonemptyList[Parse[A]]] = result + other.parse(cs)
+            if isinstance(choices.get, Ok):
+                return Result(Ok(NonemptyList(choices.get.get.head)))
+            else:
+                return result
 
         return Parser(f)
 
-    def __or__(self, p: &#34;Parser&#34;) -&gt; &#34;Parser&#34;:
+    def __or__(self, p: &#34;Parser[A]&#34;) -&gt; &#34;Parser[A]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Flag(&#34;verbose&#34;) | Option(&#34;option&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
         [(&#39;verbose&#39;, True)]
-        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)  # TODO: shouldn&#39;t this throw an error?
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
         [(&#39;verbose&#39;, True)]
+        &gt;&gt;&gt; (p &gt;&gt; Empty()).parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        ArgumentError(token=&#39;--option&#39;, description=&#39;Unexpected argument: --option&#39;)
         &gt;&gt;&gt; p.parse_args(&#34;--option&#34;, &#34;x&#34;)
         [(&#39;option&#39;, &#39;x&#39;)]
         &#34;&#34;&#34;
 
-        def f(cs: List[str]) -&gt; Result[A]:
-            def results():
-                yield (self + p).parse(cs)
-
-            return Result.do(results)
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return (self + p).parse(cs)
 
         return Parser(f)
 
-    def __rshift__(self, p: &#34;Parser&#34;) -&gt; &#34;Parser&#34;:
+    def __rshift__(self, p: &#34;Parser[List[B]]&#34;) -&gt; &#34;Parser[List[B]]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Argument(&#34;first&#34;) &gt;&gt; Argument(&#34;second&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;)
@@ -1191,33 +1372,66 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
         &gt;&gt;&gt; p = p1 &gt;&gt; Argument(&#34;a&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
         [(&#39;verbose&#39;, True), (&#39;a&#39;, &#39;value&#39;)]
+        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
+        ArgumentError(token=&#39;--verbose&#39;, description=&#39;--verbose&#39;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
         ArgumentError(token=None, description=&#39;Missing: a&#39;)
-        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
-        ArgumentError(token=&#39;value&#39;, description=&#39;matches --verbose&#39;)
         &#34;&#34;&#34;
 
-        def g() -&gt; Generator[Any, List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield p
-            yield self.return_(r1 + r2)
+        def g() -&gt; Generator[Any, Parsed[List[B]], None]:
+            # noinspection PyTypeChecker
+            p1: Parsed[List[B]] = yield self
+            # noinspection PyTypeChecker
+            p2: Parsed[List[B]] = yield p
+            yield p.return_(Parsed(p1.get + p2.get))
 
         return Parser.do(g)
 
     @classmethod
-    def bind(cls, x: &#34;Parser&#34;, f: Callable[[List[B]], &#34;Parser&#34;]) -&gt; &#34;Parser&#34;:  # type: ignore[override]
-        def g(cs: List[str]) -&gt; Result[B]:
-            def results() -&gt; Generator[Result[B], Ok[B], None]:
-                parse = x.parse(cs)
-                out: Ok[B] = yield parse
-                parser = f(out.parsed)
-                yield parser.parse(out.remainder)
+    def bind(cls, x: &#34;Parser&#34;, f: Callable[[Parsed[A]], &#34;Parser[A]&#34;]) -&gt; &#34;Parser[A]&#34;:
+        def apply_parser(parse: Parse[A]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return f(parse.parsed).parse(parse.unparsed)
 
-            return Result.do(results)
+        def get_successful(
+            parses: NonemptyList[Parse[A]],
+        ) -&gt; Generator[Parse[A], None, None]:
+            for parse in parses:
+                result: Result[NonemptyList[Parse[A]]] = apply_parser(parse)
+                if isinstance(result.get, Ok):  # Exclude failed parses
+                    yield from result.get.get
+
+        def h(parses: NonemptyList[Parse[A]]) -&gt; Result[NonemptyList[Parse[A]]]:
+            successful_parses = NonemptyList.make(*get_successful(parses))
+            if successful_parses:
+                return Result(Ok(successful_parses))
+            return apply_parser(parses.head)
+
+        def g(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return x.parse(cs) &gt;= h
 
         return Parser(g)
 
-    def many(self) -&gt; &#34;Parser&#34;:
+    @classmethod
+    def do(cls, generator: Callable[[], Generator[&#34;Parser&#34;, Parsed[A], None]]):
+        def f(
+            a: Optional[Parsed[A]], it: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+        ) -&gt; &#34;Parser&#34;:
+            try:
+                ma: Parser
+                it2: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+                if a is None:
+                    ma, it2 = it.__next__()
+                else:
+                    ma, it2 = it.send(a)
+            except StopIteration:
+                if a is None:
+                    raise RuntimeError(&#34;Cannot use an empty iterator with do.&#34;)
+                return cls.return_(a)
+            return cls.bind(ma, partial(f, it=it2))
+
+        return f(None, StatelessIterator(generator))
+
+    def many(self) -&gt; &#34;Parser[List[A]]&#34;:
         &#34;&#34;&#34;
         &gt;&gt;&gt; p = Argument(&#34;as-many-as-you-like&#34;).many()
         &gt;&gt;&gt; p.parse_args()
@@ -1235,13 +1449,15 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;)
         [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
         &#34;&#34;&#34;
-        return self.many1() | self.return_([])
+        return self.many1() | Parser[List[A]].return_(Parsed([]))
 
     def many1(self):
-        def g() -&gt; Generator[&#34;Parser&#34;, List[KeyValue[A]], None]:
-            r1 = yield self
-            r2 = yield self.many()
-            yield self.return_(r1 + r2)
+        def g() -&gt; Generator[&#34;Parser&#34;, Parsed, None]:
+            # noinspection PyTypeChecker
+            r1: Parsed[List[A]] = yield self
+            # noinspection PyTypeChecker
+            r2: Parsed[List[A]] = yield self.many()
+            yield Parser[List[A]].return_(Parsed(r1.get + r2.get))
 
         @lru_cache()
         def f(cs: tuple):
@@ -1254,22 +1470,26 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
 
     def parse_args(self, *args: str) -&gt; Union[List[KeyValueTuple], Exception]:
         result = self.parse(list(args)).get
-        if isinstance(result, Ok):
-            return [KeyValueTuple(**asdict(kv)) for kv in result.parsed]
-        return result
+        if isinstance(result, Exception):
+            return result
+        parse: NonemptyList[Parse[List[KeyValue]]] = result.get
+        head: Parse[List[KeyValue]] = parse.head
+        parsed: Parsed[List[KeyValue]] = head.parsed
+        pairs: List[KeyValue] = parsed.get
+        return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
     @classmethod
-    def return_(cls, a: List[B]) -&gt; &#34;Parser&#34;:  # type: ignore[override]
-        def f(cs: List[str]) -&gt; Result[B]:
-            return Result.ok(parsed=a, remainder=cs)
+    def return_(cls, a: Parsed[A]) -&gt; &#34;Parser&#34;:
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[A]]]:
+            return Result(Ok(NonemptyList(Parse(a, cs))))
 
         return Parser(f)
 
     @classmethod
-    def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
+    def zero(cls, error: Optional[Exception] = None) -&gt; &#34;Parser[A]&#34;:
         if error is None:
             error = RuntimeError(&#34;zero&#34;)
-        result: Result[A] = Result(error)
+        result: Result[NonemptyList[Parse[A]]] = Result(error)
         return Parser(lambda cs: result)</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -1282,13 +1502,14 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="monad_argparse.parser.DoParser" href="#monad_argparse.parser.DoParser">DoParser</a></li>
+<li><a title="monad_argparse.parser.Empty" href="#monad_argparse.parser.Empty">Empty</a></li>
 <li><a title="monad_argparse.parser.Item" href="#monad_argparse.parser.Item">Item</a></li>
 <li><a title="monad_argparse.parser.Sat" href="#monad_argparse.parser.Sat">Sat</a></li>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="monad_argparse.parser.Parser.zero"><code class="name flex">
-<span>def <span class="ident">zero</span></span>(<span>error: Exception = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></span>
+<dt id="monad_argparse.parser.Parser.do"><code class="name flex">
+<span>def <span class="ident">do</span></span>(<span>generator: Callable[[], Generator[ForwardRef('<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>'), <a title="monad_argparse.parser.Parsed" href="#monad_argparse.parser.Parsed">Parsed</a>[-A], None]])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1297,10 +1518,40 @@ def return_(cls, a: List[A]) -&gt; &#34;P[Parser]&#34;:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
+def do(cls, generator: Callable[[], Generator[&#34;Parser&#34;, Parsed[A], None]]):
+    def f(
+        a: Optional[Parsed[A]], it: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+    ) -&gt; &#34;Parser&#34;:
+        try:
+            ma: Parser
+            it2: StatelessIterator[&#34;Parser&#34;, Parsed[A]]
+            if a is None:
+                ma, it2 = it.__next__()
+            else:
+                ma, it2 = it.send(a)
+        except StopIteration:
+            if a is None:
+                raise RuntimeError(&#34;Cannot use an empty iterator with do.&#34;)
+            return cls.return_(a)
+        return cls.bind(ma, partial(f, it=it2))
+
+    return f(None, StatelessIterator(generator))</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>error: Optional[Exception] = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[-A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def zero(cls, error: Optional[Exception] = None) -&gt; &#34;Parser[A]&#34;:
     if error is None:
         error = RuntimeError(&#34;zero&#34;)
-    result: Result[A] = Result(error)
+    result: Result[NonemptyList[Parse[A]]] = Result(error)
     return Parser(lambda cs: result)</code></pre>
 </details>
 </dd>
@@ -1308,7 +1559,7 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 <h3>Methods</h3>
 <dl>
 <dt id="monad_argparse.parser.Parser.many"><code class="name flex">
-<span>def <span class="ident">many</span></span>(<span>self) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></span>
+<span>def <span class="ident">many</span></span>(<span>self) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[typing.List[-A]]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = Argument(&quot;as-many-as-you-like&quot;).many()
@@ -1331,7 +1582,7 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def many(self) -&gt; &#34;Parser&#34;:
+<pre><code class="python">def many(self) -&gt; &#34;Parser[List[A]]&#34;:
     &#34;&#34;&#34;
     &gt;&gt;&gt; p = Argument(&#34;as-many-as-you-like&#34;).many()
     &gt;&gt;&gt; p.parse_args()
@@ -1349,7 +1600,7 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
     &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;)
     [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
     &#34;&#34;&#34;
-    return self.many1() | self.return_([])</code></pre>
+    return self.many1() | Parser[List[A]].return_(Parsed([]))</code></pre>
 </details>
 </dd>
 <dt id="monad_argparse.parser.Parser.many1"><code class="name flex">
@@ -1362,10 +1613,12 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def many1(self):
-    def g() -&gt; Generator[&#34;Parser&#34;, List[KeyValue[A]], None]:
-        r1 = yield self
-        r2 = yield self.many()
-        yield self.return_(r1 + r2)
+    def g() -&gt; Generator[&#34;Parser&#34;, Parsed, None]:
+        # noinspection PyTypeChecker
+        r1: Parsed[List[A]] = yield self
+        # noinspection PyTypeChecker
+        r2: Parsed[List[A]] = yield self.many()
+        yield Parser[List[A]].return_(Parsed(r1.get + r2.get))
 
     @lru_cache()
     def f(cs: tuple):
@@ -1398,9 +1651,13 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 </summary>
 <pre><code class="python">def parse_args(self, *args: str) -&gt; Union[List[KeyValueTuple], Exception]:
     result = self.parse(list(args)).get
-    if isinstance(result, Ok):
-        return [KeyValueTuple(**asdict(kv)) for kv in result.parsed]
-    return result</code></pre>
+    if isinstance(result, Exception):
+        return result
+    parse: NonemptyList[Parse[List[KeyValue]]] = result.get
+    head: Parse[List[KeyValue]] = parse.head
+    parsed: Parsed[List[KeyValue]] = head.parsed
+    pairs: List[KeyValue] = parsed.get
+    return [KeyValueTuple(**asdict(kv)) for kv in pairs]</code></pre>
 </details>
 </dd>
 </dl>
@@ -1424,49 +1681,57 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Result(BaseMonad[A, &#34;Result&#34;, &#34;Result&#34;]):
+<pre><code class="python">class Result(MonadPlus[A, &#34;Result&#34;, &#34;Result&#34;], Generic[A]):
     get: Union[Ok[A], Exception]
 
+    def __add__(self, other: &#34;Result[B]&#34;) -&gt; &#34;Result&#34;:
+        if isinstance(self.get, Ok):
+            return self
+        if isinstance(other.get, Ok):
+            return other
+        return Result(RuntimeError(&#34;__add__&#34;))
+
+    def __ge__(self, other: Callable[[A], &#34;Result&#34;]) -&gt; &#34;Result&#34;:
+        return Result.bind(self, other)
+
+    def __repr__(self):
+        return f&#34;Result({self.get})&#34;
+
+    def __rshift__(self, other: &#34;Result[B]&#34;) -&gt; &#34;Result[Any]&#34;:
+        def result():
+            # noinspection PyTypeChecker
+            o1: List[Ok[A]] = yield self
+            # noinspection PyTypeChecker
+            o2: List[Ok[B]] = yield other
+            yield o1 + o2
+
+        return Result.do(result)
+
     @classmethod
-    def bind(  # type: ignore[override]
+    def bind(
         cls,
         x: &#34;Result[A]&#34;,
-        f: Callable[[Ok[A]], &#34;Result[B]&#34;],
+        f: Callable[[A], &#34;Result[B]&#34;],
     ) -&gt; &#34;Result[B]&#34;:
         y = x.get
         if isinstance(y, Exception):
             return cast(Result[B], x)
-        return f(y)
-
-    def is_error(self):
-        return isinstance(self.get, Exception)
-
-    def is_ok(self):
-        return not self.is_error()
-
-    @staticmethod
-    def ok(parsed: List[A], remainder: List[str]):
-        assert isinstance(parsed, list)
-        return Result(Ok(parsed, remainder))
+        return f(y.get)
 
     @classmethod
-    def return_(cls, a: Union[Ok[A], Exception]) -&gt; &#34;Result[A]&#34;:  # type: ignore[override]
-        return Result(a)
+    def return_(cls, a: A) -&gt; &#34;Result[A]&#34;:
+        return Result(Ok(a))
 
-    def __rshift__(self, other: &#34;Result&#34;):
-        def result():
-            o1 = yield self
-            o2 = yield other
-            yield Ok(parsed=o1.parsed + o2.parsed, remainder=o2.remainder)
-
-        return Result.do(result)</code></pre>
+    @classmethod
+    def zero(cls) -&gt; &#34;Result[A]&#34;:
+        return Result(ArgumentError(description=&#34;zero&#34;))</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="monad_argparse.monad.BaseMonad" href="monad.html#monad_argparse.monad.BaseMonad">BaseMonad</a></li>
+<li><a title="monad_argparse.parser.MonadPlus" href="#monad_argparse.parser.MonadPlus">MonadPlus</a></li>
+<li><a title="monad_argparse.parser.MonadZero" href="#monad_argparse.parser.MonadZero">MonadZero</a></li>
 <li><a title="monad_argparse.monad.Monad" href="monad.html#monad_argparse.monad.Monad">Monad</a></li>
 <li>typing.Generic</li>
-<li>abc.ABC</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
@@ -1477,8 +1742,8 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="monad_argparse.parser.Result.ok"><code class="name flex">
-<span>def <span class="ident">ok</span></span>(<span>parsed: List[-A], remainder: List[str])</span>
+<dt id="monad_argparse.parser.Result.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>) ‑> <a title="monad_argparse.parser.Result" href="#monad_argparse.parser.Result">Result</a>[-A]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1486,61 +1751,31 @@ def zero(cls, error: Exception = None) -&gt; &#34;Parser&#34;:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@staticmethod
-def ok(parsed: List[A], remainder: List[str]):
-    assert isinstance(parsed, list)
-    return Result(Ok(parsed, remainder))</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Methods</h3>
-<dl>
-<dt id="monad_argparse.parser.Result.is_error"><code class="name flex">
-<span>def <span class="ident">is_error</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_error(self):
-    return isinstance(self.get, Exception)</code></pre>
-</details>
-</dd>
-<dt id="monad_argparse.parser.Result.is_ok"><code class="name flex">
-<span>def <span class="ident">is_ok</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_ok(self):
-    return not self.is_error()</code></pre>
+<pre><code class="python">@classmethod
+def zero(cls) -&gt; &#34;Result[A]&#34;:
+    return Result(ArgumentError(description=&#34;zero&#34;))</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="monad_argparse.monad.BaseMonad" href="monad.html#monad_argparse.monad.BaseMonad">BaseMonad</a></b></code>:
+<li><code><b><a title="monad_argparse.parser.MonadPlus" href="#monad_argparse.parser.MonadPlus">MonadPlus</a></b></code>:
 <ul class="hlist">
-<li><code><a title="monad_argparse.monad.BaseMonad.bind" href="monad.html#monad_argparse.monad.Monad.bind">bind</a></code></li>
-<li><code><a title="monad_argparse.monad.BaseMonad.return_" href="monad.html#monad_argparse.monad.Monad.return_">return_</a></code></li>
+<li><code><a title="monad_argparse.parser.MonadPlus.bind" href="monad.html#monad_argparse.monad.Monad.bind">bind</a></code></li>
+<li><code><a title="monad_argparse.parser.MonadPlus.return_" href="monad.html#monad_argparse.monad.Monad.return_">return_</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
 <dt id="monad_argparse.parser.Sat"><code class="flex name class">
 <span>class <span class="ident">Sat</span></span>
-<span>(</span><span>predicate: Callable[[List[str]], bool], description: str)</span>
+<span>(</span><span>predicate: Callable[[str], bool], description: str)</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; def f():
 ...     x1 = yield Argument(&quot;first&quot;)
 ...     x2 = yield Argument(&quot;second&quot;)
-...     yield Parser.return_(x1 + x2)
+...     yield Parser.return_(x1 &gt;&gt; x2)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;b&quot;)
 [('first', 'a'), ('second', 'b')]
@@ -1552,7 +1787,7 @@ def ok(parsed: List[A], remainder: List[str]):
 ...     xs2 = yield p2
 ...     x2 = yield Argument(&quot;second&quot;)
 ...     xs3 = yield p2
-...     yield Parser.return_(xs1 + x1 + xs2 + x2 + xs3)
+...     yield Parser.return_(xs1 &gt;&gt; x1 &gt;&gt; xs2 &gt;&gt; x2 &gt;&gt; xs3)
 ...
 &gt;&gt;&gt; Parser.do(f).parse_args(&quot;a&quot;, &quot;--verbose&quot;, &quot;b&quot;, &quot;--quiet&quot;)
 [('first', 'a'), ('verbose', True), ('second', 'b'), ('quiet', True)]
@@ -1561,17 +1796,19 @@ def ok(parsed: List[A], remainder: List[str]):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Sat(Parser, Generic[A]):
-    def __init__(self, predicate: Callable[[List[str]], bool], description: str):
-        def g() -&gt; Generator[Parser, List[str], None]:
-            cs = [c] = yield Item(description)
-            if predicate(cs):
-                yield self.return_(cs)
+<pre><code class="python">class Sat(Parser[List[KeyValue[str]]]):
+    def __init__(self, predicate: Callable[[str], bool], description: str):
+        def g() -&gt; Generator[Parser, Parsed[List[KeyValue[str]]], None]:
+            # noinspection PyTypeChecker
+            parsed = yield Item(description)
+            [kv] = parsed.get
+            if predicate(kv.value):
+                yield self.return_(parsed)
             else:
-                yield self.zero(ArgumentError(token=c, description=description))
+                yield self.zero(ArgumentError(token=kv.key, description=description))
 
-        def f(cs: List[str]) -&gt; Result:
-            return Parser.do(g).parse(cs)
+        def f(cs: List[str]) -&gt; Result[NonemptyList[Parse[List[KeyValue[str]]]]]:
+            return Parser[List[KeyValue[str]]].do(g).parse(cs)
 
         super().__init__(f)</code></pre>
 </details>
@@ -1634,6 +1871,9 @@ def ok(parsed: List[A], remainder: List[str]):
 <h4><code><a title="monad_argparse.parser.DoParser" href="#monad_argparse.parser.DoParser">DoParser</a></code></h4>
 </li>
 <li>
+<h4><code><a title="monad_argparse.parser.Empty" href="#monad_argparse.parser.Empty">Empty</a></code></h4>
+</li>
+<li>
 <h4><code><a title="monad_argparse.parser.Eq" href="#monad_argparse.parser.Eq">Eq</a></code></h4>
 </li>
 <li>
@@ -1668,22 +1908,29 @@ def ok(parsed: List[A], remainder: List[str]):
 <li>
 <h4><code><a title="monad_argparse.parser.Ok" href="#monad_argparse.parser.Ok">Ok</a></code></h4>
 <ul class="">
-<li><code><a title="monad_argparse.parser.Ok.parsed" href="#monad_argparse.parser.Ok.parsed">parsed</a></code></li>
-<li><code><a title="monad_argparse.parser.Ok.remainder" href="#monad_argparse.parser.Ok.remainder">remainder</a></code></li>
+<li><code><a title="monad_argparse.parser.Ok.get" href="#monad_argparse.parser.Ok.get">get</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="monad_argparse.parser.Option" href="#monad_argparse.parser.Option">Option</a></code></h4>
 </li>
 <li>
-<h4><code><a title="monad_argparse.parser.P" href="#monad_argparse.parser.P">P</a></code></h4>
+<h4><code><a title="monad_argparse.parser.Parse" href="#monad_argparse.parser.Parse">Parse</a></code></h4>
 <ul class="">
-<li><code><a title="monad_argparse.parser.P.return_" href="#monad_argparse.parser.P.return_">return_</a></code></li>
+<li><code><a title="monad_argparse.parser.Parse.parsed" href="#monad_argparse.parser.Parse.parsed">parsed</a></code></li>
+<li><code><a title="monad_argparse.parser.Parse.unparsed" href="#monad_argparse.parser.Parse.unparsed">unparsed</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="monad_argparse.parser.Parsed" href="#monad_argparse.parser.Parsed">Parsed</a></code></h4>
+<ul class="">
+<li><code><a title="monad_argparse.parser.Parsed.get" href="#monad_argparse.parser.Parsed.get">get</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="monad_argparse.parser.Parser.do" href="#monad_argparse.parser.Parser.do">do</a></code></li>
 <li><code><a title="monad_argparse.parser.Parser.many" href="#monad_argparse.parser.Parser.many">many</a></code></li>
 <li><code><a title="monad_argparse.parser.Parser.many1" href="#monad_argparse.parser.Parser.many1">many1</a></code></li>
 <li><code><a title="monad_argparse.parser.Parser.parse" href="#monad_argparse.parser.Parser.parse">parse</a></code></li>
@@ -1695,9 +1942,7 @@ def ok(parsed: List[A], remainder: List[str]):
 <h4><code><a title="monad_argparse.parser.Result" href="#monad_argparse.parser.Result">Result</a></code></h4>
 <ul class="">
 <li><code><a title="monad_argparse.parser.Result.get" href="#monad_argparse.parser.Result.get">get</a></code></li>
-<li><code><a title="monad_argparse.parser.Result.is_error" href="#monad_argparse.parser.Result.is_error">is_error</a></code></li>
-<li><code><a title="monad_argparse.parser.Result.is_ok" href="#monad_argparse.parser.Result.is_ok">is_ok</a></code></li>
-<li><code><a title="monad_argparse.parser.Result.ok" href="#monad_argparse.parser.Result.ok">ok</a></code></li>
+<li><code><a title="monad_argparse.parser.Result.zero" href="#monad_argparse.parser.Result.zero">zero</a></code></li>
 </ul>
 </li>
 <li>
