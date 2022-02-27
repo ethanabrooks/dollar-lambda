@@ -18,24 +18,10 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
     def __init__(self, f: Callable[[Sequence[str]], Result[NonemptyList[Parse[A]]]]):
         self.f = f
 
-    def __add__(
+    def __or__(
         self: "Parser[B]",
         other: "Parser[C]",
     ) -> "Parser[Union[B, C]]":
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Union[B, C]]]]:
-            r1: Result[NonemptyList[Parse[B]]] = self.parse(cs)
-            r2: Result[NonemptyList[Parse[C]]] = other.parse(cs)
-            choices: Result[
-                Union[NonemptyList[Parse[B]], NonemptyList[Parse[C]]]
-            ] = r1.__add__(r2)
-            if isinstance(choices.get, Ok):
-                return Result(Ok(NonemptyList(choices.get.get.head)))
-            else:
-                return r2
-
-        return Parser(f)
-
-    def __or__(self, p: "Parser[B]") -> "Parser[Union[A, B]]":
         """
         >>> p = Flag("verbose") | Option("option")
         >>> p.parse_args("--verbose")
@@ -48,8 +34,16 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         [('option', 'x')]
         """
 
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Union[A, B]]]]:
-            return (self + p).parse(cs)
+        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Union[B, C]]]]:
+            r1: Result[NonemptyList[Parse[B]]] = self.parse(cs)
+            r2: Result[NonemptyList[Parse[C]]] = other.parse(cs)
+            choices: Result[
+                Union[NonemptyList[Parse[B]], NonemptyList[Parse[C]]]
+            ] = r1.__or__(r2)
+            if isinstance(choices.get, Ok):
+                return Result(Ok(NonemptyList(choices.get.get.head)))
+            else:
+                return r2
 
         return Parser(f)
 

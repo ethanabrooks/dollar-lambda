@@ -24,12 +24,12 @@ D = TypeVar("D")
 class Result(MonadPlus[B, "Result[B]"]):
     get: Union[Ok[B], Exception]
 
-    def __add__(self, other: "Result[C]") -> "Result[Union[B, C]]":
+    def __or__(self, other: "Result[C]") -> "Result[Union[B, C]]":
         if isinstance(self.get, Ok):
             return self
         if isinstance(other.get, Ok):
             return other
-        return Result(RuntimeError("__add__"))
+        return Result(RuntimeError("__or__"))
 
     def __ge__(self, other: Callable[[B], "Result"]) -> "Result":
         return Result.bind(self, other)

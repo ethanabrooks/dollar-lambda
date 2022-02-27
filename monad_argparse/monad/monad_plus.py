@@ -16,5 +16,5 @@ class MonadZero(Monad[A, MA]):
 
 class MonadPlus(MonadZero[A, MA]):
     @abc.abstractmethod
-    def __add__(self, other: MA) -> MA:
+    def __or__(self, other: MA) -> MA:
         raise NotImplementedError
