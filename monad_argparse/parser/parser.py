@@ -157,6 +157,11 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     @classmethod
     def return_(cls: "Type[Parser[A]]", a: Parsed[A]) -> "Parser[A]":
+        """
+        >>> Parser.return_(Parsed([KeyValue("some-key", "some-value")])).parse_args()
+        [('some-key', 'some-value')]
+        """
+
         def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[A]]]:
             return Result(Ok(NonemptyList(Parse(a, cs))))
 
@@ -164,6 +169,14 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     @classmethod
     def zero(cls, error: Optional[Exception] = None) -> "Parser[A]":
+        """
+        >>> Parser.zero().parse_args()
+        RuntimeError('zero')
+        >>> Parser.zero().parse_args("a")
+        RuntimeError('zero')
+        >>> Parser.zero(error=RuntimeError("This is a test.")).parse_args("a")
+        RuntimeError('This is a test.')
+        """
         if error is None:
             error = RuntimeError("zero")
         result: Result[NonemptyList[Parse[A]]] = Result(error)
@@ -349,7 +362,7 @@ class Flag(DoParser[bool]):
         dest: Optional[str] = None,
         value: bool = True,
     ):
-        assert short or long
+        assert short or long, "Either short or long must be specified."
 
         def g() -> Generator[Parser, Parsed, None]:
             description = f"{' or '.join(list(flags(short, long)))}"
