@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from functools import lru_cache
+from functools import lru_cache, reduce
 from typing import Callable, Generator, Optional, Sequence, Type, TypeVar, Union
 
 from monad_argparse.monad.monad_plus import MonadPlus
@@ -106,6 +106,10 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
         return Parser(g)
 
+    @classmethod
+    def empty(cls: "Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
+        return cls.return_(Parsed([]))
+
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
         >>> p = Argument("as-many-as-you-like").many()
@@ -124,7 +128,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         >>> p.parse_args("--verbose", "--quiet", "--quiet")
         [('verbose', True), ('quiet', True), ('quiet', True)]
         """
-        return self.many1() | Parser[Sequence[B]].return_(Parsed([]))
+        return self.many1() | Parser[Sequence[B]].empty()
 
     def many1(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         def g() -> Generator["Parser[Sequence[B]]", Parsed[Sequence[B]], None]:
@@ -139,6 +143,39 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
             return Parser.do(g).parse(list(cs))
 
         return Parser(lambda cs: f(tuple(cs)))
+
+    @classmethod
+    def nonpositional(cls, *parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
+        """
+        >>> p = Parser.nonpositional(Flag("verbose"), Flag("debug"))
+        >>> p.parse_args("--verbose", "--debug")
+        [('verbose', True), ('debug', True)]
+        >>> p.parse_args("--debug", "--verbose")
+        [('debug', True), ('verbose', True)]
+        >>> p.parse_args()
+        ArgumentError(token=None, description='Missing: --debug')
+        >>> p.parse_args("--debug")
+        ArgumentError(token=None, description='Missing: --verbose')
+        >>> p.parse_args("--verbose")
+        ArgumentError(token='--debug', description='--debug')
+        >>> p = Parser.nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
+        >>> p.parse_args("--debug", "hello", "--verbose")
+        [('debug', True), ('a', 'hello'), ('verbose', True)]
+        """
+        if not parsers:
+            return Parser[Sequence[B]].empty()
+
+        def get_alternatives():
+            for i, head in enumerate(parsers):
+                tail = [p for j, p in enumerate(parsers) if j != i]
+                yield head >> cls.nonpositional(*tail)
+
+        def _or(
+            p1: Parser[Sequence[B]], p2: Parser[Sequence[B]]
+        ) -> Parser[Sequence[B]]:
+            return p1 | p2
+
+        return reduce(_or, get_alternatives())
 
     def parse(self, cs: Sequence[str]) -> Result[NonemptyList[Parse[A]]]:
         return self.f(cs)
