@@ -2,15 +2,27 @@ import abc
 import typing
 from abc import ABC
 from functools import partial
-from typing import Any, Callable, Generator, Generic, Optional, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
-from monad_argparse.stateless_iterator import StatelessIterator
+from monad_argparse.monad.stateless_iterator import StatelessIterator
 
 A = TypeVar("A")
 B = TypeVar("B", covariant=True)
-MA = TypeVar("MA", contravariant=True)
-MB = TypeVar("MB", covariant=True)
-C = TypeVar("C", bound="M")
+MSub = TypeVar("MSub", bound="M")
+
+
+MA = TypeVar("MA")
+MB = TypeVar("MB")
 
 
 class M(ABC, Generic[A]):
@@ -21,24 +33,22 @@ class M(ABC, Generic[A]):
     def __ge__(self, f: Callable[[A], Any]):
         raise NotImplementedError
 
-    def __eq__(self, other):
-        return self.a == other
+    def __eq__(self, other) -> bool:  # type: ignore[override]
+        if isinstance(other, M):
+            return self.a == other.a
+        return False
 
     def __repr__(self) -> str:
         return f"M {self.unwrap(self)}"
 
     @classmethod
-    def return_(cls, a: A):
-        raise NotImplementedError
-
-    @classmethod
-    def unwrap(cls: typing.Type[C], x: Union[C, A]) -> A:
+    def unwrap(cls: typing.Type[MSub], x: Union[MSub, A]) -> A:
         if isinstance(x, M):
             return cls.unwrap(x.a)
         return cast(A, x)
 
 
-class Monad(Generic[A, MA, MB]):
+class Monad(Generic[A, MA]):
     """
     Monad laws:
     ```haskell
@@ -59,8 +69,10 @@ class Monad(Generic[A, MA, MB]):
         raise NotImplementedError
 
     @classmethod
-    def do(cls, generator: Callable[[], Generator[MA, A, None]]):
-        def f(a: Optional[A], it: StatelessIterator[MA, A]) -> MB:
+    def do(
+        cls: "Type[Monad[A, MA]]", generator: Callable[[], Generator[MA, A, None]]
+    ) -> MA:
+        def f(a: Optional[A], it: StatelessIterator[MA, A]) -> MA:
             try:
                 ma: MA
                 it2: StatelessIterator[MA, A]
@@ -78,16 +90,10 @@ class Monad(Generic[A, MA, MB]):
 
     @classmethod
     @abc.abstractmethod
-    def return_(cls, a: A) -> MB:
+    def return_(cls, a: A) -> MA:
         """
         ```haskell
         return :: a -> m a
         ```
         """
         raise NotImplementedError
-
-
-class BaseMonad(Monad[A, MA, Union[A, MB]], ABC):
-    @classmethod
-    def return_(cls, a: A) -> Union[A, MB]:
-        return a

@@ -1,9 +1,10 @@
 from dataclasses import dataclass, replace
 from typing import Generator, Generic, Optional, TypeVar
 
-from monad_argparse.option import Option as OptionMonad
+from monad_argparse.monad.option import Option as OptionMonad
 
-A = TypeVar("A", contravariant=True)
+A = TypeVar("A", covariant=True)
+B = TypeVar("B", contravariant=True)
 
 
 @dataclass
@@ -27,14 +28,14 @@ class NonemptyList(Generic[A]):
         return repr(list(self))
 
     @staticmethod
-    def make(*xs: A) -> Optional["NonemptyList[A]"]:
+    def make(*xs: B) -> Optional["NonemptyList[B]"]:
         if xs:
             head, *maybe_tail = xs
             if not maybe_tail:
                 return NonemptyList(head)
 
             def options() -> Generator[
-                Optional[NonemptyList[A]], NonemptyList[A], None
+                Optional[NonemptyList[B]], NonemptyList[B], None
             ]:
                 tail = yield NonemptyList.make(*maybe_tail)
                 yield NonemptyList(head, tail)

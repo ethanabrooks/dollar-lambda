@@ -1,18 +1,18 @@
-from typing import Callable, Generic, Optional
+from typing import Callable, Optional
 
-from monad_argparse.monad import A, B, BaseMonad, M
+from monad_argparse.monad.monad import A, B, M, Monad
 
 
-class O(M, Generic[A]):
+class O(M[Optional[A]]):
     def __ge__(self, f: Callable[[A], Optional[A]]):
-        return Option.bind(self.a, f)
+        return O(Option.bind(self.a, f))
 
     @classmethod
     def return_(cls, a: A) -> "O[Optional[A]]":
         return O(Option.return_(a))
 
 
-class Option(BaseMonad[A, Optional[A], Optional[B]]):
+class Option(Monad[A, Optional[A]]):
     """
     >>> def options():
     ...     x = yield 1
@@ -39,3 +39,7 @@ class Option(BaseMonad[A, Optional[A], Optional[B]]):
         if x is None:
             return None
         return f(x)
+
+    @classmethod
+    def return_(cls, a: A) -> Optional[A]:
+        return a

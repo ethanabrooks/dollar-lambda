@@ -1,18 +1,18 @@
-from typing import Callable, Generic, Union
+from typing import Callable, Union
 
-from monad_argparse.monad import A, BaseMonad, M
+from monad_argparse.monad.monad import A, M, Monad
 
 
-class R(M, Generic[A]):
+class R(M[Union[Exception, A]]):
     def __ge__(self, f: Callable[[A], Union[Exception, A]]):  # type: ignore[override]
-        return Result.bind(self.a, f)
+        return R(Result.bind(self.a, f))
 
-    @classmethod
-    def return_(cls, a: A) -> "R[Union[A, Exception]]":
-        return R(Result.return_(a))
+    @staticmethod
+    def return_(a: A) -> "R[Union[Exception, A]]":
+        return R(a)
 
 
-class Result(BaseMonad[A, Union[A, Exception], Union[A, Exception]]):
+class Result(Monad[A, Union[A, Exception]]):
     """
     >>> def results():
     ...     x = yield 1
@@ -40,3 +40,7 @@ class Result(BaseMonad[A, Union[A, Exception], Union[A, Exception]]):
             return x
         y = f(x)  # type: ignore[arg-type]
         return y
+
+    @classmethod
+    def return_(cls, a: A) -> Union[A, Exception]:
+        return a

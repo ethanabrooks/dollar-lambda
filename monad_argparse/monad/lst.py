@@ -1,19 +1,22 @@
 import typing
-from typing import Callable, Generator, Union
+from typing import Callable, Generator
 
-from monad_argparse.monad import A, B, BaseMonad, M
+from monad_argparse.monad.monad import A, B, M, Monad
 
 
-class L(M, typing.Generic[A]):
+class L(M[typing.List[A]]):
     def __ge__(self, f: Callable[[A], typing.List[A]]):  # type: ignore[override]
-        return List.bind(self.a, f)
+        return L(List.bind(self.a, f))
+
+    def __iter__(self):
+        yield from self.a
 
     @classmethod
     def return_(cls, a: A) -> "L[typing.List[A]]":
         return L(List.return_(a))
 
 
-class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
+class List(Monad[A, typing.List[A]]):
     """
     >>> def lists():
     ...     x = yield []
@@ -50,5 +53,5 @@ class List(BaseMonad[A, typing.List[A], Union[typing.List[A], typing.List[B]]]):
         return list(g())
 
     @classmethod
-    def return_(cls, a: A) -> Union[typing.List[A], typing.List[B]]:
+    def return_(cls, a: A) -> typing.List[A]:
         return [a]

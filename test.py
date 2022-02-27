@@ -3,11 +3,12 @@ import doctest
 import unittest
 from abc import ABC, abstractmethod
 
-from monad_argparse import io, lst, monad, option, parser, result
-from monad_argparse.io import I
-from monad_argparse.lst import L
-from monad_argparse.option import O
-from monad_argparse.result import R
+from monad_argparse.monad import io, lst, monad, option, result
+from monad_argparse.monad.io import I
+from monad_argparse.monad.lst import L
+from monad_argparse.monad.option import O
+from monad_argparse.monad.result import R
+from monad_argparse.parser import parser
 
 
 def load_tests(_, tests, __):
@@ -56,7 +57,7 @@ class MonadLawTester(ABC):
 
     def test_law1(self):
         for a in self.unwrapped_values():
-            self.assertEqual(self.return_(a) >= self.f1, self.f1(a))
+            self.assertEqual(self.return_(a) >= self.f1, self.m(self.f1(a)))
 
     def test_law2(self):
         for p in self.wrapped_values():
@@ -68,7 +69,7 @@ class MonadLawTester(ABC):
 
             p = self.m(p)
             x1 = p >= (lambda a: self.f1(a) >= self.f2)
-            x2 = self.m(p >= self.f1) >= self.f2
+            x2 = (p >= self.f1) >= self.f2
             self.assertEqual(x1, x2)
 
     @staticmethod
@@ -123,13 +124,23 @@ class TestList(MonadLawTester, unittest.TestCase):
     def assertEqual(self, a, b):
         return unittest.TestCase.assertEqual(self, a, b)
 
+    def f1(self, x):
+        unwrapped = self.unwrap(x)
+        assert isinstance(unwrapped, int)
+        return L([unwrapped + 1])
+
+    def f2(self, x):
+        unwrapped = self.unwrap(x)
+        assert isinstance(unwrapped, int)
+        return L([unwrapped * 2])
+
     @staticmethod
     def m(a):
-        return R(a)
+        return L(a)
 
     @staticmethod
     def return_(a):
-        return R.return_(a)
+        return L.return_(a)
 
     @staticmethod
     def unwrap(x):
@@ -145,12 +156,12 @@ class TestIO(MonadLawTester, unittest.TestCase):
         return unittest.TestCase.assertEqual(self, a, b)
 
     def f1(self, x):
-        unwrapped = self.unwrap(x)
-        return self.m(lambda: unwrapped + 1)
+        assert isinstance(x, int)
+        return self.m(lambda: x + 1)
 
     def f2(self, x):
-        unwrapped = self.unwrap(x)
-        return self.m(lambda: unwrapped * 2)
+        assert isinstance(x, int)
+        return self.m(lambda: x * 2)
 
     @staticmethod
     def m(a):
@@ -170,4 +181,5 @@ class TestIO(MonadLawTester, unittest.TestCase):
 
 
 if __name__ == "__main__":
+    TestIO().test_law1()
     unittest.main()
