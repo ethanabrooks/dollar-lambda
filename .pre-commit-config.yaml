@@ -14,7 +14,8 @@ repos:
     hooks:
       - id: test
         name: test
-        entry: ./test.sh
+        entry: /usr/bin/make
+        args: [test]
         language: script
   - repo: https://github.com/pycqa/flake8
     rev: 4.0.1
