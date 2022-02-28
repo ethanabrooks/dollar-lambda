@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Generic, Type, TypeVar, Union, cast
 
 from monad_argparse.monad.monad_plus import MonadPlus
-from monad_argparse.parser.parser import ArgumentError
+from monad_argparse.parser.error import ArgumentError
 
 A = TypeVar("A", covariant=True)
 
