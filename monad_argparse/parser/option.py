@@ -14,6 +14,8 @@ class Option(DoParser[str]):
     [('value', 'x')]
     >>> Option("value").parse_args("--value")
     ArgumentError(token=None, description='Missing: argument for --value')
+    >>> Option("value").parse_args()
+    ArgumentError(token=None, description='Missing: --value')
     """
 
     def __init__(
