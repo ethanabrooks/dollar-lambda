@@ -12,6 +12,7 @@
 #     language: python
 #     name: python3
 # ---
+# type: ignore[import]
 
 # %% [markdown]
 # # Monad Argparse
@@ -88,8 +89,11 @@ p.parse_args("--quiet", "--quiet", "--quiet")
 # %% [markdown]
 # Combine sequences and sums
 
+from typing import Sequence, Union
+
 # %% pycharm={"name": "#%%\n"}
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
+p2 = Argument("a")
 p = p1 >> Argument("a")
 p.parse_args("--verbose", "value")
 
