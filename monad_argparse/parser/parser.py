@@ -221,33 +221,6 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return Parser(lambda cs: result)
 
 
-class Check(Parser[Sequence[A]]):
-    """
-    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args("c")
-    []
-    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args()
-    []
-    >>> Check(lambda c: c.startswith('c'), "Does not start with c").parse_args("d")
-    ArgumentError(token='d', description='Does not start with c: d')
-    """
-
-    def __init__(self, predicate: Callable[[str], bool], description: str):
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Sequence[A]]]]:
-            if cs:
-                c, *_ = cs
-                if predicate(c):
-                    return Result(
-                        Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs)))
-                    )
-                else:
-                    return Result(
-                        ArgumentError(token=c, description=f"{description}: {c}")
-                    )
-            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
-
-        super().__init__(f)
-
-
 class Empty(Parser[Sequence[A]]):
     """
     >>> Empty().parse_args()
@@ -274,14 +247,6 @@ class Empty(Parser[Sequence[A]]):
             return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
 
         super().__init__(f)
-
-
-A = TypeVar("A", covariant=True)  # type: ignore[misc]
-
-
-class ArgParser(Parser[Sequence[KeyValue[A]]]):
-
-    pass
 
 
 D = TypeVar("D", covariant=True)
