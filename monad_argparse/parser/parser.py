@@ -1,6 +1,7 @@
-from dataclasses import asdict
+import typing
+from dataclasses import asdict, replace
 from functools import lru_cache, reduce
-from typing import Callable, Generator, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Generator, Generic, Optional, Sequence, TypeVar, Union
 
 from monad_argparse.monad.monad_plus import MonadPlus
 from monad_argparse.monad.nonempty_list import NonemptyList
@@ -107,7 +108,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return Parser(g)
 
     @classmethod
-    def empty(cls: "Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
+    def empty(cls: "typing.Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
         return cls.return_(Parsed([]))
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
@@ -193,7 +194,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
     @classmethod
-    def return_(cls: "Type[Parser[A]]", a: Parsed[A]) -> "Parser[A]":
+    def return_(cls: "typing.Type[Parser[A]]", a: Parsed[A]) -> "Parser[A]":
         """
         >>> Parser.return_(Parsed([KeyValue("some-key", "some-value")])).parse_args()
         [('some-key', 'some-value')]
@@ -283,31 +284,63 @@ class ArgParser(Parser[Sequence[KeyValue[A]]]):
     pass
 
 
-# D = TypeVar("D")
-# E = TypeVar("E")
+D = TypeVar("D", covariant=True)
+E = TypeVar("E", covariant=True)
 
 
-# class Apply(Parser[Sequence[KeyValue[str]]], Generic[D]):
-#     def __init__(
-#         self,
-#         f: Callable[[Sequence[D]], E],
-#         parser: Parser[D],
-#     ):
-#         def g() -> Generator[
-#             Parser[D],
-#             Parsed[Sequence[KeyValue[str]]],
-#             None,
-#         ]:
-#             # noinspection PyTypeChecker
-#             parsed = yield parser
-#             yield self.return_(f(parsed))
+class Apply(Parser[E], Generic[D, E]):
+    def __init__(
+        self,
+        f: Callable[[D], Result[E]],
+        parser: Parser[D],
+    ):
+        def h() -> Generator[
+            Parser[Union[D, E]],
+            Parsed[D],
+            None,
+        ]:
+            # noinspection PyTypeChecker
+            parsed: Parsed[D] = yield parser
+            y = f(parsed.get)
+            if isinstance(y.get, Exception):
+                yield self.zero(y.get)
+            elif isinstance(y.get, Ok):
+                yield Parser[E].return_(Parsed(y.get.get))
 
-#         def g(
-#             cs: Sequence[str],
-#         ) -> Result[NonemptyList[Parse[Sequence[KeyValue[str]]]]]:
-#             return Parser[Sequence[KeyValue[str]]].do(h).parse(cs)
+        def g(
+            cs: Sequence[str],
+        ) -> Result[NonemptyList[Parse[E]]]:
+            do = Parser[E].do(h)  # type: ignore[arg-type]
+            # The suppression of the type-checker is unfortunately unavoidable here because our definition of `do` requires
+            # the type to remain the same throughout the do block as a consequence of the way that python types generators.
+            return do.parse(cs)
 
-#         super().__init__(g)
+        super().__init__(g)
+
+
+class Type(Apply[Sequence[KeyValue[str]], Sequence[KeyValue[Any]]]):
+    """
+    >>> Type(int, Argument("arg")).parse_args("1")
+    [('arg', 1)]
+    >>> Type(int, Argument("arg")).parse_args("one")
+    ValueError("invalid literal for int() with base 10: 'one'")
+    """
+
+    def __init__(
+        self, f: Callable[[str], Any], parser: Parser[Sequence[KeyValue[str]]]
+    ):
+        def g(
+            kvs: Sequence[KeyValue[str]],
+        ) -> Result[Sequence[KeyValue[Any]]]:
+            head, *tail = kvs
+            try:
+                head = replace(head, value=f(head.value))
+            except Exception as e:
+                return Result(e)
+
+            return Result(Ok([*tail, head]))
+
+        super().__init__(g, parser)
 
 
 class Item(Parser[Sequence[KeyValue[str]]]):
@@ -329,30 +362,20 @@ class Item(Parser[Sequence[KeyValue[str]]]):
         super().__init__(f)
 
 
-F = TypeVar("F", covariant=True)
+F = TypeVar("F")
 
 
-class Sat(Parser[F]):
+class Sat(Apply[F, F]):
     def __init__(
         self,
         parser: Parser[F],
         predicate: Callable[[F], bool],
         on_fail: Callable[[F], ArgumentError],
     ):
-        def g() -> Generator[Parser[F], Parsed[F], None]:
-            # noinspection PyTypeChecker
-            parsed = yield parser
-            if predicate(parsed.get):
-                yield self.return_(parsed)
-            else:
-                yield self.zero(on_fail(parsed.get))
+        def f(x: F) -> Result[F]:
+            return Result(Ok(x) if predicate(x) else on_fail(x))
 
-        def f(
-            cs: Sequence[str],
-        ) -> Result[NonemptyList[Parse[F]]]:
-            return Parser[F].do(g).parse(cs)
-
-        super().__init__(f)
+        super().__init__(f, parser)
 
 
 class SatItem(Sat[Sequence[KeyValue[str]]]):
@@ -371,15 +394,6 @@ class SatItem(Sat[Sequence[KeyValue[str]]]):
             return on_fail(kv.value)
 
         super().__init__(Item(description), _predicate, _on_fail)
-
-
-class Eq(SatItem):
-    def __init__(self, s):
-        super().__init__(
-            lambda s1: s == s1,
-            on_fail=lambda s1: ArgumentError(s1, f"{s1} != {s}"),
-            description=s,
-        )
 
 
 class DoParser(Parser[Sequence[KeyValue[A]]]):
