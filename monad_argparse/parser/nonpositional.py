@@ -44,16 +44,16 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
 
 @dataclass
 class Args:
-    """
-    >>> @dataclass
-    ... class MyArgs(Args):
-    ...     t: bool = True
-    ...     f: bool = False
-    ...     i: int = 1
-    ...     s: str = "a"
-    >>> MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")
-    [('t', True), ('f', False), ('i', 2), ('s', 'b')]
-    """
+    # """
+    # >>> @dataclass
+    # ... class MyArgs(Args):
+    # ...     t: bool = True
+    # ...     f: bool = False
+    # ...     i: int = 1
+    # ...     s: str = "a"
+    # >>> MyArgs().parse_args("-t", "-f", "-i", "2", "-s", "b")
+    # [('t', True), ('f', True), ('i', 2), ('s', 'b')]
+    # """
 
     @property
     def parser(self) -> Parser:
@@ -64,28 +64,26 @@ class Args:
                     assert isinstance(
                         field.default, bool
                     ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    if field.default is False:
-                        if len(field.name) == 1:
-                            short = field.name
-                            long = None
-                        else:
-                            short = None
-                            long = field.name
-                    else:
-                        short = None
-                        long = f"no-{field.name}"
-                    yield Flag(
-                        long=long, short=short, dest=field.name, value=field.default
-                    )
+                    # if field.default is False:
+                    #     if len(field.name) == 1:
+                    #         short = field.name
+                    #         long = None
+                    #     else:
+                    #         short = None
+                    #         long = field.name
+                    # else:
+                    short = None
+                    long = f"no-{field.name}"
+                    yield Flag(long=long, short=short, dest=field.name)
                 else:
 
-                    if len(field.name) == 1:
-                        short = field.name
-                        long = None
-                    else:
-                        short = None
-                        long = field.name
-                    option = Option(short=short, long=long)
+                    # if len(field.name) == 1:
+                    #     short = field.name
+                    #     long = None
+                    # else:
+                    #     short = None
+                    #     long = field.name
+                    option = Option(short=None, long=field.name)
                     try:
                         t = field.metadata["type"]
                     except (TypeError, KeyError):

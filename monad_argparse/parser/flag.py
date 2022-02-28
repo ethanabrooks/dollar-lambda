@@ -1,10 +1,11 @@
-from typing import Generator, Optional
+from typing import Optional, Sequence
 
-from monad_argparse.parser.do_parser import DoParser
+from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.key_value import KeyValue
-from monad_argparse.parser.parse import Parsed
+from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import Parser
+from monad_argparse.parser.result import Result
 from monad_argparse.parser.sat import SatItem
 
 
@@ -41,7 +42,7 @@ class MatchesFlag(SatItem):
         )
 
 
-class Flag(DoParser[bool]):
+class Flag(Parser[Sequence[KeyValue[bool]]]):
     """
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
@@ -53,16 +54,21 @@ class Flag(DoParser[bool]):
 
     def __init__(
         self,
-        long: Optional[str] = None,
+        long: str,
         short: Optional[str] = None,
         dest: Optional[str] = None,
-        value: bool = True,
     ):
-        def g() -> Generator[Parser, Parsed, None]:
-            yield MatchesFlag(long=long, short=short)
 
-            key = dest or long or short
-            assert key is not None, "Either dest or long or short must be specified."
-            yield self.return_(Parsed([KeyValue(key, value)]))
+        if len(long) == 1 and short is None:
+            short = long
+        key: str = long if dest is None else dest
 
-        super().__init__(g)
+        def f(
+            cs: Sequence[str],
+        ) -> Result[NonemptyList[Parse[Sequence[KeyValue[bool]]]]]:
+            parser = MatchesFlag(long=long, short=short) >= (
+                lambda _: self.return_(Parsed([KeyValue(key, True)]))
+            )
+            return parser.parse(cs)
+
+        super().__init__(f)

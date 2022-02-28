@@ -18,6 +18,9 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
     def __init__(self, f: Callable[[Sequence[str]], Result[NonemptyList[Parse[A]]]]):
         self.f = f
 
+    def __ge__(self: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":
+        return self.bind(self, f)
+
     def __or__(
         self: "Parser[B]",
         other: "Parser[C]",
@@ -85,25 +88,25 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return Parser.do(g)
 
     @staticmethod
-    def bind(x: "Parser[A]", f: Callable[[Parsed[A]], "Parser[A]"]) -> "Parser[A]":  # type: ignore[override]
-        def apply_parser(parse: Parse[A]) -> Result[NonemptyList[Parse[A]]]:
+    def bind(x: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
+        def apply_parser(parse: Parse[A]) -> Result[NonemptyList[Parse[B]]]:
             return f(parse.parsed).parse(parse.unparsed)
 
         def get_successful(
             parses: NonemptyList[Parse[A]],
-        ) -> Generator[Parse[A], None, None]:
+        ) -> Generator[Parse[B], None, None]:
             for parse in parses:
-                result: Result[NonemptyList[Parse[A]]] = apply_parser(parse)
+                result: Result[NonemptyList[Parse[B]]] = apply_parser(parse)
                 if isinstance(result.get, Ok):  # Exclude failed parses
                     yield from result.get.get
 
-        def h(parses: NonemptyList[Parse[A]]) -> Result[NonemptyList[Parse[A]]]:
+        def h(parses: NonemptyList[Parse[A]]) -> Result[NonemptyList[Parse[B]]]:
             successful_parses = NonemptyList.make(*get_successful(parses))
             if successful_parses:
                 return Result(Ok(successful_parses))
             return apply_parser(parses.head)
 
-        def g(cs: Sequence[str]) -> Result[NonemptyList[Parse[A]]]:
+        def g(cs: Sequence[str]) -> Result[NonemptyList[Parse[B]]]:
             return x.parse(cs) >= h
 
         return Parser(g)

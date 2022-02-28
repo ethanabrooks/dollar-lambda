@@ -1,6 +1,8 @@
 from typing import Callable, Generator, Generic, Sequence, TypeVar, Union
 
 from monad_argparse.monad.nonempty_list import NonemptyList
+from monad_argparse.parser.item import Item
+from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Ok, Result
@@ -37,3 +39,20 @@ class Apply(Parser[E], Generic[D, E]):
             return do.parse(cs)
 
         super().__init__(g)
+
+
+class ApplyItem(Apply[Sequence[KeyValue[str]], E]):
+    def __init__(
+        self,
+        f: Callable[[str], E],
+        description: str,
+    ):
+        def g(parsed: Sequence[KeyValue[str]]) -> Result[E]:
+            [kv] = parsed
+            try:
+                y = f(kv.value)
+            except Exception as e:
+                return Result(e)
+            return Result(Ok(y))
+
+        super().__init__(g, Item(description))
