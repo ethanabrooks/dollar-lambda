@@ -41,9 +41,9 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Union[B, C]]]]:
             r1: Result[NonemptyList[Parse[B]]] = self.parse(cs)
             r2: Result[NonemptyList[Parse[C]]] = other.parse(cs)
-            choices: Result[
-                Union[NonemptyList[Parse[B]], NonemptyList[Parse[C]]]
-            ] = r1.__or__(r2)
+            choices: Result[Union[NonemptyList[Parse[B]], NonemptyList[Parse[C]]]] = (
+                r1 | r2
+            )
             if isinstance(choices.get, Ok):
                 return Result(Ok(NonemptyList(choices.get.get.head)))
             else:
@@ -72,20 +72,11 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         >>> p.parse_args("--verbose")
         ArgumentError(token=None, description='Missing: a')
         """
-
-        def g() -> Generator[
-            Parser[Sequence[Union[B, C]]],
-            Parsed[Sequence[Union[B, C]]],
-            None,
-        ]:
-            # noinspection PyTypeChecker
-            p1: Parsed[Sequence[Union[B, C]]] = yield self
-            # noinspection PyTypeChecker
-            p2: Parsed[Sequence[Union[B, C]]] = yield p
-            p3: Parsed[Sequence[Union[B, C]]] = p1 >> p2
-            yield Parser[Sequence[Union[B, C]]].return_(p3)
-
-        return Parser.do(g)
+        return self >= (
+            lambda p1: (
+                p >= (lambda p2: Parser[Sequence[Union[B, C]]].return_(p1 >> p2))
+            )
+        )
 
     @staticmethod
     def bind(x: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
