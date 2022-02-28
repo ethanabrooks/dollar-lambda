@@ -53,15 +53,16 @@ class Flag(DoParser[bool]):
 
     def __init__(
         self,
-        long: str,
+        long: Optional[str] = None,
         short: Optional[str] = None,
         dest: Optional[str] = None,
         value: bool = True,
     ):
-        assert short or long, "Either short or long must be specified."
-
         def g() -> Generator[Parser, Parsed, None]:
             yield MatchesFlag(long=long, short=short)
-            yield self.return_(Parsed([KeyValue((dest or long), value)]))
+
+            key = dest or long or short
+            assert key is not None, "Either dest or long or short must be specified."
+            yield self.return_(Parsed([KeyValue(key, value)]))
 
         super().__init__(g)

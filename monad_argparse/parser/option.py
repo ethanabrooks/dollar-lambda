@@ -20,7 +20,7 @@ class Option(DoParser[str]):
 
     def __init__(
         self,
-        long: str,
+        long: Optional[str] = None,
         short: Optional[str] = None,
         dest: Optional[str] = None,
     ):
@@ -28,7 +28,9 @@ class Option(DoParser[str]):
             yield MatchesFlag(long=long, short=short)
             parsed = yield Item(f"argument for {next(flags(short=short, long=long))}")
             [kv] = parsed.get
-            key = dest or long
+
+            key = dest or long or short
+            assert key is not None, "Either dest or long or short must be specified."
             yield self.return_(Parsed([KeyValue(key, kv.value)]))
 
         super().__init__(g)

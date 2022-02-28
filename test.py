@@ -8,7 +8,7 @@ from monad_argparse.monad.io import I
 from monad_argparse.monad.lst import L
 from monad_argparse.monad.option import O
 from monad_argparse.monad.result import R
-from monad_argparse.parser import apply, argument, do_parser, empty, flag
+from monad_argparse.parser import apply, argument, do_parser, empty, flag, nonpositional
 from monad_argparse.parser import option as parser_option
 from monad_argparse.parser import parser, sat, type_
 
@@ -29,6 +29,7 @@ def load_tests(_, tests, __):
         parser_option,
         sat,
         type_,
+        nonpositional,
     ]:
         tests.addTests(doctest.DocTestSuite(mod))
     return tests

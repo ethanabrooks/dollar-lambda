@@ -1,11 +1,11 @@
-# from dataclasses import Field, dataclass, fields
-# from email.generator import Generator
+from dataclasses import Field, dataclass, fields
 from functools import reduce
-from typing import Sequence, TypeVar
+from typing import Generator, Sequence, TypeVar, Union
 
-# from monad_argparse.parser.flag import Flag
-# from monad_argparse.parser.option import Option
+from monad_argparse.parser.flag import Flag
+from monad_argparse.parser.option import Option
 from monad_argparse.parser.parser import Parser
+from monad_argparse.parser.type_ import Type
 
 A = TypeVar("A")
 
@@ -42,22 +42,71 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     return reduce(_or, get_alternatives())
 
 
-# @dataclass
-# class Nonpositional(Parser[Sequence[A]]):
-#     def __post_init__(self):
-#         def get_parsers() -> Generator[Parser[Sequence[A]], None, None]:
-#             field: Field
-#             for field in fields(self):
-#                 if field.type == bool:
-#                     assert isinstance(
-#                         field.default, bool
-#                     ), f"If field.type == bool, field.default must be a bool, not {field.default}"
-#                     long = field.name if field.default == True else f"no-{field.name}"
-#                     yield Flag(long=long, dest=field.name, value=field.default)
-#                 else:
-#                     yield Option(field.name)
+@dataclass
+class Args:
+    """
+    >>> @dataclass
+    ... class MyArgs(Args):
+    ...     t: bool = True
+    ...     f: bool = False
+    ...     i: int = 1
+    ...     s: str = "a"
+    >>> MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")
+    [('t', True), ('f', False), ('i', 2), ('s', 'b')]
+    """
 
-#         def f(cs: Sequence[str]):
-#             parser = nonpositional(*self.parsers)
+    @property
+    def parser(self) -> Parser:
+        def get_parsers() -> Generator[Union[Flag, Type], None, None]:
+            field: Field
+            for field in fields(self):
+                if field.type == bool:
+                    assert isinstance(
+                        field.default, bool
+                    ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
+                    if field.default is False:
+                        if len(field.name) == 1:
+                            short = field.name
+                            long = None
+                        else:
+                            short = None
+                            long = field.name
+                    else:
+                        short = None
+                        long = f"no-{field.name}"
+                    yield Flag(
+                        long=long, short=short, dest=field.name, value=field.default
+                    )
+                else:
 
-#         super().__init__(f)
+                    if len(field.name) == 1:
+                        short = field.name
+                        long = None
+                    else:
+                        short = None
+                        long = field.name
+                    option = Option(short=short, long=long)
+                    try:
+                        t = field.metadata["type"]
+                    except (TypeError, KeyError):
+                        t = field.type
+
+                    yield Type(t, option)
+
+        return nonpositional(*get_parsers())
+
+    def parse_args(self, *args):
+        return self.parser.parse_args(*args)
+
+
+if __name__ == "__main__":
+
+    @dataclass
+    class MyArgs(Args):
+        t: bool = True
+        f: bool = False
+        i: int = 1
+        s: str = "a"
+
+    print(repr(MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")))
+    # print(repr(MyArgs().parse_args()))
