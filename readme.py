@@ -12,7 +12,6 @@
 #     language: python
 #     name: python3
 # ---
-# type: ignore[import]
 
 # %% [markdown]
 # # Monad Argparse
@@ -88,8 +87,8 @@ p.parse_args("--quiet", "--quiet", "--quiet")
 
 # %% [markdown]
 # Combine sequences and sums
-
-from typing import Sequence, Union
+#
+# from typing import Sequence, Union
 
 # %% pycharm={"name": "#%%\n"}
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
@@ -106,7 +105,7 @@ p = p2 >> Argument("a")
 p.parse_args("--verbose", "value")
 
 # %% [markdown]
-# `monad_argparse` of course defines a utility, `Parser.nonpositional` for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power of this approach to parsing.
+# `monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
 # First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 # %% pycharm={"name": "#%%\n"}
@@ -135,7 +134,7 @@ def nonpositional(*parsers):
             tail = [
                 p for j, p in enumerate(parsers) if j != i
             ]  # get the parsers not including `head`
-            yield head >> Parser.nonpositional(*tail)
+            yield head >> nonpositional(*tail)
 
     return reduce(
         lambda a, b: a | b, get_alternatives()
@@ -151,9 +150,8 @@ p = nonpositional(Flag("verbose"), Flag("debug"))
 p.parse_args("--verbose", "--debug")
 
 # %% pycharm={"name": "#%%\n"}
-p = nonpositional(Flag("verbose"), Flag("debug"))
 p.parse_args("--debug", "--verbose")
 
 # %% pycharm={"name": "#%%\n"}
-p = Parser.nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
+p = nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
 p.parse_args("--debug", "hello", "--verbose")
