@@ -1,15 +1,15 @@
 import typing
 from dataclasses import dataclass
-from typing import Generator, TypeVar, Union, overload
+from typing import Callable, Generator, TypeVar, Union, overload
 
-from monad_argparse.monad.monoid import Monoid
+from monad_argparse.monad.monoid import MonadPlus
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B")
 
 
 @dataclass
-class Sequence(Monoid[A, "Sequence[A]"], typing.Sequence[A]):
+class Sequence(MonadPlus[A, "Sequence[A]"], typing.Sequence[A]):
     get: typing.Sequence[A]
 
     @overload
@@ -33,6 +33,21 @@ class Sequence(Monoid[A, "Sequence[A]"], typing.Sequence[A]):
 
     def __or__(self, other: "Sequence[B]") -> "Sequence[Union[A, B]]":
         return Sequence([*self.get, *other.get])
+
+    @staticmethod
+    def bind(  # type: ignore[override]
+        x: "Sequence[A]",
+        f: Callable[[A], "Sequence[A]"],
+    ) -> "Sequence[A]":
+        def g() -> Generator[A, None, None]:
+            for a in x:
+                yield from f(a)
+
+        return Sequence(list(g()))
+
+    @staticmethod
+    def return_(a: B) -> "Sequence[B]":
+        return Sequence([a])
 
     @staticmethod
     def zero() -> "Sequence[A]":

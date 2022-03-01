@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Generator, Generic, Type, TypeVar, Union
 
-from monad_argparse.monad.monoid import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
@@ -26,8 +26,8 @@ class Parsed(Generic[A]):
         return Parsed(Sequence(list(g())))
 
 
-D = TypeVar("D", covariant=True)
-E = TypeVar("E")
+D = TypeVar("D", covariant=True, bound=Monoid)
+E = TypeVar("E", bound=Monoid)
 
 
 @dataclass

@@ -3,15 +3,15 @@ from dataclasses import asdict
 from functools import lru_cache
 from typing import Callable, Generator, Optional, TypeVar, Union
 
-from monad_argparse.monad.monoid import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
-A = TypeVar("A", covariant=True)
-B = TypeVar("B")
-C = TypeVar("C")
+A = TypeVar("A", covariant=True, bound=Monoid)
+B = TypeVar("B", bound=Monoid)
+C = TypeVar("C", bound=Monoid)
 
 
 class Parser(MonadPlus[Parsed[A], "Parser[A]"]):

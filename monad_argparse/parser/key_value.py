@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Generic, NamedTuple, TypeVar, Union
+from typing import Any, Callable, Generator, Generic, NamedTuple, Type, TypeVar, Union
 
-from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
@@ -28,7 +27,7 @@ B = TypeVar("B")
 
 
 @dataclass
-class KeyValues(MonadPlus[KeyValue[A], "KeyValues[A]"], Sequence[KeyValue[A]]):
+class KeyValues(Sequence[KeyValue[A]]):
     get: Sequence[KeyValue[A]]
 
     def __or__(self, other: "KeyValues[B]") -> "KeyValues[Union[A,B]]":  # type: ignore[override]
@@ -44,8 +43,8 @@ class KeyValues(MonadPlus[KeyValue[A], "KeyValues[A]"], Sequence[KeyValue[A]]):
 
         return KeyValues(Sequence(list(g())))
 
-    @staticmethod
-    def return_(a: KeyValue[A]) -> "KeyValues[A]":
+    @classmethod
+    def return_(cls: Type["KeyValues[A]"], a: KeyValue[A]) -> "KeyValues[A]":  # type: ignore[override]
         return KeyValues(Sequence([a]))
 
     @staticmethod

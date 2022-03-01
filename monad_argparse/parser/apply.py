@@ -8,7 +8,7 @@ from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
-D = TypeVar("D", covariant=True)
+D = TypeVar("D", covariant=True, bound=MonadPlus)
 E = TypeVar("E", covariant=True, bound=MonadPlus)
 
 
