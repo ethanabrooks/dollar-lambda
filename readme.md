@@ -205,7 +205,7 @@ p.parse_args("--verbose", "value")
 
 
 
-`monad_argparse` of course defines a utility, `Parser.nonpositional` for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
+`monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
 First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 

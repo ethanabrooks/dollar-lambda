@@ -49,4 +49,3 @@ class Parse(MonadPlus[D, "Parse[D]"]):
     @classmethod
     def zero(cls: "Type[Parse[D]]") -> "Parse[D]":
         raise NotImplementedError
-        # return Parse(Parsed(None), [])
