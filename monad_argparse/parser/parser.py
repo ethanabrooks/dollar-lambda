@@ -21,7 +21,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
     def __ge__(self: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":
         return self.bind(self, f)
 
-    def __or__(
+    def __or__(  # type: ignore[override]
         self: "Parser[B]",
         other: "Parser[C]",
     ) -> "Parser[Union[B, C]]":

@@ -31,7 +31,16 @@ class KeyValues(Sequence[KeyValue[A]]):
     get: Sequence[KeyValue[A]]
 
     def __or__(self, other: "KeyValues[B]") -> "KeyValues[Union[A,B]]":  # type: ignore[override]
-        return KeyValues(Sequence([*self.get, *other.get]))
+        def has_missing(kvs: KeyValues) -> bool:
+            return any([isinstance(kv.value, Missing) for kv in kvs])
+
+        if has_missing(self) and has_missing(other):
+            return KeyValues(Sequence([]))
+        if has_missing(self):
+            return KeyValues(other.get)
+        if has_missing(other):
+            return KeyValues(self.get)
+        return KeyValues(self.get + other.get)
 
     @staticmethod
     def bind(  # type: ignore[override]

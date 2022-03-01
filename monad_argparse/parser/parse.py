@@ -13,7 +13,7 @@ C = TypeVar("C", covariant=True)
 class Parsed(Monoid[A, "Parsed[A]"]):
     get: A
 
-    def __or__(self, other: "Parsed[B]") -> "Parsed[Union[A, B]]":
+    def __or__(self, other: "Parsed[B]") -> "Parsed[Union[A, B]]":  # type: ignore[override]
         return Parsed(self.get | other.get)
 
     def __repr__(self):
@@ -42,7 +42,7 @@ class Parse(MonadPlus[D, "Parse[D]"]):
     parsed: Parsed[D]
     unparsed: Sequence[str]
 
-    def __or__(self, other: "Parse[E]") -> "Parse[Union[D, E]]":
+    def __or__(self, other: "Parse[E]") -> "Parse[Union[D, E]]":  # type: ignore[override]
         return Parse(
             parsed=self.parsed | other.parsed,
             unparsed=max(self.unparsed, other.unparsed, key=len),
