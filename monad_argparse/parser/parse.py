@@ -16,7 +16,17 @@ class Parse(MonadPlus[A, "Parse[A]"]):
 
     def __or__(self, other: "Parse[B]") -> "Parse[Union[A, B]]":  # type: ignore[override]
         parsed = self.parsed | other.parsed
+        if self.default is not None and other.default is not None:
+            default = self.default | other.default
+        elif self.default is not None:
+            default = self.default
+        elif other.default is not None:
+            default = other.default
+        else:
+            assert self.default is None and other.default is None
+            default = None
         return Parse(
+            default=default,
             parsed=parsed,
             unparsed=max(self.unparsed, other.unparsed, key=len),
         )

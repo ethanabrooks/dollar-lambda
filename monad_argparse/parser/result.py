@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Callable, Type, TypeVar, Union
 
-from monad_argparse.monad.monoid import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.error import ArgumentError
 
 A = TypeVar("A", covariant=True)
-B = TypeVar("B", covariant=True, bound=MonadPlus)
-C = TypeVar("C", bound=MonadPlus)
+B = TypeVar("B", covariant=True, bound=Monoid)
+C = TypeVar("C", bound=Monoid)
 D = TypeVar("D")
 
 
@@ -15,8 +15,6 @@ class Result(MonadPlus[B, "Result[B]"]):
     get: Union[B, Exception]
 
     def __or__(self, other: "Result[C]") -> "Result[Union[B, C]]":  # type: ignore[override]
-        # if not isinstance(self.get, Exception) and not isinstance(other.get, Exception):
-        #     return self.get | other.get
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):
