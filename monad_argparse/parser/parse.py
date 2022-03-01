@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Type, TypeVar, Union
+from typing import Callable, Optional, Type, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.sequence import Sequence
@@ -12,10 +12,12 @@ B = TypeVar("B", bound=Monoid)
 class Parse(MonadPlus[A, "Parse[A]"]):
     parsed: A
     unparsed: Sequence[str]
+    default: Optional[A] = None
 
     def __or__(self, other: "Parse[B]") -> "Parse[Union[A, B]]":  # type: ignore[override]
+        parsed = self.parsed | other.parsed
         return Parse(
-            parsed=self.parsed | other.parsed,
+            parsed=parsed,
             unparsed=max(self.unparsed, other.unparsed, key=len),
         )
 
