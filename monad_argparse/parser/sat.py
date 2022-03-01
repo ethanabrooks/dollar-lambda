@@ -1,13 +1,14 @@
 from typing import Callable, Sequence, TypeVar
 
+from monad_argparse.monad.monad_plus import MonadPlus
 from monad_argparse.parser.apply import Apply
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.item import Item
-from monad_argparse.parser.key_value import KeyValue
+from monad_argparse.parser.key_value import KeyValue, KeyValues
 from monad_argparse.parser.parser import Parser
-from monad_argparse.parser.result import Ok, Result
+from monad_argparse.parser.result import Result
 
-F = TypeVar("F")
+F = TypeVar("F", bound=MonadPlus)
 
 
 class Sat(Apply[F, F]):
@@ -18,12 +19,12 @@ class Sat(Apply[F, F]):
         on_fail: Callable[[F], ArgumentError],
     ):
         def f(x: F) -> Result[F]:
-            return Result(Ok(x) if predicate(x) else on_fail(x))
+            return Result(x if predicate(x) else on_fail(x))
 
         super().__init__(f, parser)
 
 
-class SatItem(Sat[Sequence[KeyValue[str]]]):
+class SatItem(Sat[KeyValues[str]]):
     def __init__(
         self,
         predicate: Callable[[str], bool],

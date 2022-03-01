@@ -3,7 +3,7 @@ from typing import Sequence
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import A, Parser
-from monad_argparse.parser.result import Ok, Result
+from monad_argparse.parser.result import Result
 
 
 class Empty(Parser[Sequence[A]]):
@@ -30,6 +30,6 @@ class Empty(Parser[Sequence[A]]):
                 return Result(
                     ArgumentError(token=c, description=f"Unexpected argument: {c}")
                 )
-            return Result(Ok(Parse(parsed=Parsed([]), unparsed=cs)))
+            return Result(Parse(parsed=Parsed([]), unparsed=cs))
 
         super().__init__(f)

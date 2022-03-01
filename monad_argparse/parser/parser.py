@@ -4,9 +4,9 @@ from functools import lru_cache
 from typing import Callable, Generator, Optional, Sequence, TypeVar, Union
 
 from monad_argparse.monad.monad_plus import MonadPlus
-from monad_argparse.parser.key_value import KeyValue, KeyValueTuple
+from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
 from monad_argparse.parser.parse import Parse, Parsed
-from monad_argparse.parser.result import Ok, Result
+from monad_argparse.parser.result import Result
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B")
@@ -41,7 +41,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
             r1: Result[Parse[B]] = self.parse(cs)
             r2: Result[Parse[C]] = other.parse(cs)
             choices: Result[Parse[Union[B, C]]] = r1 | r2
-            if isinstance(choices.get, Ok):
+            if not isinstance(choices.get, Exception):
                 return choices
             else:
                 return r2
@@ -128,25 +128,26 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return self.f(cs)
 
     def parse_args(
-        self: "Parser[Sequence[KeyValue]]", *args: str
+        self: "Parser[KeyValues]", *args: str
     ) -> Union[Sequence[KeyValueTuple], Exception]:
         result = self.parse(list(args)).get
         if isinstance(result, Exception):
             return result
-        parse: Parse[Sequence[KeyValue]] = result.get
-        parsed: Parsed[Sequence[KeyValue]] = parse.parsed
-        pairs: Sequence[KeyValue] = parsed.get
+        parse: Parse[KeyValues] = result
+        parsed: Parsed[KeyValues] = parse.parsed
+        pairs: KeyValues = parsed.get
         return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
     @classmethod
     def return_(cls: "typing.Type[Parser[A]]", a: Parsed[A]) -> "Parser[A]":
         """
+        >>> from monad_argparse.parser.key_value import KeyValue
         >>> Parser.return_(Parsed([KeyValue("some-key", "some-value")])).parse_args()
         [('some-key', 'some-value')]
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A]]:
-            return Result(Ok(Parse(a, cs)))
+            return Result(Parse(a, cs))
 
         return Parser(f)
 

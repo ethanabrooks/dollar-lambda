@@ -1,13 +1,14 @@
 from typing import Callable, Generic, Sequence, TypeVar
 
+from monad_argparse.monad.monad_plus import MonadPlus
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import Parser
-from monad_argparse.parser.result import Ok, Result
+from monad_argparse.parser.result import Result
 
 D = TypeVar("D", covariant=True)
-E = TypeVar("E", covariant=True)
+E = TypeVar("E", covariant=True, bound=MonadPlus)
 
 
 class Apply(Parser[E], Generic[D, E]):
@@ -20,7 +21,7 @@ class Apply(Parser[E], Generic[D, E]):
             y = f(parsed.get)
             if isinstance(y.get, Exception):
                 return self.zero(y.get)
-            return Parser[E].return_(Parsed(y.get.get))
+            return Parser[E].return_(Parsed(y.get))
 
         def g(
             cs: Sequence[str],
@@ -42,6 +43,6 @@ class ApplyItem(Apply[Sequence[KeyValue[str]], E]):
                 y = f(kv.value)
             except Exception as e:
                 return Result(e)
-            return Result(Ok(y))
+            return Result(y)
 
         super().__init__(g, Item(description))

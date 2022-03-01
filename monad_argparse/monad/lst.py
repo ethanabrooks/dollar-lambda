@@ -47,8 +47,7 @@ class List(Monad[A, typing.List[A]]):
     ) -> typing.List[B]:
         def g() -> Generator[B, None, None]:
             for y in x:
-                for z in f(y):
-                    yield z
+                yield from f(y)
 
         return list(g())
 

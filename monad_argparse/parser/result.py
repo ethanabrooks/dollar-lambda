@@ -1,33 +1,23 @@
 from dataclasses import dataclass
-from typing import Callable, Generic, Type, TypeVar, Union, cast
+from typing import Callable, Type, TypeVar, Union
 
 from monad_argparse.monad.monad_plus import MonadPlus
 from monad_argparse.parser.error import ArgumentError
 
 A = TypeVar("A", covariant=True)
-
-
-@dataclass
-class Ok(Generic[A]):
-    get: A
-
-    def __repr__(self):
-        return f"Ok({self.get})"
-
-
-B = TypeVar("B", covariant=True)
-C = TypeVar("C")
+B = TypeVar("B", covariant=True, bound=MonadPlus)
+C = TypeVar("C", bound=MonadPlus)
 D = TypeVar("D")
 
 
 @dataclass
 class Result(MonadPlus[B, "Result[B]"]):
-    get: Union[Ok[B], Exception]
+    get: Union[B, Exception]
 
     def __or__(self, other: "Result[C]") -> "Result[Union[B, C]]":
-        if isinstance(self.get, Ok):
+        if not isinstance(self.get, Exception):
             return self
-        if isinstance(other.get, Ok):
+        if not isinstance(other.get, Exception):
             return other
         return Result(RuntimeError("__or__"))
 
@@ -40,18 +30,17 @@ class Result(MonadPlus[B, "Result[B]"]):
     @classmethod
     def bind(  # type: ignore[override]
         cls,
-        x: "Result[A]",
-        f: Callable[[A], "Result[A]"],
-    ) -> "Result[A]":
+        x: "Result[C]",
+        f: Callable[[C], "Result[C]"],
+    ) -> "Result[C]":
         y = x.get
         if isinstance(y, Exception):
-            return cast(Result[A], x)
-        z: A = y.get
-        return f(z)
+            return x
+        return f(y)
 
     @classmethod
     def return_(cls: "Type[Result[B]]", a: C) -> "Result[C]":
-        return Result(Ok(a))
+        return Result(a)
 
     @classmethod
     def zero(cls: "Type[Result[B]]") -> "Result[B]":
