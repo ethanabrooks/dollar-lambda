@@ -33,10 +33,10 @@ class SatItem(Sat[KeyValues[str]]):
     ):
         def _predicate(parsed: Sequence[KeyValue[str]]) -> bool:
             [kv] = parsed
-            return predicate(kv.value)
+            return predicate(kv.get_value())
 
         def _on_fail(parsed: Sequence[KeyValue[str]]) -> ArgumentError:
             [kv] = parsed
-            return on_fail(kv.value)
+            return on_fail(kv.get_value())
 
         super().__init__(Item(description), _predicate, _on_fail)

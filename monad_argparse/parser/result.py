@@ -15,6 +15,8 @@ class Result(MonadPlus[B, "Result[B]"]):
     get: Union[B, Exception]
 
     def __or__(self, other: "Result[C]") -> "Result[Union[B, C]]":
+        # if not isinstance(self.get, Exception) and not isinstance(other.get, Exception):
+        #     return self.get | other.get
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):

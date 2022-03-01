@@ -22,7 +22,7 @@ class Type(Apply[KeyValues[str], KeyValues[Any]]):
         ) -> Result[KeyValues[Any]]:
             head, *tail = kvs.get
             try:
-                head = replace(head, value=f(head.value))
+                head = replace(head, value=f(head.get_value()))
             except Exception as e:
                 return Result(e)
 
