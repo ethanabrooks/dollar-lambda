@@ -1,17 +1,8 @@
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Generic,
-    NamedTuple,
-    Sequence,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, Generator, Generic, NamedTuple, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus
+from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
 
@@ -40,27 +31,8 @@ B = TypeVar("B")
 class KeyValues(MonadPlus[KeyValue[A], "KeyValues[A]"], Sequence[KeyValue[A]]):
     get: Sequence[KeyValue[A]]
 
-    @overload
-    def __getitem__(self, i: int) -> KeyValue[A]:
-        ...
-
-    @overload
-    def __getitem__(self, i: slice) -> Sequence[KeyValue[A]]:
-        ...
-
-    def __getitem__(
-        self, i: Union[int, slice]
-    ) -> Union[KeyValue[A], Sequence[KeyValue[A]]]:
-        return self.get[i]
-
-    def __iter__(self) -> Generator[KeyValue[A], None, None]:
-        yield from self.get
-
-    def __len__(self) -> int:
-        return len(self.get)
-
-    def __or__(self, other: "KeyValues[B]") -> "KeyValues[Union[A,B]]":
-        return KeyValues([*self.get, *other.get])
+    def __or__(self, other: "KeyValues[B]") -> "KeyValues[Union[A,B]]":  # type: ignore[override]
+        return KeyValues(Sequence([*self.get, *other.get]))
 
     @staticmethod
     def bind(  # type: ignore[override]
@@ -70,15 +42,15 @@ class KeyValues(MonadPlus[KeyValue[A], "KeyValues[A]"], Sequence[KeyValue[A]]):
             for kv in x.get:
                 yield from f(kv).get
 
-        return KeyValues(list(g()))
+        return KeyValues(Sequence(list(g())))
 
     @staticmethod
     def return_(a: KeyValue[A]) -> "KeyValues[A]":
-        return KeyValues([a])
+        return KeyValues(Sequence([a]))
 
     @staticmethod
     def zero() -> "KeyValues[A]":
-        return KeyValues([])
+        return KeyValues(Sequence([]))
 
 
 class KeyValueTuple(NamedTuple):

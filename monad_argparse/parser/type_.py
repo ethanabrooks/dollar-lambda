@@ -5,6 +5,7 @@ from monad_argparse.parser.apply import Apply
 from monad_argparse.parser.key_value import KeyValues
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sequence import Sequence
 
 
 class Type(Apply[KeyValues[str], KeyValues[Any]]):
@@ -26,6 +27,6 @@ class Type(Apply[KeyValues[str], KeyValues[Any]]):
             except Exception as e:
                 return Result(e)
 
-            return Result(KeyValues([*tail, head]))
+            return Result(KeyValues(Sequence([*tail, head])))
 
         super().__init__(g, parser)

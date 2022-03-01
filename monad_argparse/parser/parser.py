@@ -1,12 +1,13 @@
 import typing
 from dataclasses import asdict
 from functools import lru_cache
-from typing import Callable, Generator, Optional, Sequence, TypeVar, Union
+from typing import Callable, Generator, Optional, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B")
@@ -87,7 +88,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     @classmethod
     def empty(cls: "typing.Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
-        return cls.return_(Parsed([]))
+        return cls.return_(Parsed(Sequence([])))
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
@@ -120,7 +121,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
         @lru_cache()
         def f(cs: tuple):
-            return Parser.do(g).parse(list(cs))
+            return Parser.do(g).parse(Sequence(list(cs)))
 
         return Parser(lambda cs: f(tuple(cs)))
 
@@ -129,8 +130,8 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     def parse_args(
         self: "Parser[KeyValues]", *args: str
-    ) -> Union[Sequence[KeyValueTuple], Exception]:
-        result = self.parse(list(args)).get
+    ) -> Union[typing.Sequence[KeyValueTuple], Exception]:
+        result = self.parse(Sequence(list(args))).get
         if isinstance(result, Exception):
             return result
         parse: Parse[KeyValues] = result

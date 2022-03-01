@@ -1,10 +1,11 @@
 from dataclasses import Field, dataclass, fields
 from functools import reduce
-from typing import Generator, Sequence, TypeVar, Union
+from typing import Generator, TypeVar, Union
 
 from monad_argparse.parser.flag import Flag
 from monad_argparse.parser.option import Option
 from monad_argparse.parser.parser import Parser
+from monad_argparse.parser.sequence import Sequence
 from monad_argparse.parser.type_ import Type
 
 A = TypeVar("A")

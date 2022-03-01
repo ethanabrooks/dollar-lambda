@@ -1,10 +1,11 @@
-from typing import Optional, Sequence
+from typing import Optional
 
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.key_value import KeyValue, KeyValues
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sequence import Sequence
 
 
 class Item(Parser[KeyValues[str]]):
@@ -13,9 +14,12 @@ class Item(Parser[KeyValues[str]]):
             cs: Sequence[str],
         ) -> Result[Parse[KeyValues[str]]]:
             if cs:
-                c, *cs = cs
+                head, *tail = cs
                 return Result(
-                    Parse(parsed=Parsed(KeyValues([KeyValue(name, c)])), unparsed=cs)
+                    Parse(
+                        parsed=Parsed(KeyValues(Sequence([KeyValue(name, head)]))),
+                        unparsed=Sequence(tail),
+                    )
                 )
             return Result(ArgumentError(description=f"Missing: {description or name}"))
 

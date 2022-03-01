@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, TypeVar
+from typing import Optional, TypeVar
 
 from monad_argparse.parser.flag import MatchesFlag, flags
 from monad_argparse.parser.item import Item
@@ -6,6 +6,7 @@ from monad_argparse.parser.key_value import KeyValues
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
 

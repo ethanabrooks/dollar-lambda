@@ -1,4 +1,4 @@
-from typing import Callable, Generic, Sequence, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.item import Item
@@ -6,6 +6,7 @@ from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sequence import Sequence
 
 D = TypeVar("D", covariant=True)
 E = TypeVar("E", covariant=True, bound=MonadPlus)

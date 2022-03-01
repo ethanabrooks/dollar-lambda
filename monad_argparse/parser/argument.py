@@ -1,8 +1,7 @@
-from typing import Sequence
-
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parser import Parser
+from monad_argparse.parser.sequence import Sequence
 
 
 class Argument(Parser[Sequence[KeyValue[str]]]):

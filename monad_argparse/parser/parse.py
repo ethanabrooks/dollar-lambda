@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Callable, Generator, Generic, Sequence, Type, TypeVar, Union
+from typing import Callable, Generator, Generic, Type, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus
+from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", covariant=True)
@@ -22,7 +23,7 @@ class Parsed(Generic[A]):
             yield from self.get
             yield from other.get
 
-        return Parsed(list(g()))
+        return Parsed(Sequence(list(g())))
 
 
 D = TypeVar("D", covariant=True)
@@ -44,7 +45,7 @@ class Parse(MonadPlus[D, "Parse[D]"]):
 
     @staticmethod
     def return_(a: E) -> "Parse[E]":
-        return Parse(Parsed(a), [])
+        return Parse(Parsed(a), Sequence([]))
 
     @classmethod
     def zero(cls: "Type[Parse[D]]") -> "Parse[D]":
