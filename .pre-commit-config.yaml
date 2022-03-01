@@ -9,7 +9,8 @@ repos:
     rev: v0.931
     hooks:
       - id: mypy
-        args: [--show-error-codes, --exclude=readme.py]
+        files: monad_argparse/
+        args: [--show-error-codes]
   - repo: local
     hooks:
       - id: test
