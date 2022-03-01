@@ -16,7 +16,7 @@ class Option(Parser[KeyValues[str]]):
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
     >>> Option("value").parse_args("--value")
-    ArgumentError(token=None, description='Missing: argument for --value')
+    ArgumentError(token=None, description='Missing: value')
     >>> Option("value").parse_args()
     ArgumentError(token=None, description='Missing: --value')
     """

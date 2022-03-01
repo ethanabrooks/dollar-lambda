@@ -1,54 +1,19 @@
+from __future__ import annotations
+
 import abc
-import typing
 from abc import ABC
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Generic,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Callable, Generator, Generic, Optional, Type, TypeVar
 
 from monad_argparse.monad.stateless_iterator import StatelessIterator
 
-A = TypeVar("A")
-B = TypeVar("B", covariant=True)
-MSub = TypeVar("MSub", bound="M")
+A = TypeVar("A", covariant=True)
+B = TypeVar("B", bound="Monad")
+C = TypeVar("C", contravariant=True)
+D = TypeVar("D", bound="Monad")
 
 
-MA = TypeVar("MA")
-MB = TypeVar("MB")
-
-
-class M(ABC, Generic[A]):
-    def __init__(self, a):
-        self.a: A = self.unwrap(a)
-
-    @abc.abstractmethod
-    def __ge__(self, f: Callable[[A], Any]):
-        raise NotImplementedError
-
-    def __eq__(self, other) -> bool:  # type: ignore[override]
-        if isinstance(other, M):
-            return self.a == other.a
-        return False
-
-    def __repr__(self) -> str:
-        return f"M {self.unwrap(self)}"
-
-    @classmethod
-    def unwrap(cls: typing.Type[MSub], x: Union[MSub, A]) -> A:
-        if isinstance(x, M):
-            return cls.unwrap(x.a)
-        return cast(A, x)
-
-
-class Monad(Generic[A, MA]):
+class Monad(ABC, Generic[A]):
     """
     Monad laws:
     ```haskell
@@ -58,9 +23,12 @@ class Monad(Generic[A, MA]):
     ```
     """
 
-    @classmethod
+    def __ge__(self, f):
+        return self.bind(f)
+
     @abc.abstractmethod
-    def bind(cls, x: MA, f: Callable[[A], MB]) -> MB:
+    def bind(self: B, f: Callable[[A], B]) -> B:
+        ...
         """
         ```haskell
         (>>=) :: m a -> (a -> m b) -> m b
@@ -70,12 +38,12 @@ class Monad(Generic[A, MA]):
 
     @classmethod
     def do(
-        cls: "Type[Monad[A, MA]]", generator: Callable[[], Generator[MA, A, None]]
-    ) -> MA:
-        def f(a: Optional[A], it: StatelessIterator[MA, A]) -> MA:
+        cls: Type[D],
+        generator: Callable[[], Generator[D, B, None]],
+    ) -> D:
+        def f(a: Optional[B], it: StatelessIterator[D, B]) -> D:
             try:
-                ma: MA
-                it2: StatelessIterator[MA, A]
+                it2: StatelessIterator[D, B]
                 if a is None:
                     ma, it2 = it.__next__()
                 else:
@@ -84,13 +52,14 @@ class Monad(Generic[A, MA]):
                 if a is None:
                     raise RuntimeError("Cannot use an empty iterator with do.")
                 return cls.return_(a)
-            return cls.bind(ma, partial(f, it=it2))
+            return ma.bind(partial(f, it=it2))
 
         return f(None, StatelessIterator(generator))
 
     @classmethod
     @abc.abstractmethod
-    def return_(cls, a: A) -> MA:
+    def return_(cls: Type[D], a: A) -> D:  # type: ignore[misc]
+        # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         ```haskell
         return :: a -> m a

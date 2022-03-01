@@ -1,13 +1,17 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import Callable, Generator, TypeVar
 
-from monad_argparse.monad.monad import M, Monad
+from monad_argparse.monad.monad import Monad
 
 A = TypeVar("A")
 B = TypeVar("B", covariant=True)
 C = TypeVar("C")
 
 
-class IO(Monad[A, Callable[[], A]]):
+@dataclass
+class IO(Monad[A]):
     """
     >>> def returns_1_with_side_effects():
     ...     print("foo")
@@ -28,43 +32,40 @@ class IO(Monad[A, Callable[[], A]]):
     3
     """
 
-    @classmethod
-    def bind(cls, x: Callable[[], A], f: Callable[[A], Callable[[], B]]) -> Callable[[], B]:  # type: ignore[override]
-        return f(x())
+    get: Callable[[], A]
+
+    def __call__(self) -> A:
+        return self.get()
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, IO):
+            return self.get() == other.get()
+        return False
+
+    def bind(self, f: Callable[[A], IO[B]]) -> IO[B]:
+        return f(self())
 
     @classmethod
     def do(  # type: ignore[override]
         cls,
-        generator: Callable[[], Generator[Callable[[], A], A, None]],
-        *args,
-        **kwargs,
+        generator: Callable[[], Generator[IO[A], A, None]],
     ):
-        it = generator(*args, **kwargs)
+        it = generator()
 
         def f(y: A):
             try:
                 z = it.send(y)
             except StopIteration:
-                return y  # type:ignore[return-value]
+                return y
 
             return cls.bind(z, f)
 
         return f(next(it)())
 
     @classmethod
-    def return_(cls, a: C) -> Callable[[], C]:
-        return lambda: a
+    def return_(cls, a: C) -> IO[C]:
+        return IO(lambda: a)
 
 
-class I(M[Callable[[], A]]):
-    def __ge__(self, f: Callable[[A], Callable[[], B]]):  # type: ignore[override]
-        return IO.bind(self.a, f)
-
-    @classmethod
-    def return_(cls, a: A) -> "I[A]":
-        return I(IO[A].return_(a))
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, I):
-            return self.unwrap(self.a)() == other.unwrap(other)()
-        return False
+class I(IO[A]):
+    pass

@@ -1,46 +1,50 @@
-from typing import Callable, Union
+from __future__ import annotations
 
-from monad_argparse.monad.monad import A, M, Monad
+from dataclasses import dataclass
+from typing import Callable, TypeVar
 
+from monad_argparse.monad.monad import Monad
 
-class R(M[Union[Exception, A]]):
-    def __ge__(self, f: Callable[[A], Union[Exception, A]]):  # type: ignore[override]
-        return R(Result.bind(self.a, f))
-
-    @staticmethod
-    def return_(a: A) -> "R[Union[Exception, A]]":
-        return R(a)
+A = TypeVar("A", covariant=True)
+B = TypeVar("B", contravariant=True)
 
 
-class Result(Monad[A, Union[A, Exception]]):
+@dataclass
+class Result(Monad[A]):
     """
     >>> def results():
-    ...     x = yield 1
-    ...     y = yield 2
-    ...     yield x + y
+    ...     x = yield Result(1)
+    ...     y = yield Result(2)
+    ...     yield Result(x + y)
     ...
     >>> Result.do(results)
-    3
+    Result(3)
     >>> def results():
-    ...     x = yield 1
-    ...     y = yield RuntimeError("Oh no!")
-    ...     yield x + y
+    ...     x = yield Result(1)
+    ...     y = yield Result(RuntimeError("Oh no!"))
+    ...     yield Result(x + y)
     ...
     >>> Result.do(results)
-    RuntimeError('Oh no!')
+    Result(RuntimeError('Oh no!'))
     """
 
-    @classmethod
-    def bind(  # type: ignore[override]
-        cls,
-        x: Union[A, Exception],
-        f: Callable[[A], Union[A, Exception]],
-    ) -> Union[A, Exception]:
-        if isinstance(x, Exception):
-            return x
-        y = f(x)  # type: ignore[arg-type]
-        return y
+    get: A | Exception
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.get)})"
+
+    def bind(
+        self,
+        f: Callable[[A], Result[B]],
+    ) -> Result[B]:
+        if isinstance(self.get, Exception):
+            return Result(self.get)
+        return f(self.get)
 
     @classmethod
-    def return_(cls, a: A) -> Union[A, Exception]:
-        return a
+    def return_(cls, a: B) -> Result[B]:
+        return Result(a)
+
+
+class R(Result):
+    pass

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import typing
 from dataclasses import asdict
 from functools import lru_cache
-from typing import Callable, Generator, Optional, TypeVar, Union
+from typing import Callable, Generator, Optional, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
@@ -9,22 +11,21 @@ from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
-A = TypeVar("A", covariant=True, bound=Monoid)
+A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C", bound=Monoid)
 
 
-class Parser(MonadPlus[A, "Parser[A]"]):
+class Parser(MonadPlus[A]):
+    D = TypeVar("D", bound="Parser[A]")
+
     def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
 
-    def __ge__(self: "Parser[A]", f: Callable[[A], "Parser[B]"]) -> "Parser[B]":
-        return self.bind(self, f)
-
-    def __or__(  # type: ignore[override]
-        self: "Parser[B]",
-        other: "Parser[C]",
-    ) -> "Parser[Union[B, C]]":
+    def __add__(
+        self: Parser[A],
+        other: Parser[B],
+    ) -> Parser[A | B]:
         """
         >>> from monad_argparse import Argument, Option, Empty, Flag
         >>> p = Flag("verbose") | Option("option")
@@ -38,10 +39,10 @@ class Parser(MonadPlus[A, "Parser[A]"]):
         [('option', 'x')]
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[Union[B, C]]]:
-            r1: Result[Parse[B]] = self.parse(cs)
-            r2: Result[Parse[C]] = other.parse(cs)
-            choices: Result[Parse[Union[B, C]]] = r1 | r2
+        def f(cs: Sequence[str]) -> Result[Parse[A | B]]:
+            r1: Result[Parse[A]] = self.parse(cs)
+            r2: Result[Parse[B]] = other.parse(cs)
+            choices: Result[Parse[A | B]] = r1 | r2
             if not isinstance(choices.get, Exception):
                 return choices
             else:
@@ -50,8 +51,8 @@ class Parser(MonadPlus[A, "Parser[A]"]):
         return Parser(f)
 
     def __rshift__(
-        self: "Parser[Sequence[B]]", p: "Parser[Sequence[C]]"
-    ) -> "Parser[Sequence[Union[B, C]]]":
+        self: Parser[Sequence[A]], p: Parser[Sequence[B]]
+    ) -> Parser[Sequence[A | B]]:
         """
         >>> from monad_argparse import Argument, Flag
         >>> p = Argument("first") >> Argument("second")
@@ -70,24 +71,19 @@ class Parser(MonadPlus[A, "Parser[A]"]):
         >>> p.parse_args("--verbose")
         ArgumentError(token=None, description='Missing: a')
         """
-        return self >= (
-            lambda p1: (
-                p >= (lambda p2: Parser[Sequence[Union[B, C]]].return_(p1 + p2))
-            )
-        )
+        return self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
 
-    @staticmethod
-    def bind(x: "Parser[A]", f: Callable[[A], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
+    def bind(self, f: Callable[[A], Parser[B]]) -> Parser[B]:
         def h(parse: Parse[A]) -> Result[Parse[B]]:
             return f(parse.parsed).parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -> Result[Parse[B]]:
-            return x.parse(cs) >= h
+            return self.parse(cs) >= h
 
         return Parser(g)
 
     @classmethod
-    def empty(cls: "typing.Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
+    def empty(cls: Type[Parser[Sequence[B]]]) -> Parser[Sequence[B]]:
         return cls.return_(Sequence([]))
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
@@ -130,7 +126,7 @@ class Parser(MonadPlus[A, "Parser[A]"]):
 
     def parse_args(
         self: "Parser[KeyValues]", *args: str
-    ) -> Union[typing.Sequence[KeyValueTuple], Exception]:
+    ) -> typing.Sequence[KeyValueTuple] | Exception:
         result = self.parse(Sequence(list(args))).get
         if isinstance(result, Exception):
             return result
@@ -139,20 +135,21 @@ class Parser(MonadPlus[A, "Parser[A]"]):
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
-    def return_(cls: "typing.Type[Parser[B]]", a: B) -> "Parser[B]":
+    def return_(cls, a: A) -> Parser[A]:  # type: ignore[misc]
+        # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         >>> from monad_argparse.parser.key_value import KeyValue
         >>> Parser.return_(([KeyValue("some-key", "some-value")])).parse_args()
         [('some-key', 'some-value')]
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[B]]:
+        def f(cs: Sequence[str]) -> Result[Parse[A]]:
             return Result(Parse(a, cs))
 
         return Parser(f)
 
     @classmethod
-    def zero(cls, error: Optional[Exception] = None) -> "Parser[A]":
+    def zero(cls, error: Optional[Exception] = None) -> Parser[A]:
         """
         >>> Parser.zero().parse_args()
         RuntimeError('zero')
@@ -164,4 +161,4 @@ class Parser(MonadPlus[A, "Parser[A]"]):
         if error is None:
             error = RuntimeError("zero")
         result: Result[Parse[A]] = Result(error)
-        return Parser(lambda cs: result)
+        return Parser(lambda _: result)

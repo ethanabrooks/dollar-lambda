@@ -1,45 +1,50 @@
-from typing import Callable, Optional
+from __future__ import annotations
 
-from monad_argparse.monad.monad import A, B, M, Monad
+from dataclasses import dataclass
+from typing import Callable, TypeVar
 
+from monad_argparse.monad.monad import Monad
 
-class O(M[Optional[A]]):
-    def __ge__(self, f: Callable[[A], Optional[A]]):
-        return O(Option.bind(self.a, f))
-
-    @classmethod
-    def return_(cls, a: A) -> "O[Optional[A]]":
-        return O(Option.return_(a))
+A = TypeVar("A", covariant=True)
+B = TypeVar("B", contravariant=True)
 
 
-class Option(Monad[A, Optional[A]]):
+@dataclass
+class Option(Monad[A]):
     """
     >>> def options():
-    ...     x = yield 1
-    ...     y = yield 2
-    ...     yield x + y
+    ...     x = yield Option(1)
+    ...     y = yield Option(2)
+    ...     yield Option(x + y)
     ...
     >>> Option.do(options)
-    3
+    Option(3)
     >>> def options():
-    ...     x = yield 1
-    ...     y = yield None
-    ...     yield x + y
+    ...     x = yield Option(1)
+    ...     y = yield Option(None)
+    ...     yield Option(x + y)
     ...
     >>> print(Option.do(options))  # added `print` in order to get None to show up
-    None
+    Option(None)
     """
 
-    @classmethod
-    def bind(  # type: ignore[override]
-        cls,
-        x: Optional[A],
-        f: Callable[[A], Optional[B]],
-    ) -> Optional[B]:
-        if x is None:
-            return None
-        return f(x)
+    get: A | None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.get)})"
+
+    def bind(
+        self,
+        f: Callable[[A], Option[B]],
+    ) -> Option[B]:
+        if self.get is None:
+            return Option(None)
+        return f(self.get)
 
     @classmethod
-    def return_(cls, a: A) -> Optional[A]:
-        return a
+    def return_(cls, a: B) -> Option[B]:
+        return Option(a)
+
+
+class O(Option[A]):
+    pass

@@ -1,56 +1,63 @@
+from __future__ import annotations
+
 import typing
-from typing import Callable, Generator
+from dataclasses import dataclass
+from typing import Callable, Generator, TypeVar
 
-from monad_argparse.monad.monad import A, B, M, Monad
+from monad_argparse.monad.monad import Monad
+
+A = TypeVar("A", covariant=True)
+B = TypeVar("B")
+C = TypeVar("C", contravariant=True)
 
 
-class L(M[typing.List[A]]):
-    def __ge__(self, f: Callable[[A], typing.List[A]]):  # type: ignore[override]
-        return L(List.bind(self.a, f))
+@dataclass
+class List(Monad[A]):
+    """
+    >>> def lists():
+    ...     x = yield List([])
+    ...     y = yield List([2, 3])
+    ...     yield List([x + y])
+    ...
+    >>> List.do(lists)
+    List([])
+    >>> def lists():
+    ...     x = yield List([1])
+    ...     y = yield List([2, 3])
+    ...     yield List([x + y])
+    ...
+    >>> List.do(lists)
+    List([3, 4])
+    >>> def lists():
+    ...     x = yield List([1, 2])
+    ...     y = yield List([2, 3])
+    ...     yield List([x + y])
+    ...
+    >>> List.do(lists)
+    List([3, 4, 4, 5])
+    """
+
+    get: typing.List[A]
 
     def __iter__(self):
-        yield from self.a
+        yield from self.get
 
-    @classmethod
-    def return_(cls, a: A) -> "L[typing.List[A]]":
-        return L(List.return_(a))
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.get)})"
 
-
-class List(Monad[A, typing.List[A]]):
-    """
-    >>> def lists():
-    ...     x = yield []
-    ...     y = yield [2, 3]
-    ...     yield [x + y]
-    ...
-    >>> List.do(lists)
-    []
-    >>> def lists():
-    ...     x = yield [1]
-    ...     y = yield [2, 3]
-    ...     yield [x + y]
-    ...
-    >>> List.do(lists)
-    [3, 4]
-    >>> def lists():
-    ...     x = yield [1, 2]
-    ...     y = yield [2, 3]
-    ...     yield [x + y]
-    ...
-    >>> List.do(lists)
-    [3, 4, 4, 5]
-    """
-
-    @classmethod
     def bind(  # type: ignore[override]
-        cls, x: typing.List[A], f: Callable[[A], typing.List[B]]
-    ) -> typing.List[B]:
+        self: List[A], f: Callable[[A], List[B]]
+    ) -> List[B]:
         def g() -> Generator[B, None, None]:
-            for y in x:
+            for y in self:
                 yield from f(y)
 
-        return list(g())
+        return List(list(g()))
 
     @classmethod
-    def return_(cls, a: A) -> typing.List[A]:
-        return [a]
+    def return_(cls, a: C) -> List[C]:
+        return List([a])
+
+
+class L(List[A]):
+    pass

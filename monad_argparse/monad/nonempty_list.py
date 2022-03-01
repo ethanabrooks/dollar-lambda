@@ -1,18 +1,21 @@
-from dataclasses import dataclass, replace
-from typing import Generator, Generic, Optional, TypeVar
+from __future__ import annotations
 
-from monad_argparse.monad.option import Option as OptionMonad
+from dataclasses import dataclass, replace
+from typing import TypeVar
+
+from monad_argparse.monad.monad import Monad
+from monad_argparse.monad.option import Option
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", contravariant=True)
 
 
 @dataclass
-class NonemptyList(Generic[A]):
+class NonemptyList(Monad[A]):
     head: A
-    tail: "Optional[NonemptyList[A]]" = None
+    tail: NonemptyList[A] | None = None
 
-    def __add__(self, other: "NonemptyList"):
+    def __add__(self, other: NonemptyList[B]):
         if self.tail is None:
             return replace(self, tail=other)
         if other.tail is None:
@@ -27,18 +30,27 @@ class NonemptyList(Generic[A]):
     def __repr__(self):
         return repr(list(self))
 
+    def bind(self, f):
+        def g():
+            for y in self:
+                yield from f(y)
+
+        return NonemptyList.make(list(g()))
+
     @staticmethod
-    def make(*xs: B) -> Optional["NonemptyList[B]"]:
+    def _make(*xs: B) -> Option["NonemptyList[B]"]:
         if xs:
-            head, *maybe_tail = xs
-            if not maybe_tail:
-                return NonemptyList(head)
+            head, *tail = xs
+            if not tail:
+                return Option(NonemptyList(head))
 
-            def options() -> Generator[
-                Optional[NonemptyList[B]], NonemptyList[B], None
-            ]:
-                tail = yield NonemptyList.make(*maybe_tail)
-                yield NonemptyList(head, tail)
+            return NonemptyList._make(*tail) >= (lambda tl: NonemptyList(head, tl))
+        return Option(None)
 
-            return OptionMonad.do(options)
-        return None
+    @staticmethod
+    def make(*xs: B) -> None | "NonemptyList[B]":
+        return NonemptyList._make(*xs).get
+
+    @classmethod
+    def return_(cls, a: B) -> NonemptyList[B]:
+        return NonemptyList(a)

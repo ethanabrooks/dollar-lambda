@@ -21,6 +21,15 @@ class Item(Parser[KeyValues[str]]):
                         unparsed=Sequence(tail),
                     )
                 )
-            return Result(ArgumentError(description=f"Missing: {description or name}"))
+            return Result(
+                ArgumentError(token=None, description=f"Missing: {name}")
+                # MissingError(
+                #     Parse(
+                #         default=KeyValues(Sequence([KeyValue(name, None)])),
+                #         parsed=KeyValues(Sequence([])),
+                #         unparsed=cs,
+                #     )
+                # )
+            )
 
         super().__init__(f)

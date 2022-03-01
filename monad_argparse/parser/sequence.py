@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
-from typing import Callable, Generator, TypeVar, Union, overload
+from typing import Callable, Generator, Iterator, TypeVar, overload
 
 from monad_argparse.monad.monoid import MonadPlus
 
@@ -9,7 +11,7 @@ B = TypeVar("B")
 
 
 @dataclass
-class Sequence(MonadPlus[A, "Sequence[A]"], typing.Sequence[A]):
+class Sequence(MonadPlus[A], typing.Sequence[A]):
     get: typing.Sequence[A]
 
     @overload
@@ -17,10 +19,10 @@ class Sequence(MonadPlus[A, "Sequence[A]"], typing.Sequence[A]):
         ...
 
     @overload
-    def __getitem__(self, i: slice) -> "Sequence[A]":
+    def __getitem__(self, i: slice) -> Sequence[A]:
         ...
 
-    def __getitem__(self, i: Union[int, slice]) -> Union[A, "Sequence[A]"]:
+    def __getitem__(self, i: int | slice) -> A | Sequence[A]:
         if isinstance(i, int):
             return self.get[i]
         return Sequence(self.get[i])
@@ -31,24 +33,20 @@ class Sequence(MonadPlus[A, "Sequence[A]"], typing.Sequence[A]):
     def __len__(self) -> int:
         return len(self.get)
 
-    def __or__(self, other: "Sequence[B]") -> "Sequence[Union[A, B]]":  # type: ignore[override]
+    def __add__(self, other: Sequence[B]) -> Sequence[A | B]:
         return Sequence([*self, *other])
 
-    @staticmethod
-    def bind(  # type: ignore[override]
-        x: "Sequence[A]",
-        f: Callable[[A], "Sequence[A]"],
-    ) -> "Sequence[A]":
-        def g() -> Generator[A, None, None]:
-            for a in x:
+    def bind(self, f: Callable[[A], Sequence[B]]) -> Sequence[B]:
+        def g() -> Iterator[B]:
+            for a in self:
                 yield from f(a)
 
         return Sequence(list(g()))
 
     @staticmethod
-    def return_(a: B) -> "Sequence[B]":
+    def return_(a: B) -> Sequence[B]:
         return Sequence([a])
 
     @staticmethod
-    def zero() -> "Sequence[A]":
+    def zero() -> Sequence[A]:
         return Sequence([])

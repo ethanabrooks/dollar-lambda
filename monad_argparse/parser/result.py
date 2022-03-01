@@ -1,41 +1,51 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Callable, Type, TypeVar, Union
+from typing import Callable, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
-from monad_argparse.parser.error import ArgumentError
+from monad_argparse.parser.error import ArgumentError  # , MissingError
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", covariant=True, bound=Monoid)
 C = TypeVar("C", bound=Monoid)
-D = TypeVar("D")
 
 
 @dataclass
-class Result(MonadPlus[B, "Result[B]"]):
-    get: Union[B, Exception]
+class Result(MonadPlus[B]):
+    get: B | Exception
 
-    def __or__(self, other: "Result[C]") -> "Result[Union[B, C]]":  # type: ignore[override]
+    def __add__(self, other: Result[C]) -> Result[B | C]:
+        # if isinstance(self.get, MissingError):
+        #     if isinstance(other.get, MissingError):
+        #         return Result(MissingError(self.get.default | self.get.default))
+        #     if not isinstance(other.get, Exception):
+        #         return Result(self.get.default | other.get)
+        #     if isinstance(other.get, Exception):
+        #         return Result(self.get.default | other.get)
+        #     raise RuntimeError("unreachable")
+        # if isinstance(self.get, Exception):
+        #     return other
+        # if not isinstance(self.get, Exception):
+        #     if not isinstance(other.get, Exception):
+        #         return Result(self.get | other.get)
+        #     return other | self
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):
             return other
-        return Result(RuntimeError("__or__"))
+        return self
 
-    def __ge__(self, other: Callable[[B], "Result"]) -> "Result":
+    def __ge__(self, other: Callable[[B], Result]) -> Result:
         return Result.bind(self, other)
 
     def __repr__(self):
         return f"Result({self.get})"
 
-    @classmethod
-    def bind(  # type: ignore[override]
-        cls,
-        x: "Result[C]",
-        f: Callable[[C], "Result[C]"],
-    ) -> "Result[C]":
-        y = x.get
+    def bind(self, f: Callable[[B], Result[C]]) -> Result[C]:
+        y = self.get
         if isinstance(y, Exception):
-            return x
+            return Result(y)
         return f(y)
 
     @classmethod
