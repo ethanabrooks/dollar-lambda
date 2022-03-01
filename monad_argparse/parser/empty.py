@@ -1,6 +1,5 @@
 from typing import Sequence
 
-from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.parser import A, Parser
@@ -25,12 +24,12 @@ class Empty(Parser[Sequence[A]]):
     """
 
     def __init__(self):
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Sequence[A]]]]:
+        def f(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
             if cs:
                 c, *_ = cs
                 return Result(
                     ArgumentError(token=c, description=f"Unexpected argument: {c}")
                 )
-            return Result(Ok(NonemptyList(Parse(parsed=Parsed([]), unparsed=cs))))
+            return Result(Ok(Parse(parsed=Parsed([]), unparsed=cs)))
 
         super().__init__(f)

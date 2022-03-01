@@ -4,7 +4,6 @@ from functools import lru_cache
 from typing import Callable, Generator, Optional, Sequence, TypeVar, Union
 
 from monad_argparse.monad.monad_plus import MonadPlus
-from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.key_value import KeyValue, KeyValueTuple
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.result import Ok, Result
@@ -15,7 +14,7 @@ C = TypeVar("C")
 
 
 class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
-    def __init__(self, f: Callable[[Sequence[str]], Result[NonemptyList[Parse[A]]]]):
+    def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
 
     def __ge__(self: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":
@@ -38,14 +37,12 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         [('option', 'x')]
         """
 
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[Union[B, C]]]]:
-            r1: Result[NonemptyList[Parse[B]]] = self.parse(cs)
-            r2: Result[NonemptyList[Parse[C]]] = other.parse(cs)
-            choices: Result[Union[NonemptyList[Parse[B]], NonemptyList[Parse[C]]]] = (
-                r1 | r2
-            )
+        def f(cs: Sequence[str]) -> Result[Parse[Union[B, C]]]:
+            r1: Result[Parse[B]] = self.parse(cs)
+            r2: Result[Parse[C]] = other.parse(cs)
+            choices: Result[Parse[Union[B, C]]] = r1 | r2
             if isinstance(choices.get, Ok):
-                return Result(Ok(NonemptyList(choices.get.get.head)))
+                return choices
             else:
                 return r2
 
@@ -80,24 +77,10 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     @staticmethod
     def bind(x: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
-        def apply_parser(parse: Parse[A]) -> Result[NonemptyList[Parse[B]]]:
+        def h(parse: Parse[A]) -> Result[Parse[B]]:
             return f(parse.parsed).parse(parse.unparsed)
 
-        def get_successful(
-            parses: NonemptyList[Parse[A]],
-        ) -> Generator[Parse[B], None, None]:
-            for parse in parses:
-                result: Result[NonemptyList[Parse[B]]] = apply_parser(parse)
-                if isinstance(result.get, Ok):  # Exclude failed parses
-                    yield from result.get.get
-
-        def h(parses: NonemptyList[Parse[A]]) -> Result[NonemptyList[Parse[B]]]:
-            successful_parses = NonemptyList.make(*get_successful(parses))
-            if successful_parses:
-                return Result(Ok(successful_parses))
-            return apply_parser(parses.head)
-
-        def g(cs: Sequence[str]) -> Result[NonemptyList[Parse[B]]]:
+        def g(cs: Sequence[str]) -> Result[Parse[B]]:
             return x.parse(cs) >= h
 
         return Parser(g)
@@ -141,7 +124,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
         return Parser(lambda cs: f(tuple(cs)))
 
-    def parse(self, cs: Sequence[str]) -> Result[NonemptyList[Parse[A]]]:
+    def parse(self, cs: Sequence[str]) -> Result[Parse[A]]:
         return self.f(cs)
 
     def parse_args(
@@ -150,9 +133,8 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         result = self.parse(list(args)).get
         if isinstance(result, Exception):
             return result
-        parse: NonemptyList[Parse[Sequence[KeyValue]]] = result.get
-        head: Parse[Sequence[KeyValue]] = parse.head
-        parsed: Parsed[Sequence[KeyValue]] = head.parsed
+        parse: Parse[Sequence[KeyValue]] = result.get
+        parsed: Parsed[Sequence[KeyValue]] = parse.parsed
         pairs: Sequence[KeyValue] = parsed.get
         return [KeyValueTuple(**asdict(kv)) for kv in pairs]
 
@@ -163,8 +145,8 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         [('some-key', 'some-value')]
         """
 
-        def f(cs: Sequence[str]) -> Result[NonemptyList[Parse[A]]]:
-            return Result(Ok(NonemptyList(Parse(a, cs))))
+        def f(cs: Sequence[str]) -> Result[Parse[A]]:
+            return Result(Ok(Parse(a, cs)))
 
         return Parser(f)
 
@@ -180,5 +162,5 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         """
         if error is None:
             error = RuntimeError("zero")
-        result: Result[NonemptyList[Parse[A]]] = Result(error)
+        result: Result[Parse[A]] = Result(error)
         return Parser(lambda cs: result)

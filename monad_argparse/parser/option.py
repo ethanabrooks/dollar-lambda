@@ -1,6 +1,5 @@
 from typing import Optional, Sequence, TypeVar
 
-from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.flag import MatchesFlag, flags
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
@@ -33,7 +32,7 @@ class Option(Parser[Sequence[KeyValue[str]]]):
 
         def f(
             cs: Sequence[str],
-        ) -> Result[NonemptyList[Parse[Sequence[KeyValue[str]]]]]:
+        ) -> Result[Parse[Sequence[KeyValue[str]]]]:
             parser = MatchesFlag(long=long, short=short) >= (
                 lambda _: Item(
                     name,

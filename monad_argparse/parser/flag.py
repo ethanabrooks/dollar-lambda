@@ -1,6 +1,5 @@
 from typing import Optional, Sequence
 
-from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed
@@ -65,7 +64,7 @@ class Flag(Parser[Sequence[KeyValue[bool]]]):
 
         def f(
             cs: Sequence[str],
-        ) -> Result[NonemptyList[Parse[Sequence[KeyValue[bool]]]]]:
+        ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
             parser = MatchesFlag(long=long, short=short) >= (
                 lambda _: self.return_(Parsed([KeyValue(key, True)]))
             )

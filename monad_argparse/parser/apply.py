@@ -1,6 +1,5 @@
 from typing import Callable, Generator, Generic, Sequence, TypeVar, Union
 
-from monad_argparse.monad.nonempty_list import NonemptyList
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed
@@ -32,7 +31,7 @@ class Apply(Parser[E], Generic[D, E]):
 
         def g(
             cs: Sequence[str],
-        ) -> Result[NonemptyList[Parse[E]]]:
+        ) -> Result[Parse[E]]:
             do = Parser[E].do(h)  # type: ignore[arg-type]
             # The suppression of the type-checker is unfortunately unavoidable here because our definition of `do` requires
             # the type to remain the same throughout the do block as a consequence of the way that python types generators.
