@@ -5,7 +5,7 @@ from typing import Callable, Generator, Optional, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
-from monad_argparse.parser.parse import Parse, Parsed
+from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
@@ -14,11 +14,11 @@ B = TypeVar("B", bound=Monoid)
 C = TypeVar("C", bound=Monoid)
 
 
-class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
+class Parser(MonadPlus[A, "Parser[A]"]):
     def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
 
-    def __ge__(self: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":
+    def __ge__(self: "Parser[A]", f: Callable[[A], "Parser[B]"]) -> "Parser[B]":
         return self.bind(self, f)
 
     def __or__(  # type: ignore[override]
@@ -72,12 +72,12 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         """
         return self >= (
             lambda p1: (
-                p >= (lambda p2: Parser[Sequence[Union[B, C]]].return_(p1 >> p2))
+                p >= (lambda p2: Parser[Sequence[Union[B, C]]].return_(p1 + p2))
             )
         )
 
     @staticmethod
-    def bind(x: "Parser[A]", f: Callable[[Parsed[A]], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
+    def bind(x: "Parser[A]", f: Callable[[A], "Parser[B]"]) -> "Parser[B]":  # type: ignore[override]
         def h(parse: Parse[A]) -> Result[Parse[B]]:
             return f(parse.parsed).parse(parse.unparsed)
 
@@ -88,7 +88,7 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
 
     @classmethod
     def empty(cls: "typing.Type[Parser[Sequence[B]]]") -> "Parser[Sequence[B]]":
-        return cls.return_(Parsed(Sequence([])))
+        return cls.return_(Sequence([]))
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
@@ -112,12 +112,12 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         return self.many1() | Parser[Sequence[B]].empty()
 
     def many1(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
-        def g() -> Generator["Parser[Sequence[B]]", Parsed[Sequence[B]], None]:
+        def g() -> Generator["Parser[Sequence[B]]", Sequence[B], None]:
             # noinspection PyTypeChecker
-            r1: Parsed[Sequence[B]] = yield self
+            r1: Sequence[B] = yield self
             # noinspection PyTypeChecker
-            r2: Parsed[Sequence[B]] = yield self.many()
-            yield Parser[Sequence[B]].return_(r1 >> r2)
+            r2: Sequence[B] = yield self.many()
+            yield Parser[Sequence[B]].return_(r1 + r2)
 
         @lru_cache()
         def f(cs: tuple):
@@ -135,19 +135,18 @@ class Parser(MonadPlus[Parsed[A], "Parser[A]"]):
         if isinstance(result, Exception):
             return result
         parse: Parse[KeyValues] = result
-        parsed: Parsed[KeyValues] = parse.parsed
-        pairs: KeyValues = parsed.get
-        return [KeyValueTuple(**asdict(kv)) for kv in pairs]
+        kvs: KeyValues = parse.parsed
+        return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
-    def return_(cls: "typing.Type[Parser[A]]", a: Parsed[A]) -> "Parser[A]":
+    def return_(cls: "typing.Type[Parser[B]]", a: B) -> "Parser[B]":
         """
         >>> from monad_argparse.parser.key_value import KeyValue
-        >>> Parser.return_(Parsed([KeyValue("some-key", "some-value")])).parse_args()
+        >>> Parser.return_(([KeyValue("some-key", "some-value")])).parse_args()
         [('some-key', 'some-value')]
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[A]]:
+        def f(cs: Sequence[str]) -> Result[Parse[B]]:
             return Result(Parse(a, cs))
 
         return Parser(f)

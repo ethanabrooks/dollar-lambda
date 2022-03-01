@@ -32,7 +32,7 @@ class Sequence(MonadPlus[A, "Sequence[A]"], typing.Sequence[A]):
         return len(self.get)
 
     def __or__(self, other: "Sequence[B]") -> "Sequence[Union[A, B]]":  # type: ignore[override]
-        return Sequence([*self.get, *other.get])
+        return Sequence([*self, *other])
 
     @staticmethod
     def bind(  # type: ignore[override]

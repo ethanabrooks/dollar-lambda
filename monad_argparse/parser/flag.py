@@ -2,7 +2,7 @@ from typing import Optional
 
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.key_value import KeyValue
-from monad_argparse.parser.parse import Parse, Parsed
+from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sat import SatItem
@@ -67,7 +67,7 @@ class Flag(Parser[Sequence[KeyValue[bool]]]):
             cs: Sequence[str],
         ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
             parser = MatchesFlag(long=long, short=short) >= (
-                lambda _: self.return_(Parsed(Sequence([KeyValue(key, True)])))
+                lambda _: self.return_(Sequence([KeyValue(key, True)]))
             )
             return parser.parse(cs)
 

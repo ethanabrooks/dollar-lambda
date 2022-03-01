@@ -1,5 +1,5 @@
 from monad_argparse.parser.error import ArgumentError
-from monad_argparse.parser.parse import Parse, Parsed
+from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import A, Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
@@ -29,6 +29,6 @@ class Empty(Parser[Sequence[A]]):
                 return Result(
                     ArgumentError(token=c, description=f"Unexpected argument: {c}")
                 )
-            return Result(Parse(parsed=Parsed(Sequence([])), unparsed=cs))
+            return Result(Parse(parsed=Sequence([]), unparsed=cs))
 
         super().__init__(f)

@@ -3,26 +3,27 @@ from typing import Callable, Generic, TypeVar
 from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
-from monad_argparse.parser.parse import Parse, Parsed
+from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
 D = TypeVar("D", covariant=True, bound=MonadPlus)
 E = TypeVar("E", covariant=True, bound=MonadPlus)
+F = TypeVar("F", bound=MonadPlus)
 
 
-class Apply(Parser[E], Generic[D, E]):
+class Apply(Parser[E], Generic[F, E]):
     def __init__(
         self,
-        f: Callable[[D], Result[E]],
-        parser: Parser[D],
+        f: Callable[[F], Result[E]],
+        parser: Parser[F],
     ):
-        def h(parsed: Parsed[D]) -> Parser[E]:
-            y = f(parsed.get)
+        def h(parsed: F) -> Parser[E]:
+            y = f(parsed)
             if isinstance(y.get, Exception):
                 return self.zero(y.get)
-            return Parser[E].return_(Parsed(y.get))
+            return Parser[E].return_(y.get)
 
         def g(
             cs: Sequence[str],

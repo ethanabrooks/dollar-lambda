@@ -2,7 +2,7 @@ from typing import Optional
 
 from monad_argparse.parser.error import ArgumentError
 from monad_argparse.parser.key_value import KeyValue, KeyValues
-from monad_argparse.parser.parse import Parse, Parsed
+from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
@@ -17,7 +17,7 @@ class Item(Parser[KeyValues[str]]):
                 head, *tail = cs
                 return Result(
                     Parse(
-                        parsed=Parsed(KeyValues(Sequence([KeyValue(name, head)]))),
+                        parsed=KeyValues(Sequence([KeyValue(name, head)])),
                         unparsed=Sequence(tail),
                     )
                 )
