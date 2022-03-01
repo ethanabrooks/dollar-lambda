@@ -1,17 +1,20 @@
 from dataclasses import dataclass
-from typing import Callable, Generator, Generic, Type, TypeVar, Union
+from typing import Callable, Generator, Type, TypeVar, Union
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.sequence import Sequence
 
-A = TypeVar("A", covariant=True)
-B = TypeVar("B", covariant=True)
+A = TypeVar("A", covariant=True, bound=Monoid)
+B = TypeVar("B", covariant=True, bound=Monoid)
 C = TypeVar("C", covariant=True)
 
 
 @dataclass
-class Parsed(Generic[A]):
+class Parsed(Monoid[A, "Parsed[A]"]):
     get: A
+
+    def __or__(self, other: "Parsed[B]") -> "Parsed[Union[A, B]]":
+        return Parsed(self.get | other.get)
 
     def __repr__(self):
         return f"Parsed({self.get})"
@@ -25,6 +28,10 @@ class Parsed(Generic[A]):
 
         return Parsed(Sequence(list(g())))
 
+    @staticmethod
+    def zero() -> "Parsed[A]":
+        raise NotImplementedError
+
 
 D = TypeVar("D", covariant=True, bound=Monoid)
 E = TypeVar("E", bound=Monoid)
@@ -36,7 +43,10 @@ class Parse(MonadPlus[D, "Parse[D]"]):
     unparsed: Sequence[str]
 
     def __or__(self, other: "Parse[E]") -> "Parse[Union[D, E]]":
-        raise NotImplementedError
+        return Parse(
+            parsed=self.parsed | other.parsed,
+            unparsed=max(self.unparsed, other.unparsed, key=len),
+        )
 
     @staticmethod
     def bind(x: "Parse[E]", f: Callable[[E], "Parse[E]"]) -> "Parse[E]":  # type: ignore[override]
