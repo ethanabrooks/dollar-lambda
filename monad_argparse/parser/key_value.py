@@ -11,7 +11,7 @@ from typing import (
     overload,
 )
 
-from monad_argparse.monad.monad_plus import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus
 
 A = TypeVar("A", covariant=True)
 

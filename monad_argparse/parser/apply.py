@@ -1,6 +1,6 @@
 from typing import Callable, Generic, Sequence, TypeVar
 
-from monad_argparse.monad.monad_plus import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse, Parsed

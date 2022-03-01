@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Generator, Generic, Sequence, Type, TypeVar, Union
 
-from monad_argparse.monad.monad_plus import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", covariant=True)

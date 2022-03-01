@@ -3,7 +3,7 @@ from dataclasses import asdict
 from functools import lru_cache
 from typing import Callable, Generator, Optional, Sequence, TypeVar, Union
 
-from monad_argparse.monad.monad_plus import MonadPlus
+from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
 from monad_argparse.parser.parse import Parse, Parsed
 from monad_argparse.parser.result import Result
