@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Generic, Sequence, TypeVar, Union
+from typing import Callable, Generic, Sequence, TypeVar
 
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
@@ -16,26 +16,16 @@ class Apply(Parser[E], Generic[D, E]):
         f: Callable[[D], Result[E]],
         parser: Parser[D],
     ):
-        def h() -> Generator[
-            Parser[Union[D, E]],
-            Parsed[D],
-            None,
-        ]:
-            # noinspection PyTypeChecker
-            parsed: Parsed[D] = yield parser
+        def h(parsed: Parsed[D]) -> Parser[E]:
             y = f(parsed.get)
             if isinstance(y.get, Exception):
-                yield self.zero(y.get)
-            elif isinstance(y.get, Ok):
-                yield Parser[E].return_(Parsed(y.get.get))
+                return self.zero(y.get)
+            return Parser[E].return_(Parsed(y.get.get))
 
         def g(
             cs: Sequence[str],
         ) -> Result[Parse[E]]:
-            do = Parser[E].do(h)  # type: ignore[arg-type]
-            # The suppression of the type-checker is unfortunately unavoidable here because our definition of `do` requires
-            # the type to remain the same throughout the do block as a consequence of the way that python types generators.
-            return do.parse(cs)
+            return (parser >= h).parse(cs)
 
         super().__init__(g)
 
