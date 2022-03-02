@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Generic, TypeVar
+from typing import Protocol, Type, TypeVar
 
 from monad_argparse.monad.monad import Monad
 
@@ -10,7 +10,7 @@ B = TypeVar("B", covariant=True)
 C = TypeVar("C", bound="Monoid")
 
 
-class Monoid(Generic[A]):
+class Monoid(Protocol[A]):
     @abc.abstractmethod
     def __add__(self: C, other: C) -> C:
         raise NotImplementedError
@@ -20,7 +20,7 @@ class Monoid(Generic[A]):
 
     @classmethod
     @abc.abstractmethod
-    def zero(cls) -> Monoid[A]:
+    def zero(cls: Type[C]) -> C:
         raise NotImplementedError
 
 

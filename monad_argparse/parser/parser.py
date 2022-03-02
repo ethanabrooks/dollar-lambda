@@ -6,7 +6,7 @@ from functools import lru_cache
 from typing import Callable, Generator, Optional, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
-from monad_argparse.parser.key_value import KeyValues, KeyValueTuple
+from monad_argparse.parser.key_value import KeyValue, KeyValueTuple
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
@@ -17,7 +17,7 @@ C = TypeVar("C", bound=Monoid)
 
 
 class Parser(MonadPlus[A]):
-    D = TypeVar("D", bound="Parser[A]")
+    D = TypeVar("D", bound="Parser")
 
     def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
@@ -78,7 +78,7 @@ class Parser(MonadPlus[A]):
             return f(parse.parsed).parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -> Result[Parse[B]]:
-            return self.parse(cs) >= h
+            return self.parse(cs).bind(h)
 
         return Parser(g)
 
@@ -125,13 +125,13 @@ class Parser(MonadPlus[A]):
         return self.f(cs)
 
     def parse_args(
-        self: "Parser[KeyValues]", *args: str
+        self: "Parser[Sequence[KeyValue]]", *args: str
     ) -> typing.Sequence[KeyValueTuple] | Exception:
         result = self.parse(Sequence(list(args))).get
         if isinstance(result, Exception):
             return result
-        parse: Parse[KeyValues] = result
-        kvs: KeyValues = parse.parsed
+        parse: Parse[Sequence[KeyValue]] = result
+        kvs: Sequence[KeyValue] = parse.parsed
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
@@ -149,7 +149,7 @@ class Parser(MonadPlus[A]):
         return Parser(f)
 
     @classmethod
-    def zero(cls, error: Optional[Exception] = None) -> Parser[A]:
+    def zero(cls: Type[Parser[A]], error: Optional[Exception] = None) -> Parser[A]:
         """
         >>> Parser.zero().parse_args()
         RuntimeError('zero')

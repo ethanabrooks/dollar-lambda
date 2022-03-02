@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass
-from typing import Callable, Generator, Iterator, TypeVar, overload
+from typing import Callable, Generator, Iterator, Type, TypeVar, overload
 
 from monad_argparse.monad.monoid import MonadPlus
 
@@ -47,6 +47,6 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     def return_(a: B) -> Sequence[B]:
         return Sequence([a])
 
-    @staticmethod
-    def zero() -> Sequence[A]:
+    @classmethod
+    def zero(cls: Type[Sequence[A]]) -> Sequence[A]:
         return Sequence([])

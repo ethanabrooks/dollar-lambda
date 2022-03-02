@@ -2,7 +2,7 @@ from typing import Optional, TypeVar
 
 from monad_argparse.parser.flag import MatchesFlag, flags
 from monad_argparse.parser.item import Item
-from monad_argparse.parser.key_value import KeyValues
+from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
@@ -11,7 +11,7 @@ from monad_argparse.parser.sequence import Sequence
 A = TypeVar("A", covariant=True)
 
 
-class Option(Parser[KeyValues[str]]):
+class Option(Parser[Sequence[KeyValue[str]]]):
     """
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
@@ -33,7 +33,7 @@ class Option(Parser[KeyValues[str]]):
 
         def f(
             cs: Sequence[str],
-        ) -> Result[Parse[KeyValues[str]]]:
+        ) -> Result[Parse[Sequence[KeyValue[str]]]]:
             parser = MatchesFlag(long=long, short=short) >= (
                 lambda _: Item(
                     name,

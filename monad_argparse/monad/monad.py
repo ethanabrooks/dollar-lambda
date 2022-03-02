@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import abc
-from abc import ABC
 from functools import partial
-from typing import Callable, Generator, Generic, Optional, Type, TypeVar
+from typing import Callable, Generator, Optional, Protocol, Type, TypeVar
 
 from monad_argparse.monad.stateless_iterator import StatelessIterator
 
-A = TypeVar("A", covariant=True)
+A = TypeVar("A")
 B = TypeVar("B", bound="Monad")
 C = TypeVar("C", contravariant=True)
 D = TypeVar("D", bound="Monad")
 
 
-class Monad(ABC, Generic[A]):
+class Monad(Protocol[A]):
     """
     Monad laws:
     ```haskell
