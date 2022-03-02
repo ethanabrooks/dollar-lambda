@@ -36,9 +36,6 @@ class Result(MonadPlus[B]):
             return other
         return self
 
-    def __ge__(self, other: Callable[[B], Result]) -> Result:
-        return Result.bind(self, other)
-
     def __repr__(self):
         return f"Result({self.get})"
 
