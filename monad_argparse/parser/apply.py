@@ -28,7 +28,8 @@ class Apply(Parser[E], Generic[F, E]):
         def g(
             cs: Sequence[str],
         ) -> Result[Parse[E]]:
-            return (parser >= h).parse(cs)
+            p: Parser[E] = parser >= h
+            return p.parse(cs)
 
         super().__init__(g)
 

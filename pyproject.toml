@@ -19,6 +19,7 @@ mypy = "^0.931"
 pyre-check = "^0.9.10"
 flake8 = "^4.0.1"
 pdoc3 = "^0.10.0"
+pyright = "^1.1.225"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

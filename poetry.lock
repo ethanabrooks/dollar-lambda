@@ -1068,6 +1068,21 @@ typing-extensions = "*"
 typing-inspect = "*"
 
 [[package]]
+name = "pyright"
+version = "1.1.225"
+description = "Command line wrapper for pyright"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+nodeenv = ">=1.6.0"
+
+[package.extras]
+all = ["twine (>=3.4.1)"]
+dev = ["twine (>=3.4.1)"]
+
+[[package]]
 name = "pyrsistent"
 version = "0.18.1"
 description = "Persistent/Functional/Immutable data structures"
@@ -1384,7 +1399,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4.0"
-content-hash = "26b85b6470fabc3e9c4319f097aaf3392c68c333284acde011b60415ad464d8e"
+content-hash = "561a13b1afb03f3d58d905bc5f5cc28fcb45d0a63b024a1a9cdccddc17957e09"
 
 [metadata.files]
 appnope = [
@@ -1938,6 +1953,10 @@ pyre-check = [
 pyre-extensions = [
     {file = "pyre-extensions-0.0.27.tar.gz", hash = "sha256:767607736d5d2da4db3377e016746776a195987fb3c61c7b38b442160e67771f"},
     {file = "pyre_extensions-0.0.27-py3-none-any.whl", hash = "sha256:5ad4822ceaed43171a36391a95b70b928c222ca0776f4e689f6921081ecfb324"},
+]
+pyright = [
+    {file = "pyright-1.1.225-py3-none-any.whl", hash = "sha256:ebb6de095972914b6b3b12d053474e29943389f585dd4bff8a684eb45c4d6987"},
+    {file = "pyright-1.1.225.tar.gz", hash = "sha256:d638b616bdaea762502e8904307ca8247754d7629b7adf05f0bb2bf64cbb340f"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.18.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:df46c854f490f81210870e509818b729db4488e1f30f2a1ce1698b2295a878d1"},
