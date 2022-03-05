@@ -1,3 +1,6 @@
+"""
+A `Sequence` is a strongly-typed immutable list that implements `MonadPlus`.
+"""
 from __future__ import annotations
 
 import typing
@@ -12,6 +15,22 @@ B = TypeVar("B")
 
 @dataclass
 class Sequence(MonadPlus[A], typing.Sequence[A]):
+    """
+    >>> s = Sequence([1, 2])
+    >>> len(s)
+    2
+    >>> s[0]
+    1
+    >>> s[-1]
+    2
+    >>> s + s
+    Sequence(get=[1, 2, 1, 2])
+    >>> [x + 1 for x in s]
+    [2, 3]
+    >>> Sequence([1, 2]) >= (lambda x: Sequence([x, -x]))
+    Sequence(get=[1, -1, 2, -2])
+    """
+
     get: typing.Sequence[A]
 
     @overload

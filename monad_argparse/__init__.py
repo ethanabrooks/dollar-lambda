@@ -1,5 +1,5 @@
 """
-### λ Welcome to the monad_argparse package.
+### λ Welcome to the `monad_argparse` package.
 """
 from monad_argparse.argument_parsers import (
     Args,

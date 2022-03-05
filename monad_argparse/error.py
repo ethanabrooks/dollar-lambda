@@ -1,5 +1,5 @@
 """
-This package contains definitions for errors which can be raised by parsers.
+Contains definitions for errors which can be raised by parsers.
 """
 from dataclasses import dataclass
 from typing import Generic, TypeVar

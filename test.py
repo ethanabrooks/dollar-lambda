@@ -3,11 +3,11 @@ import doctest
 import unittest
 from abc import ABC, abstractmethod
 
-from monad_argparse import argument_parsers, parser
+from monad_argparse import argument_parsers, parser, result, sequence
 
 
 def load_tests(_, tests, __):
-    for mod in [parser, argument_parsers]:
+    for mod in [parser, argument_parsers, sequence, result]:
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 

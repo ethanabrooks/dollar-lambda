@@ -1,3 +1,6 @@
+"""
+A `Parse` is the output of parsing, separating inputs into a parsed component and a yet-to-be parsed (`unparsed`) component.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass

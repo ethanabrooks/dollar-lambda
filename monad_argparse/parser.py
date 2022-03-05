@@ -1,3 +1,6 @@
+"""
+`Parser` is the class that powers `monad_argparse`.
+"""
 from __future__ import annotations
 
 import typing

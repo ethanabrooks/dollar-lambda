@@ -1,3 +1,6 @@
+"""
+Results represent either success or failure (an exception). This is how errors get bubbled up during the parsing process.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,9 +24,6 @@ class Result(MonadPlus[A]):
         if not isinstance(other.get, Exception):
             return other
         return self
-
-    def __repr__(self):
-        return f"Result({self.get})"
 
     def bind(self, f: Callable[[A], Result[B]]) -> Result[B]:
         y = self.get
