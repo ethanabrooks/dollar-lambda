@@ -1,5 +1,3 @@
-from typing import Optional
-
 from monad_argparse.parser.error import MissingError
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
@@ -9,7 +7,7 @@ from monad_argparse.parser.sequence import Sequence
 
 
 class Item(Parser[Sequence[KeyValue[str]]]):
-    def __init__(self, name: str, description: Optional[str] = None):
+    def __init__(self, name: str):
         def f(
             cs: Sequence[str],
         ) -> Result[Parse[Sequence[KeyValue[str]]]]:
