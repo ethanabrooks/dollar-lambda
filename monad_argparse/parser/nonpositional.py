@@ -2,6 +2,7 @@ from dataclasses import Field, dataclass, fields
 from functools import reduce
 from typing import Generator, TypeVar, Union
 
+from monad_argparse.parser.done import Done
 from monad_argparse.parser.flag import Flag
 from monad_argparse.parser.option import Option
 from monad_argparse.parser.parser import Parser
@@ -25,6 +26,18 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     ArgumentError(token=None, description='Missing: --verbose')
     >>> p.parse_args("--verbose")
     ArgumentError(token='--verbose', description="Input '--verbose' does not match '--debug")
+    >>> p = nonpositional(
+    ...   Flag("verbose") | Parser.key_values(verbose=False),
+    ...   Flag("debug") | Parser.key_values(debug=False)
+    ... )
+    >>> p.parse_args("--verbose", "--debug")
+    [('verbose', True), ('debug', True)]
+    >>> p.parse_args("--verbose")
+    [('verbose', True), ('debug', False)]
+    >>> p.parse_args("--debug")
+    [('verbose', False), ('debug', True)]
+    >>> p.parse_args()
+    [('verbose', False), ('debug', False)]
     >>> p = nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
     >>> p.parse_args("--debug", "hello", "--verbose")
     [('debug', True), ('a', 'hello'), ('verbose', True)]
@@ -35,7 +48,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     def get_alternatives():
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail)
+            yield head >> nonpositional(*tail) >> Done()
 
     return reduce(lambda p1, p2: p1 | p2, get_alternatives())
 
@@ -96,13 +109,21 @@ class Args:
 
 
 if __name__ == "__main__":
+    from monad_argparse import Argument
 
-    @dataclass
-    class MyArgs(Args):
-        t: bool = True
-        f: bool = False
-        i: int = 1
-        s: str = "a"
+    p = nonpositional(
+        Flag("verbose"),
+        Flag("debug"),
+        Argument("a"),
+    )
+    print(repr(p.parse_args("hello", "--debug")))
 
-    print(repr(MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")))
+    # @dataclass
+    # class MyArgs(Args):
+    #     t: bool = True
+    #     f: bool = False
+    #     i: int = 1
+    #     s: str = "a"
+
+    # print(repr(MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")))
     # print(repr(MyArgs().parse_args()))

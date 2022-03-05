@@ -87,8 +87,6 @@ p.parse_args("--quiet", "--quiet", "--quiet")
 
 # %% [markdown]
 # Combine sequences and sums
-#
-# from typing import Sequence, Union
 
 # %% pycharm={"name": "#%%\n"}
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")

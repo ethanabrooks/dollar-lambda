@@ -83,6 +83,16 @@ class Parser(MonadPlus[A]):
         return Parser(g)
 
     @classmethod
+    def const(cls: Type[Parser[Sequence[B]]], b: B) -> Parser[Sequence[B]]:
+        return cls.return_(Sequence([b]))
+
+    @classmethod
+    def key_values(
+        cls: Type[Parser[Sequence[KeyValue[B]]]], **kwargs: B
+    ) -> Parser[Sequence[KeyValue[B]]]:
+        return cls.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
+
+    @classmethod
     def empty(cls: Type[Parser[Sequence[B]]]) -> Parser[Sequence[B]]:
         return cls.return_(Sequence([]))
 
