@@ -2,7 +2,7 @@
 Contains all the functions for generating parsers tailored for parsing command line arguments.
 """
 from dataclasses import Field, dataclass, fields, replace
-from functools import reduce
+from functools import partial, reduce
 from typing import Any, Callable, Generator, Optional, TypeVar
 
 from pytypeclass import MonadPlus
@@ -98,6 +98,7 @@ def equals(s: str) -> Parser[Sequence[KeyValue[str]]]:
 
 def flag(
     dest: str,
+    short: bool = True,
     string: Optional[str] = None,
     default: Optional[bool] = None,
 ) -> Parser[Sequence[KeyValue[bool]]]:
@@ -112,22 +113,26 @@ def flag(
     >>> flag("v", string="--value").parse_args("--value")
     {'v': True}
     """
+    if string is None:
+        _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
+    else:
+        _string = string
 
     def f(
         cs: Sequence[str],
+        s: str,
     ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
-        if string is None:
-            _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
-        else:
-            _string = string
-        parser = equals(_string) >= (
+        parser = equals(s) >= (
             lambda _: Parser[Sequence[KeyValue[bool]]].key_values(**{dest: not default})
         )
         return parser.parse(cs)
 
-    parser = Parser(f)
+    parser = Parser(partial(f, s=_string))
     if default is not None:
         parser = parser | parser.key_values(**{dest: default})
+    if short:
+        parser2 = flag(dest, short=False, string=f"-{dest[0]}", default=default)
+        parser = parser | parser2
     return parser
 
 
@@ -188,7 +193,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
 
 
 def option(
-    dest: str, flag: Optional[str] = None, default=None
+    dest: str, flag: Optional[str] = None, default=None, short: bool = True
 ) -> Parser[Sequence[KeyValue[str]]]:
     """
     >>> option("value").parse_args("--value", "x")
@@ -223,6 +228,9 @@ def option(
     parser = Parser(f)
     if default:
         parser = parser | parser.key_values(**{dest: default})
+    if short:
+        parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
+        parser = parser2 | parser
     return parser
 
 
