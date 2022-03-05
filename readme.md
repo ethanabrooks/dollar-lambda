@@ -5,8 +5,9 @@
 Arguments
 
 
+
 ```python
-from monad_argparse.argument import argument
+from monad_argparse import argument
 
 argument("name").parse_args("Ethan")
 ```
@@ -18,11 +19,20 @@ argument("name").parse_args("Ethan")
 
 
 
+
+
+
+
+    [('name', 'Ethan')]
+
+
+
 Flags
 
 
+
 ```python
-from monad_argparse.flag import flag
+from monad_argparse import flag
 
 flag("verbose").parse_args("--verbose")
 ```
@@ -34,11 +44,20 @@ flag("verbose").parse_args("--verbose")
 
 
 
+
+
+
+
+    [('verbose', True)]
+
+
+
 Options
 
 
+
 ```python
-from monad_argparse.option import option
+from monad_argparse import option
 
 option("value").parse_args("--value", "x")
 ```
@@ -50,7 +69,16 @@ option("value").parse_args("--value", "x")
 
 
 
+
+
+
+
+    [('value', 'x')]
+
+
+
 Failure
+
 
 
 ```python
@@ -64,7 +92,16 @@ option("value").parse_args("--value")
 
 
 
+
+
+
+
+    MissingError(missing='value')
+
+
+
 Alternatives (or "Sums")
+
 
 
 ```python
@@ -80,6 +117,16 @@ p.parse_args("--verbose")
 
 
 
+
+
+
+    [('verbose', True)]
+
+
+
+
+
+
 ```python
 p.parse_args("--value", "x")
 ```
@@ -91,7 +138,16 @@ p.parse_args("--value", "x")
 
 
 
+
+
+
+
+    [('value', 'x')]
+
+
+
 Sequencing
+
 
 
 ```python
@@ -106,7 +162,16 @@ p.parse_args("a", "b")
 
 
 
+
+
+
+
+    [('first', 'a'), ('second', 'b')]
+
+
+
 Variable arguments
+
 
 
 ```python
@@ -118,6 +183,16 @@ p.parse_args("a", "b")
 
 
     [('many', 'a'), ('many', 'b')]
+
+
+
+
+
+
+
+    [('many', 'a'), ('many', 'b')]
+
+
 
 
 
@@ -135,6 +210,16 @@ p.parse_args("--verbose", "--quiet")
 
 
 
+
+
+
+    [('verbose', True), ('quiet', True)]
+
+
+
+
+
+
 ```python
 p.parse_args("--quiet", "--verbose")
 ```
@@ -143,6 +228,16 @@ p.parse_args("--quiet", "--verbose")
 
 
     [('quiet', True), ('verbose', True)]
+
+
+
+
+
+
+
+    [('quiet', True), ('verbose', True)]
+
+
 
 
 
@@ -159,6 +254,16 @@ p.parse_args("--quiet")
 
 
 
+
+
+
+    [('quiet', True)]
+
+
+
+
+
+
 ```python
 p.parse_args("--quiet", "--quiet", "--quiet")
 ```
@@ -170,7 +275,16 @@ p.parse_args("--quiet", "--quiet", "--quiet")
 
 
 
+
+
+
+
+    [('quiet', True), ('quiet', True), ('quiet', True)]
+
+
+
 Combine sequences and sums
+
 
 
 ```python
@@ -187,7 +301,16 @@ p.parse_args("--verbose", "value")
 
 
 
+
+
+
+
+    [('verbose', True), ('a', 'value')]
+
+
+
 What about doing this many times?
+
 
 
 ```python
@@ -203,12 +326,21 @@ p.parse_args("--verbose", "value")
 
 
 
+
+
+
+
+    [('verbose', True), ('a', 'value')]
+
+
+
 `monad_monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
 First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 
+
 ```python
-from monad_argparse.parser import Parser
+from monad_argparse import Parser
 
 p = Parser.empty()
 p.parse_args("any", "arguments")
@@ -221,7 +353,16 @@ p.parse_args("any", "arguments")
 
 
 
+
+
+
+
+    []
+
+
+
 Using this function, we can define a parser for nonpositional arguments.
+
 
 
 ```python
@@ -251,6 +392,7 @@ def nonpositional(*parsers):
 Let's test it:
 
 
+
 ```python
 p = nonpositional(flag("verbose"), flag("debug"))
 p.parse_args("--verbose", "--debug")
@@ -260,6 +402,16 @@ p.parse_args("--verbose", "--debug")
 
 
     [('verbose', True), ('debug', True)]
+
+
+
+
+
+
+
+    [('verbose', True), ('debug', True)]
+
+
 
 
 
@@ -276,10 +428,28 @@ p.parse_args("--debug", "--verbose")
 
 
 
+
+
+
+    [('debug', True), ('verbose', True)]
+
+
+
+
+
+
 ```python
 p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
 p.parse_args("--debug", "hello", "--verbose")
 ```
+
+
+
+
+    [('debug', True), ('a', 'hello'), ('verbose', True)]
+
+
+
 
 
 
