@@ -37,7 +37,7 @@ def flag(
         else:
             _string = string
         parser = equals(_string) >= (
-            lambda _: Parser[Sequence[KeyValue[bool]]].key_values(**{dest: True})
+            lambda _: Parser[Sequence[KeyValue[bool]]].key_values(**{dest: not default})
         )
         return parser.parse(cs)
 

@@ -53,16 +53,19 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
 
 @dataclass
 class Args:
-    # """
-    # >>> @dataclass
-    # ... class MyArgs(Args):
-    # ...     t: bool = True
-    # ...     f: bool = False
-    # ...     i: int = 1
-    # ...     s: str = "a"
-    # >>> MyArgs().parse_args("-t", "-f", "-i", "2", "-s", "b")
-    # [('t', True), ('f', True), ('i', 2), ('s', 'b')]
-    # """
+    """
+    >>> @dataclass
+    ... class MyArgs(Args):
+    ...     t: bool = True
+    ...     f: bool = False
+    ...     i: int = 1
+    ...     s: str = "a"
+    >>> p = MyArgs()
+    >>> MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")
+    [('t', False), ('f', True), ('i', 2), ('s', 'b')]
+    >>> MyArgs().parse_args("--no-t")
+    [('t', False), ('f', False), ('i', 1), ('s', 'a')]
+    """
 
     @property
     def parser(self) -> Parser[Sequence[KeyValue[Any]]]:
@@ -73,7 +76,11 @@ class Args:
                     assert isinstance(
                         field.default, bool
                     ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    yield flag(dest=field.name, default=field.default)
+                    if field.default is True:
+                        string = f"--no-{field.name}"
+                    else:
+                        string = None
+                    yield flag(dest=field.name, string=string, default=field.default)
                 else:
                     opt = option(dest=field.name, default=field.default)
                     try:
