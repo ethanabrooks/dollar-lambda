@@ -1,6 +1,6 @@
 from monad_argparse.parser.apply import Apply
 from monad_argparse.parser.argument import Argument
-from monad_argparse.parser.empty import Empty
+from monad_argparse.parser.done import Done
 from monad_argparse.parser.flag import Flag
 from monad_argparse.parser.nonpositional import Args, nonpositional
 from monad_argparse.parser.option import Option
@@ -13,7 +13,7 @@ __all__ = [
     "Option",
     "Argument",
     "Parser",
-    "Empty",
+    "Done",
     "Apply",
     "Sat",
     "Type",

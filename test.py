@@ -8,7 +8,7 @@ from monad_argparse.monad.io import IO
 from monad_argparse.monad.lst import List
 from monad_argparse.monad.option import Option
 from monad_argparse.monad.result import Result
-from monad_argparse.parser import apply, argument, empty, flag, nonpositional
+from monad_argparse.parser import apply, argument, done, flag, nonpositional
 from monad_argparse.parser import option as parser_option
 from monad_argparse.parser import parser, sat, type_
 
@@ -23,7 +23,7 @@ def load_tests(_, tests, __):
         io,
         apply,
         argument,
-        empty,
+        done,
         flag,
         parser_option,
         sat,

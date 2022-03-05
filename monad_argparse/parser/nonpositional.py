@@ -37,10 +37,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
             tail = [p for j, p in enumerate(parsers) if j != i]
             yield head >> nonpositional(*tail)
 
-    def _or(p1: Parser[Sequence[A]], p2: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
-        return p1 | p2
-
-    return reduce(_or, get_alternatives())
+    return reduce(lambda p1, p2: p1 | p2, get_alternatives())
 
 
 @dataclass

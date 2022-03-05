@@ -5,20 +5,20 @@ from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
 
-class Empty(Parser[Sequence[A]]):
+class Done(Parser[Sequence[A]]):
     """
-    >>> from monad_argparse import Argument, Empty, Flag
-    >>> Empty().parse_args()
+    >>> from monad_argparse import Argument, Flag
+    >>> Done().parse_args()
     []
-    >>> Empty().parse_args("arg")
+    >>> Done().parse_args("arg")
     ArgumentError(token='arg', description='Unexpected argument: arg')
-    >>> (Argument("arg") >> Empty()).parse_args("a")
+    >>> (Argument("arg") >> Done()).parse_args("a")
     [('arg', 'a')]
-    >>> (Argument("arg") >> Empty()).parse_args("a", "b")
+    >>> (Argument("arg") >> Done()).parse_args("a", "b")
     ArgumentError(token='b', description='Unexpected argument: b')
-    >>> (Flag("arg").many() >> Empty()).parse_args("--arg", "--arg")
+    >>> (Flag("arg").many() >> Done()).parse_args("--arg", "--arg")
     [('arg', True), ('arg', True)]
-    >>> (Flag("arg").many() >> Empty()).parse_args("--arg", "--arg", "x")
+    >>> (Flag("arg").many() >> Done()).parse_args("--arg", "--arg", "x")
     ArgumentError(token='x', description='Unexpected argument: x')
     """
 

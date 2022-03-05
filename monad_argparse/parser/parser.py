@@ -27,13 +27,13 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -> Parser[A | B]:
         """
-        >>> from monad_argparse import Argument, Option, Empty, Flag
+        >>> from monad_argparse import Argument, Option, Done, Flag
         >>> p = Flag("verbose") | Option("option")
         >>> p.parse_args("--verbose")
         [('verbose', True)]
         >>> p.parse_args("--verbose", "--option", "x")
         [('verbose', True)]
-        >>> (p >> Empty()).parse_args("--verbose", "--option", "x")
+        >>> (p >> Done()).parse_args("--verbose", "--option", "x")
         ArgumentError(token='--option', description='Unexpected argument: --option')
         >>> p.parse_args("--option", "x")
         [('option', 'x')]
