@@ -8,29 +8,28 @@ from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
-D = TypeVar("D", covariant=True, bound=MonadPlus)
-E = TypeVar("E", covariant=True, bound=MonadPlus)
-F = TypeVar("F", bound=MonadPlus)
+A = TypeVar("A", covariant=True, bound=MonadPlus)
+B = TypeVar("B", bound=MonadPlus)
 
 
-def apply(f: Callable[[F], Result[E]], parser: Parser[F]):
-    def h(parsed: F) -> Parser[E]:
+def apply(f: Callable[[B], Result[A]], parser: Parser[B]) -> Parser[A]:
+    def h(parsed: B) -> Parser[A]:
         y = f(parsed)
         if isinstance(y.get, Exception):
-            return Parser[E].zero(y.get)
-        return Parser[E].return_(y.get)
+            return Parser[A].zero(y.get)
+        return Parser[A].return_(y.get)
 
     def g(
         cs: Sequence[str],
-    ) -> Result[Parse[E]]:
-        p: Parser[E] = parser >= h
+    ) -> Result[Parse[A]]:
+        p: Parser[A] = parser >= h
         return p.parse(cs)
 
     return Parser(g)
 
 
-def apply_item(f: Callable[[str], E], description: str):
-    def g(parsed: Sequence[KeyValue[str]]) -> Result[E]:
+def apply_item(f: Callable[[str], A], description: str) -> Parser[A]:
+    def g(parsed: Sequence[KeyValue[str]]) -> Result[A]:
         [kv] = parsed
         try:
             y = f(kv.value)

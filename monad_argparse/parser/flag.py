@@ -13,7 +13,7 @@ def flag(
     string: Optional[str] = None,
     default: bool = False,
     require: bool = False,
-):
+) -> Parser[Sequence[KeyValue[bool]]]:
     """
     >>> flag("verbose").parse_args("--verbose")
     [('verbose', True)]

@@ -6,16 +6,15 @@ from typing import Callable, Type, TypeVar
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.error import ZeroError
 
-A = TypeVar("A", covariant=True)
-B = TypeVar("B", covariant=True, bound=Monoid)
-C = TypeVar("C", bound=Monoid)
+A = TypeVar("A", covariant=True, bound=Monoid)
+B = TypeVar("B", bound=Monoid)
 
 
 @dataclass
-class Result(MonadPlus[B]):
-    get: B | Exception
+class Result(MonadPlus[A]):
+    get: A | Exception
 
-    def __add__(self, other: Result[C]) -> Result[B | C]:
+    def __add__(self, other: Result[B]) -> Result[A | B]:
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):
@@ -25,16 +24,16 @@ class Result(MonadPlus[B]):
     def __repr__(self):
         return f"Result({self.get})"
 
-    def bind(self, f: Callable[[B], Result[C]]) -> Result[C]:
+    def bind(self, f: Callable[[A], Result[B]]) -> Result[B]:
         y = self.get
         if isinstance(y, Exception):
             return Result(y)
         return f(y)
 
     @classmethod
-    def return_(cls: "Type[Result[B]]", a: C) -> "Result[C]":
+    def return_(cls: "Type[Result[A]]", a: B) -> "Result[B]":
         return Result(a)
 
     @classmethod
-    def zero(cls: "Type[Result[B]]") -> "Result[B]":
+    def zero(cls: "Type[Result[A]]") -> "Result[A]":
         return Result(ZeroError())

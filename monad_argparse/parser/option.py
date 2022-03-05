@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar
+from typing import Optional
 
 from monad_argparse.parser.item import item
 from monad_argparse.parser.key_value import KeyValue
@@ -8,10 +8,10 @@ from monad_argparse.parser.result import Result
 from monad_argparse.parser.sat import equals
 from monad_argparse.parser.sequence import Sequence
 
-A = TypeVar("A", covariant=True)
 
-
-def option(dest: str, flag: Optional[str] = None, default=None):
+def option(
+    dest: str, flag: Optional[str] = None, default=None
+) -> Parser[Sequence[KeyValue[str]]]:
     """
     >>> option("value").parse_args("--value", "x")
     [('value', 'x')]
@@ -33,7 +33,7 @@ def option(dest: str, flag: Optional[str] = None, default=None):
 
     def f(
         cs: Sequence[str],
-    ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
+    ) -> Result[Parse[Sequence[KeyValue[str]]]]:
         if flag is None:
             _flag = f"--{dest}" if len(dest) > 1 else f"-{dest}"
         else:

@@ -5,7 +5,7 @@ from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
 
-def done():
+def done() -> Parser[Sequence[A]]:
     """
     >>> from monad_argparse import argument, flag
     >>> done().parse_args()

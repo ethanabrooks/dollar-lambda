@@ -1,23 +1,19 @@
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from monad_argparse.monad.monoid import Monoid
-
-A = TypeVar("A", bound=Monoid)
-
 
 @dataclass
 class ArgumentError(Exception):
     pass
 
 
-B = TypeVar("B")
+A = TypeVar("A")
 
 
 @dataclass
-class UnequalError(ArgumentError, Generic[B]):
-    left: B
-    right: B
+class UnequalError(ArgumentError, Generic[A]):
+    left: A
+    right: A
 
 
 @dataclass

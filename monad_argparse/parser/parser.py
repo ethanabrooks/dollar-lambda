@@ -13,8 +13,7 @@ from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
-C = TypeVar("C", bound=Monoid)
-D = TypeVar("D")
+C = TypeVar("C")
 
 
 class Parser(MonadPlus[A]):
@@ -89,8 +88,8 @@ class Parser(MonadPlus[A]):
 
     @classmethod
     def key_values(
-        cls: Type[Parser[Sequence[KeyValue[D]]]], **kwargs: D
-    ) -> Parser[Sequence[KeyValue[D]]]:
+        cls: Type[Parser[Sequence[KeyValue[C]]]], **kwargs: C
+    ) -> Parser[Sequence[KeyValue[C]]]:
         return cls.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
 
     @classmethod

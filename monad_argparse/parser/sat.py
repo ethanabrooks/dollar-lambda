@@ -9,15 +9,15 @@ from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
-F = TypeVar("F", bound=MonadPlus)
+A = TypeVar("A", bound=MonadPlus)
 
 
 def sat(
-    parser: Parser[F],
-    predicate: Callable[[F], bool],
-    on_fail: Callable[[F], ArgumentError],
-) -> Parser[F]:
-    def f(x: F) -> Result[F]:
+    parser: Parser[A],
+    predicate: Callable[[A], bool],
+    on_fail: Callable[[A], ArgumentError],
+) -> Parser[A]:
+    def f(x: A) -> Result[A]:
         return Result(x if predicate(x) else on_fail(x))
 
     return apply(f, parser)
