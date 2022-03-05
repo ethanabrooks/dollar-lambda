@@ -28,10 +28,7 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -> Parser[A | B]:
         """
-        >>> from monad_argparse.argument import argument
-        >>> from monad_argparse.option import option
-        >>> from monad_argparse.done import done
-        >>> from monad_argparse.flag import flag
+        >>> from monad_argparse import argument, option, done, flag
         >>> p = option("option") | flag("verbose")
         >>> p.parse_args("--verbose")
         [('verbose', True)]
@@ -58,8 +55,7 @@ class Parser(MonadPlus[A]):
         self: Parser[Sequence[A]], p: Parser[Sequence[B]]
     ) -> Parser[Sequence[A | B]]:
         """
-        >>> from monad_argparse.argument import argument
-        >>> from monad_argparse.flag import flag
+        >>> from monad_argparse import argument, flag
         >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
         [('first', 'a'), ('second', 'b')]
@@ -103,8 +99,7 @@ class Parser(MonadPlus[A]):
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
-        >>> from monad_argparse.argument import argument
-        >>> from monad_argparse.flag import flag
+        >>> from monad_argparse import argument, flag
         >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args()
         []
