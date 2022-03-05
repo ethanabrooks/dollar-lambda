@@ -1,12 +1,12 @@
 # Monad Argparse
 
-### An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
+### An alternative to `monad_argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
 
 Arguments
 
 
 ```python
-from monad_argparse import argument
+from monad_argparse.argument import argument
 
 argument("name").parse_args("Ethan")
 ```
@@ -22,7 +22,7 @@ Flags
 
 
 ```python
-from monad_argparse import flag
+from monad_argparse.flag import flag
 
 flag("verbose").parse_args("--verbose")
 ```
@@ -38,7 +38,7 @@ Options
 
 
 ```python
-from monad_argparse import option
+from monad_argparse.option import option
 
 option("value").parse_args("--value", "x")
 ```
@@ -203,12 +203,12 @@ p.parse_args("--verbose", "value")
 
 
 
-`monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
+`monad_monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
 First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 
 ```python
-from monad_argparse import Parser
+from monad_argparse.parser import Parser
 
 p = Parser.empty()
 p.parse_args("any", "arguments")
