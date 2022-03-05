@@ -22,15 +22,12 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p.parse_args("--debug", "--verbose")
     [('debug', True), ('verbose', True)]
     >>> p.parse_args()
-    MissingError(missing='--debug')
+    [('verbose', False), ('debug', False)]
     >>> p.parse_args("--debug")
-    MissingError(missing='--verbose')
+    [('verbose', False), ('debug', True)]
     >>> p.parse_args("--verbose")
-    UnequalError(left='--debug', right='--verbose')
-    >>> p = nonpositional(
-    ...   flag("verbose") | Parser.key_values(verbose=False),
-    ...   flag("debug") | Parser.key_values(debug=False)
-    ... )
+    [('verbose', True), ('debug', False)]
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
     >>> p.parse_args("--verbose", "--debug")
     [('verbose', True), ('debug', True)]
     >>> p.parse_args("--verbose")
@@ -72,14 +69,13 @@ class Args:
         def get_parsers() -> Generator[Parser, None, None]:
             field: Field
             for field in fields(self):
-                long = len(field.name) > 1
                 if field.type == bool:
                     assert isinstance(
                         field.default, bool
                     ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    yield flag(dest=field.name, long=long, default=field.default)
+                    yield flag(dest=field.name, default=field.default)
                 else:
-                    opt = option(dest=field.name, long=long, default=field.default)
+                    opt = option(dest=field.name, default=field.default)
                     try:
                         t = field.metadata["type"]
                     except (TypeError, KeyError):
