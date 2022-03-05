@@ -6,19 +6,20 @@ from monad_argparse.parser.result import Result
 from monad_argparse.parser.sequence import Sequence
 
 
-class Item(Parser[Sequence[KeyValue[str]]]):
-    def __init__(self, name: str):
-        def f(
-            cs: Sequence[str],
-        ) -> Result[Parse[Sequence[KeyValue[str]]]]:
-            if cs:
-                head, *tail = cs
-                return Result(
-                    Parse(
-                        parsed=Sequence([KeyValue(name, head)]),
-                        unparsed=Sequence(tail),
-                    )
+def item(
+    name: str,
+) -> Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -> Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *tail = cs
+            return Result(
+                Parse(
+                    parsed=Sequence([KeyValue(name, head)]),
+                    unparsed=Sequence(tail),
                 )
-            return Result(MissingError(name))
+            )
+        return Result(MissingError(name))
 
-        super().__init__(f)
+    return Parser(f)

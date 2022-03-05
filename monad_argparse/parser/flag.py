@@ -1,72 +1,31 @@
-from typing import Optional
-
-from monad_argparse.parser.error import UnequalError
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
-from monad_argparse.parser.sat import SatItem
+from monad_argparse.parser.sat import equals
 from monad_argparse.parser.sequence import Sequence
 
 
-def flags(long: Optional[str] = None, short: Optional[str] = None):
-    if short:
-        yield f"-{short}"
-    if long:
-        yield f"--{long}"
-
-
-class MatchesFlag(SatItem):
-    def __init__(
-        self,
-        long: Optional[str] = None,
-        short: Optional[str] = None,
-    ):
-        assert long or short, "Either long or short must be provided."
-
-        def matches(x: str) -> bool:
-            if short is not None and x == f"-{short}":
-                return True
-            if long is not None and x == f"--{long}":
-                return True
-            return False
-
-        flags_string = f"{' or '.join(list(flags(short=short, long=long)))}"
-
-        super().__init__(
-            matches,
-            on_fail=lambda a: UnequalError(a, flags_string),
-            description=flags_string,
-        )
-
-
-class Flag(Parser[Sequence[KeyValue[bool]]]):
+def flag(dest: str, long: bool = True, default=None):
     """
-    >>> Flag("verbose").parse_args("--verbose")
+    >>> flag("verbose").parse_args("--verbose")
     [('verbose', True)]
-    >>> Flag("verbose").parse_args()
+    >>> flag("verbose").parse_args()
     MissingError(missing='--verbose')
-    >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
+    >>> flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
     """
 
-    def __init__(
-        self,
-        long: str,
-        short: Optional[str] = None,
-        dest: Optional[str] = None,
-    ):
+    def f(
+        cs: Sequence[str],
+    ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
+        flag_str = f"--{dest}" if long else f"-{dest}"
+        parser = equals(flag_str) >= (
+            lambda _: Parser[Sequence[KeyValue[bool]]].key_values(**{dest: True})
+        )
+        return parser.parse(cs)
 
-        if len(long) == 1 and short is None:
-            short = long
-        key: str = long if dest is None else dest
-
-        def f(
-            cs: Sequence[str],
-        ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
-            parser = MatchesFlag(long=long, short=short) >= (
-                lambda _: self.return_(Sequence([KeyValue(key, True)]))
-            )
-            return parser.parse(cs)
-
-        super().__init__(f)
+    parser = Parser(f)
+    if default:
+        parser = parser | parser.key_values(**{dest: default})
+    return parser

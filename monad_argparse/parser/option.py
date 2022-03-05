@@ -1,40 +1,34 @@
-from typing import Optional, TypeVar
+from typing import TypeVar
 
-from monad_argparse.parser.flag import MatchesFlag
-from monad_argparse.parser.item import Item
+from monad_argparse.parser.item import item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.result import Result
+from monad_argparse.parser.sat import equals
 from monad_argparse.parser.sequence import Sequence
 
 A = TypeVar("A", covariant=True)
 
 
-class Option(Parser[Sequence[KeyValue[str]]]):
+def option(dest: str, long: bool = True, default=None):
     """
-    >>> Option("value").parse_args("--value", "x")
+    >>> option("value").parse_args("--value", "x")
     [('value', 'x')]
-    >>> Option("value").parse_args("--value")
+    >>> option("value").parse_args("--value")
     MissingError(missing='value')
-    >>> Option("value").parse_args()
+    >>> option("value").parse_args()
     MissingError(missing='--value')
     """
 
-    def __init__(
-        self,
-        long: str,
-        short: Optional[str] = None,
-        dest: Optional[str] = None,
-    ):
-        if len(long) == 1 and short is None:
-            short = long
-        name: str = long if dest is None else dest
+    def f(
+        cs: Sequence[str],
+    ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
+        flag_str = f"--{dest}" if long else f"-{dest}"
+        parser = equals(flag_str) >= (lambda _: item(dest))
+        return parser.parse(cs)
 
-        def f(
-            cs: Sequence[str],
-        ) -> Result[Parse[Sequence[KeyValue[str]]]]:
-            parser = MatchesFlag(long=long, short=short) >= (lambda _: Item(name))
-            return parser.parse(cs)
-
-        super().__init__(f)
+    parser = Parser(f)
+    if default:
+        parser = parser | parser.key_values(**{dest: default})
+    return parser

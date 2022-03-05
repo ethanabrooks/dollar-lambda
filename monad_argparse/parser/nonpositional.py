@@ -1,21 +1,22 @@
 from dataclasses import Field, dataclass, fields
 from functools import reduce
-from typing import Generator, TypeVar, Union
+from typing import Any, Generator, TypeVar
 
-from monad_argparse.parser.done import Done
-from monad_argparse.parser.flag import Flag
-from monad_argparse.parser.option import Option
+from monad_argparse.parser.done import done
+from monad_argparse.parser.flag import flag
+from monad_argparse.parser.key_value import KeyValue
+from monad_argparse.parser.option import option
 from monad_argparse.parser.parser import Parser
 from monad_argparse.parser.sequence import Sequence
-from monad_argparse.parser.type_ import Type
+from monad_argparse.parser.type_ import type_
 
 A = TypeVar("A")
 
 
 def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     """
-    >>> from monad_argparse import Argument, Flag
-    >>> p = nonpositional(Flag("verbose"), Flag("debug"))
+    >>> from monad_argparse import argument, flag
+    >>> p = nonpositional(flag("verbose"), flag("debug"))
     >>> p.parse_args("--verbose", "--debug")
     [('verbose', True), ('debug', True)]
     >>> p.parse_args("--debug", "--verbose")
@@ -25,10 +26,10 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p.parse_args("--debug")
     MissingError(missing='--verbose')
     >>> p.parse_args("--verbose")
-    UnequalError(left='--verbose', right='--debug')
+    UnequalError(left='--debug', right='--verbose')
     >>> p = nonpositional(
-    ...   Flag("verbose") | Parser.key_values(verbose=False),
-    ...   Flag("debug") | Parser.key_values(debug=False)
+    ...   flag("verbose") | Parser.key_values(verbose=False),
+    ...   flag("debug") | Parser.key_values(debug=False)
     ... )
     >>> p.parse_args("--verbose", "--debug")
     [('verbose', True), ('debug', True)]
@@ -38,7 +39,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     [('verbose', False), ('debug', True)]
     >>> p.parse_args()
     [('verbose', False), ('debug', False)]
-    >>> p = nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
+    >>> p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
     >>> p.parse_args("--debug", "hello", "--verbose")
     [('debug', True), ('a', 'hello'), ('verbose', True)]
     """
@@ -48,7 +49,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     def get_alternatives():
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail) >> Done()
+            yield head >> nonpositional(*tail) >> done()
 
     return reduce(lambda p1, p2: p1 | p2, get_alternatives())
 
@@ -67,40 +68,24 @@ class Args:
     # """
 
     @property
-    def parser(self) -> Parser:
-        def get_parsers() -> Generator[Union[Flag, Type], None, None]:
+    def parser(self) -> Parser[Sequence[KeyValue[Any]]]:
+        def get_parsers() -> Generator[Parser, None, None]:
             field: Field
             for field in fields(self):
+                long = len(field.name) > 1
                 if field.type == bool:
                     assert isinstance(
                         field.default, bool
                     ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    # if field.default is False:
-                    #     if len(field.name) == 1:
-                    #         short = field.name
-                    #         long = None
-                    #     else:
-                    #         short = None
-                    #         long = field.name
-                    # else:
-                    short = None
-                    long = f"no-{field.name}"
-                    yield Flag(long=long, short=short, dest=field.name)
+                    yield flag(dest=field.name, long=long, default=field.default)
                 else:
-
-                    # if len(field.name) == 1:
-                    #     short = field.name
-                    #     long = None
-                    # else:
-                    #     short = None
-                    #     long = field.name
-                    option = Option(short=None, long=field.name)
+                    opt = option(dest=field.name, long=long, default=field.default)
                     try:
                         t = field.metadata["type"]
                     except (TypeError, KeyError):
                         t = field.type
 
-                    yield Type(t, option)
+                    yield type_(t, opt)
 
         return nonpositional(*get_parsers())
 
@@ -109,12 +94,12 @@ class Args:
 
 
 if __name__ == "__main__":
-    from monad_argparse import Argument
+    from monad_argparse import argument
 
     p = nonpositional(
-        Flag("verbose"),
-        Flag("debug"),
-        Argument("a"),
+        flag("verbose"),
+        flag("debug"),
+        argument("a"),
     )
     print(repr(p.parse_args("hello", "--debug")))
 

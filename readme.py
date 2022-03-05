@@ -22,37 +22,37 @@
 # Arguments
 
 # %% pycharm={"name": "#%%\n"}
-from monad_argparse import Argument
+from monad_argparse import argument
 
-Argument("name").parse_args("Ethan")
+argument("name").parse_args("Ethan")
 
 # %% [markdown]
 # Flags
 
 # %%
-from monad_argparse import Flag
+from monad_argparse import flag
 
-Flag("verbose").parse_args("--verbose")
+flag("verbose").parse_args("--verbose")
 
 # %% [markdown]
 # Options
 
 # %% pycharm={"name": "#%%\n"}
-from monad_argparse import Option
+from monad_argparse import option
 
-Option("value").parse_args("--value", "x")
+option("value").parse_args("--value", "x")
 
 # %% [markdown]
 # Failure
 
 # %% pycharm={"name": "#%%\n"}
-Option("value").parse_args("--value")
+option("value").parse_args("--value")
 
 # %% [markdown]
 # Alternatives (or "Sums")
 
 # %% pycharm={"name": "#%%\n"}
-p = Flag("verbose") | Option("value")
+p = flag("verbose") | option("value")
 p.parse_args("--verbose")
 
 # %% pycharm={"name": "#%%\n"}
@@ -62,18 +62,18 @@ p.parse_args("--value", "x")
 # Sequencing
 
 # %% pycharm={"name": "#%%\n"}
-p = Argument("first") >> Argument("second")
+p = argument("first") >> argument("second")
 p.parse_args("a", "b")
 
 # %% [markdown]
 # Variable arguments
 
 # %% pycharm={"name": "#%%\n"}
-p = Argument("many").many()
+p = argument("many").many()
 p.parse_args("a", "b")
 
 # %% pycharm={"name": "#%%\n"}
-p = (Flag("verbose") | Flag("quiet")).many()
+p = (flag("verbose") | flag("quiet")).many()
 p.parse_args("--verbose", "--quiet")
 
 # %% pycharm={"name": "#%%\n"}
@@ -89,9 +89,9 @@ p.parse_args("--quiet", "--quiet", "--quiet")
 # Combine sequences and sums
 
 # %% pycharm={"name": "#%%\n"}
-p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
-p2 = Argument("a")
-p = p1 >> Argument("a")
+p1 = flag("verbose") | flag("quiet") | flag("yes")
+p2 = argument("a")
+p = p1 >> argument("a")
 p.parse_args("--verbose", "value")
 
 # %% [markdown]
@@ -99,7 +99,7 @@ p.parse_args("--verbose", "value")
 
 # %% pycharm={"name": "#%%\n"}
 p2 = p1.many()
-p = p2 >> Argument("a")
+p = p2 >> argument("a")
 p.parse_args("--verbose", "value")
 
 # %% [markdown]
@@ -144,12 +144,12 @@ def nonpositional(*parsers):
 
 
 # %% pycharm={"name": "#%%\n"}
-p = nonpositional(Flag("verbose"), Flag("debug"))
+p = nonpositional(flag("verbose"), flag("debug"))
 p.parse_args("--verbose", "--debug")
 
 # %% pycharm={"name": "#%%\n"}
 p.parse_args("--debug", "--verbose")
 
 # %% pycharm={"name": "#%%\n"}
-p = nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
+p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
 p.parse_args("--debug", "hello", "--verbose")

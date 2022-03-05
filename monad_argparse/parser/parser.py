@@ -14,6 +14,7 @@ from monad_argparse.parser.sequence import Sequence
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C", bound=Monoid)
+D = TypeVar("D")
 
 
 class Parser(MonadPlus[A]):
@@ -27,13 +28,13 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -> Parser[A | B]:
         """
-        >>> from monad_argparse import Argument, Option, Done, Flag
-        >>> p = Flag("verbose") | Option("option")
+        >>> from monad_argparse import argument, option, done, flag
+        >>> p = flag("verbose") | option("option")
         >>> p.parse_args("--verbose")
         [('verbose', True)]
         >>> p.parse_args("--verbose", "--option", "x")
         [('verbose', True)]
-        >>> (p >> Done()).parse_args("--verbose", "--option", "x")
+        >>> (p >> done()).parse_args("--verbose", "--option", "x")
         UnexpectedError(unexpected='--option')
         >>> p.parse_args("--option", "x")
         [('option', 'x')]
@@ -54,20 +55,20 @@ class Parser(MonadPlus[A]):
         self: Parser[Sequence[A]], p: Parser[Sequence[B]]
     ) -> Parser[Sequence[A | B]]:
         """
-        >>> from monad_argparse import Argument, Flag
-        >>> p = Argument("first") >> Argument("second")
+        >>> from monad_argparse import argument, flag
+        >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
         [('first', 'a'), ('second', 'b')]
         >>> p.parse_args("a")
         MissingError(missing='second')
         >>> p.parse_args("b")
         MissingError(missing='second')
-        >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
-        >>> p = p1 >> Argument("a")
+        >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
+        >>> p = p1 >> argument("a")
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
         >>> p.parse_args("value")
-        UnequalError(left='value', right='--yes')
+        UnequalError(left='--yes', right='value')
         >>> p.parse_args("--verbose")
         MissingError(missing='a')
         """
@@ -88,8 +89,8 @@ class Parser(MonadPlus[A]):
 
     @classmethod
     def key_values(
-        cls: Type[Parser[Sequence[KeyValue[B]]]], **kwargs: B
-    ) -> Parser[Sequence[KeyValue[B]]]:
+        cls: Type[Parser[Sequence[KeyValue[D]]]], **kwargs: D
+    ) -> Parser[Sequence[KeyValue[D]]]:
         return cls.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
 
     @classmethod
@@ -98,17 +99,17 @@ class Parser(MonadPlus[A]):
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
-        >>> from monad_argparse import Argument, Flag
-        >>> p = Argument("as-many-as-you-like").many()
+        >>> from monad_argparse import argument, flag
+        >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args()
         []
-        >>> p = Argument("as-many-as-you-like").many()
+        >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args("a")
         [('as-many-as-you-like', 'a')]
-        >>> p = Argument("as-many-as-you-like").many()
+        >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args("a", "b")
         [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-        >>> p = Flag("verbose") | Flag("quiet")
+        >>> p = flag("verbose") | flag("quiet")
         >>> p = p.many()  # parse zero or more copies
         >>> p.parse_args("--quiet", "--quiet", "--quiet")
         [('quiet', True), ('quiet', True), ('quiet', True)]

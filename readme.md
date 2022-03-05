@@ -6,9 +6,9 @@ Arguments
 
 
 ```python
-from monad_argparse import Argument
+from monad_argparse import argument
 
-Argument("name").parse_args("Ethan")
+argument("name").parse_args("Ethan")
 ```
 
 
@@ -95,7 +95,7 @@ Sequencing
 
 
 ```python
-p = Argument("first") >> Argument("second")
+p = argument("first") >> argument("second")
 p.parse_args("a", "b")
 ```
 
@@ -110,7 +110,7 @@ Variable arguments
 
 
 ```python
-p = Argument("many").many()
+p = argument("many").many()
 p.parse_args("a", "b")
 ```
 
@@ -177,8 +177,8 @@ from typing import Sequence, Union
 
 ```python
 p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
-p2 = Argument("a")
-p = p1 >> Argument("a")
+p2 = argument("a")
+p = p1 >> argument("a")
 p.parse_args("--verbose", "value")
 ```
 
@@ -194,7 +194,7 @@ What about doing this many times?
 
 ```python
 p2 = p1.many()
-p = p2 >> Argument("a")
+p = p2 >> argument("a")
 p.parse_args("--verbose", "value")
 ```
 
@@ -279,7 +279,7 @@ p.parse_args("--debug", "--verbose")
 
 
 ```python
-p = nonpositional(Flag("verbose"), Flag("debug"), Argument("a"))
+p = nonpositional(Flag("verbose"), Flag("debug"), argument("a"))
 p.parse_args("--debug", "hello", "--verbose")
 ```
 
