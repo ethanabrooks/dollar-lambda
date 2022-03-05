@@ -25,7 +25,7 @@ class Type(Apply[Sequence[KeyValue[str]], Sequence[KeyValue[Any]]]):
         ) -> Result[Sequence[KeyValue[Any]]]:
             head, *tail = kvs.get
             try:
-                head = replace(head, value=f(head.get_value()))
+                head = replace(head, value=f(head.value))
             except Exception as e:
                 return Result(e)
 

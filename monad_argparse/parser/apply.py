@@ -43,7 +43,7 @@ class ApplyItem(Apply[Sequence[KeyValue[str]], E]):
         def g(parsed: Sequence[KeyValue[str]]) -> Result[E]:
             [kv] = parsed
             try:
-                y = f(kv.get_value())
+                y = f(kv.value)
             except Exception as e:
                 return Result(e)
             return Result(y)

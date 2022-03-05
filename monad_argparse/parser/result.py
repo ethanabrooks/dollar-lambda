@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Callable, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
-from monad_argparse.parser.error import ArgumentError  # , MissingError
+from monad_argparse.parser.error import ArgumentError
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", covariant=True, bound=Monoid)
@@ -16,20 +16,6 @@ class Result(MonadPlus[B]):
     get: B | Exception
 
     def __add__(self, other: Result[C]) -> Result[B | C]:
-        # if isinstance(self.get, MissingError):
-        #     if isinstance(other.get, MissingError):
-        #         return Result(MissingError(self.get.default | self.get.default))
-        #     if not isinstance(other.get, Exception):
-        #         return Result(self.get.default | other.get)
-        #     if isinstance(other.get, Exception):
-        #         return Result(self.get.default | other.get)
-        #     raise RuntimeError("unreachable")
-        # if isinstance(self.get, Exception):
-        #     return other
-        # if not isinstance(self.get, Exception):
-        #     if not isinstance(other.get, Exception):
-        #         return Result(self.get | other.get)
-        #     return other | self
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):

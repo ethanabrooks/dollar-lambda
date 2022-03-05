@@ -1,4 +1,5 @@
 - add --help print-outs
 - add Tap-style interface
-- improve typing
-- deal with nonpositional arguments
+- use functional definitions in place of inheritance?
+- remove MatchesFlag
+- implement defaults

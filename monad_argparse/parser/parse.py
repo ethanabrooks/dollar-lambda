@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Optional, Type, TypeVar
+from typing import Callable, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
 from monad_argparse.parser.sequence import Sequence
@@ -14,22 +14,10 @@ B = TypeVar("B", bound=Monoid)
 class Parse(MonadPlus[A]):
     parsed: A
     unparsed: Sequence[str]
-    default: Optional[A] = None
 
     def __add__(self, other: "Parse[B]") -> Parse[A | B]:
-        parsed = self.parsed | other.parsed
-        if self.default is not None and other.default is not None:
-            default = self.default | other.default
-        elif self.default is not None:
-            default = self.default
-        elif other.default is not None:
-            default = other.default
-        else:
-            assert self.default is None and other.default is None
-            default = None
         return Parse(
-            default=default,
-            parsed=parsed,
+            parsed=self.parsed | other.parsed,
             unparsed=max(self.unparsed, other.unparsed, key=len),
         )
 
