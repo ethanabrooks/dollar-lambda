@@ -3,29 +3,27 @@ import doctest
 import unittest
 from abc import ABC, abstractmethod
 
-from monad_argparse.monad import io, lst, monad, option, result
-from monad_argparse.monad.io import IO
-from monad_argparse.monad.lst import List
-from monad_argparse.monad.option import Option
-from monad_argparse.monad.result import Result
-from monad_argparse.parser import apply, argument, done, flag, nonpositional
-from monad_argparse.parser import option as parser_option
-from monad_argparse.parser import parser, sat, type_
+from monad_argparse import (
+    apply,
+    argument,
+    done,
+    flag,
+    nonpositional,
+    option,
+    parser,
+    sat,
+    type_,
+)
 
 
 def load_tests(_, tests, __):
     for mod in [
-        monad,
         parser,
-        lst,
-        option,
-        result,
-        io,
         apply,
         argument,
         done,
         flag,
-        parser_option,
+        option,
         sat,
         type_,
         nonpositional,
@@ -95,116 +93,6 @@ class MonadLawTester(ABC):
     @abstractmethod
     def unwrap(x):
         raise NotImplementedError
-
-
-class TestOption(MonadLawTester, unittest.TestCase):
-    def assertEqual(self, a, b):
-        return unittest.TestCase.assertEqual(self, a, b)
-
-    @staticmethod
-    def m(a):
-        return Option(a)
-
-    @staticmethod
-    def return_(a):
-        return Option.return_(a)
-
-    @staticmethod
-    def wrapped_values():
-        return [1, None]
-
-    @staticmethod
-    def unwrap(x):
-        while isinstance(x, Option):
-            x = x.get
-        return x
-
-
-class TestResult(MonadLawTester, unittest.TestCase):
-    def assertEqual(self, a, b):
-        return unittest.TestCase.assertEqual(self, a, b)
-
-    @staticmethod
-    def m(a):
-        return Result(a)
-
-    @staticmethod
-    def return_(a):
-        return Result.return_(a)
-
-    @staticmethod
-    def unwrap(x):
-        while isinstance(x, Result):
-            x = x.get
-        return x
-
-    @staticmethod
-    def wrapped_values():
-        return [1, AssertionError()]
-
-
-class TestList(MonadLawTester, unittest.TestCase):
-    def assertEqual(self, a, b):
-        return unittest.TestCase.assertEqual(self, a, b)
-
-    def f1(self, x):
-        unwrapped = self.unwrap(x)
-        assert isinstance(unwrapped, int)
-        return List([unwrapped])
-
-    def f2(self, x):
-        unwrapped = self.unwrap(x)
-        assert isinstance(unwrapped, int)
-        return List([unwrapped * 2])
-
-    @staticmethod
-    def m(a):
-        return List(a)
-
-    @staticmethod
-    def return_(a):
-        return List.return_(a)
-
-    @staticmethod
-    def unwrap(x):
-        while isinstance(x, List):
-            x = x.get
-        return x
-
-    @staticmethod
-    def wrapped_values():
-        return [[], [1], [2, 3]]
-
-
-class TestIO(MonadLawTester, unittest.TestCase):
-    def assertEqual(self, a, b):
-        return unittest.TestCase.assertEqual(self, a, b)
-
-    def f1(self, x):
-        assert isinstance(x, int)
-        return self.m(lambda: x + 1)
-
-    def f2(self, x):
-        assert isinstance(x, int)
-        return self.m(lambda: x * 2)
-
-    @staticmethod
-    def m(a):
-        return IO(a)
-
-    @staticmethod
-    def return_(a):
-        return IO.return_(a)
-
-    @staticmethod
-    def unwrap(x):
-        while isinstance(x, IO):
-            x = x.get
-        return x()
-
-    @staticmethod
-    def wrapped_values():
-        return [lambda: 1, lambda: 2]
 
 
 if __name__ == "__main__":

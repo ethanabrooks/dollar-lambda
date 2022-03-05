@@ -1,6 +1,0 @@
-- add --help print-outs
-- add Tap-style interface
-- use functional definitions in place of inheritance?
-- remove MatchesFlag
-- implement defaults
-- deal with empty having a double meaning

@@ -6,6 +6,7 @@ authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
+pytypeclass = {git = "https://github.com/ethanabrooks/pytypeclass.git", rev = "main"}
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
