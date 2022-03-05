@@ -41,3 +41,12 @@ class SatItem(Sat[Sequence[KeyValue[str]]]):
             return on_fail(kv.value)
 
         super().__init__(Item(description), _predicate, _on_fail)
+
+
+class Eq(SatItem):
+    def __init__(self, s: str):
+        super().__init__(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: ArgumentError(s, _s),
+            description="dumb",
+        )
