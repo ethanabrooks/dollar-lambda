@@ -1,3 +1,6 @@
+mypy:
+	mypy --show-error-codes --exclude=readme.py monad_argparse
+
 test:
 	python -m unittest test.py
 
