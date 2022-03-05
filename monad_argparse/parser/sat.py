@@ -2,7 +2,7 @@ from typing import Callable, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus
 from monad_argparse.parser.apply import Apply
-from monad_argparse.parser.error import ArgumentError
+from monad_argparse.parser.error import ArgumentError, UnequalError
 from monad_argparse.parser.item import Item
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parser import Parser
@@ -47,6 +47,6 @@ class Eq(SatItem):
     def __init__(self, s: str):
         super().__init__(
             predicate=lambda _s: _s == s,
-            on_fail=lambda _s: ArgumentError(s, _s),
+            on_fail=lambda _s: UnequalError(s, _s),
             description="dumb",
         )

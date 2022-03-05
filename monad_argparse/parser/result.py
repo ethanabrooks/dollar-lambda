@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Callable, Type, TypeVar
 
 from monad_argparse.monad.monoid import MonadPlus, Monoid
-from monad_argparse.parser.error import ArgumentError
+from monad_argparse.parser.error import ZeroError
 
 A = TypeVar("A", covariant=True)
 B = TypeVar("B", covariant=True, bound=Monoid)
@@ -37,4 +37,4 @@ class Result(MonadPlus[B]):
 
     @classmethod
     def zero(cls: "Type[Result[B]]") -> "Result[B]":
-        return Result(ArgumentError(description="zero"))
+        return Result(ZeroError())

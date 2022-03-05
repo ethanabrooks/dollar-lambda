@@ -9,7 +9,7 @@ class Argument(Parser[Sequence[KeyValue[str]]]):
     >>> Argument("name").parse_args("Alice")
     [('name', 'Alice')]
     >>> Argument("name").parse_args()
-    ArgumentError(token=None, description='Missing: name')
+    MissingError(missing='name')
     """
 
     def __init__(self, dest: str):

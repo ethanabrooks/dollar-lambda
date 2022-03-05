@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import Generic, TypeVar
 
 from monad_argparse.monad.monoid import Monoid
 
@@ -8,5 +8,28 @@ A = TypeVar("A", bound=Monoid)
 
 @dataclass
 class ArgumentError(Exception):
-    token: Optional[str] = None
-    description: Optional[str] = None
+    pass
+
+
+B = TypeVar("B")
+
+
+@dataclass
+class UnequalError(ArgumentError, Generic[B]):
+    left: B
+    right: B
+
+
+@dataclass
+class MissingError(ArgumentError):
+    missing: str
+
+
+@dataclass
+class ZeroError(ArgumentError):
+    pass
+
+
+@dataclass
+class UnexpectedError(ArgumentError):
+    unexpected: str

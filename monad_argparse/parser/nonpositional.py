@@ -21,11 +21,11 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p.parse_args("--debug", "--verbose")
     [('debug', True), ('verbose', True)]
     >>> p.parse_args()
-    ArgumentError(token=None, description='Missing: --debug')
+    MissingError(missing='--debug')
     >>> p.parse_args("--debug")
-    ArgumentError(token=None, description='Missing: --verbose')
+    MissingError(missing='--verbose')
     >>> p.parse_args("--verbose")
-    ArgumentError(token='--verbose', description="Input '--verbose' does not match '--debug")
+    UnequalError(left='--verbose', right='--debug')
     >>> p = nonpositional(
     ...   Flag("verbose") | Parser.key_values(verbose=False),
     ...   Flag("debug") | Parser.key_values(debug=False)

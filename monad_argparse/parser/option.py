@@ -16,9 +16,9 @@ class Option(Parser[Sequence[KeyValue[str]]]):
     >>> Option("value").parse_args("--value", "x")
     [('value', 'x')]
     >>> Option("value").parse_args("--value")
-    ArgumentError(token=None, description='Missing: value')
+    MissingError(missing='value')
     >>> Option("value").parse_args()
-    ArgumentError(token=None, description='Missing: --value')
+    MissingError(missing='--value')
     """
 
     def __init__(

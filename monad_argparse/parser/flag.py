@@ -1,6 +1,6 @@
 from typing import Optional
 
-from monad_argparse.parser.error import ArgumentError
+from monad_argparse.parser.error import UnequalError
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
@@ -35,9 +35,7 @@ class MatchesFlag(SatItem):
 
         super().__init__(
             matches,
-            on_fail=lambda a: ArgumentError(
-                a, description=f"Input '{a}' does not match '{flags_string}"
-            ),
+            on_fail=lambda a: UnequalError(a, flags_string),
             description=flags_string,
         )
 
@@ -47,7 +45,7 @@ class Flag(Parser[Sequence[KeyValue[bool]]]):
     >>> Flag("verbose").parse_args("--verbose")
     [('verbose', True)]
     >>> Flag("verbose").parse_args()
-    ArgumentError(token=None, description='Missing: --verbose')
+    MissingError(missing='--verbose')
     >>> Flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
     """

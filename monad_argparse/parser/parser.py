@@ -34,7 +34,7 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("--verbose", "--option", "x")
         [('verbose', True)]
         >>> (p >> Done()).parse_args("--verbose", "--option", "x")
-        ArgumentError(token='--option', description='Unexpected argument: --option')
+        UnexpectedError(unexpected='--option')
         >>> p.parse_args("--option", "x")
         [('option', 'x')]
         """
@@ -59,17 +59,17 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("a", "b")
         [('first', 'a'), ('second', 'b')]
         >>> p.parse_args("a")
-        ArgumentError(token=None, description='Missing: second')
+        MissingError(missing='second')
         >>> p.parse_args("b")
-        ArgumentError(token=None, description='Missing: second')
+        MissingError(missing='second')
         >>> p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
         >>> p = p1 >> Argument("a")
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
         >>> p.parse_args("value")
-        ArgumentError(token='value', description="Input 'value' does not match '--yes")
+        UnequalError(left='value', right='--yes')
         >>> p.parse_args("--verbose")
-        ArgumentError(token=None, description='Missing: a')
+        MissingError(missing='a')
         """
         return self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
 

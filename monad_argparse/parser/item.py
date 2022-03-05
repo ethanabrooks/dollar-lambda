@@ -1,6 +1,6 @@
 from typing import Optional
 
-from monad_argparse.parser.error import ArgumentError
+from monad_argparse.parser.error import MissingError
 from monad_argparse.parser.key_value import KeyValue
 from monad_argparse.parser.parse import Parse
 from monad_argparse.parser.parser import Parser
@@ -21,6 +21,6 @@ class Item(Parser[Sequence[KeyValue[str]]]):
                         unparsed=Sequence(tail),
                     )
                 )
-            return Result(ArgumentError(token=None, description=f"Missing: {name}"))
+            return Result(MissingError(name))
 
         super().__init__(f)
