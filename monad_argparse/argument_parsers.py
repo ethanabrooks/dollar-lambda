@@ -1,3 +1,6 @@
+"""
+This file contains all the functions for generating parsers tailored for parsing command line arguments.
+"""
 from dataclasses import Field, dataclass, fields, replace
 from functools import reduce
 from typing import Any, Callable, Generator, Optional, TypeVar
@@ -53,7 +56,7 @@ def apply_item(f: Callable[[str], C], description: str) -> Parser[C]:
 def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
     """
     >>> argument("name").parse_args("Alice")
-    [('name', 'Alice')]
+    {'name': 'Alice'}
     >>> argument("name").parse_args()
     MissingError(missing='name')
     """
@@ -63,14 +66,14 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
 def done() -> Parser[Sequence[B]]:
     """
     >>> done().parse_args()
-    []
+    {}
     >>> done().parse_args("arg")
     UnexpectedError(unexpected='arg')
     >>> (argument("arg") >> done()).parse_args("a")
-    [('arg', 'a')]
+    {'arg': 'a'}
     >>> (argument("arg") >> done()).parse_args("a", "b")
     UnexpectedError(unexpected='b')
-    >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg")
+    >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg", return_dict=False)
     [('arg', True), ('arg', True)]
     >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg", "x")
     UnexpectedError(unexpected='x')
@@ -101,13 +104,13 @@ def flag(
     """
     >>> p = flag("verbose", default=False)
     >>> p.parse_args("--verbose")
-    [('verbose', True)]
+    {'verbose': True}
     >>> p.parse_args()
-    [('verbose', False)]
+    {'verbose': False}
     >>> p.parse_args("--verbose", "--verbose", "--verbose")
-    [('verbose', True)]
+    {'verbose': True}
     >>> flag("v", string="--value").parse_args("--value")
-    [('v', True)]
+    {'v': True}
     """
 
     def f(
@@ -151,27 +154,27 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     """
     >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
     >>> p.parse_args("--verbose", "--debug")
-    [('verbose', True), ('debug', True)]
+    {'verbose': True, 'debug': True}
     >>> p.parse_args("--debug", "--verbose")
-    [('debug', True), ('verbose', True)]
+    {'debug': True, 'verbose': True}
     >>> p.parse_args()
-    [('verbose', False), ('debug', False)]
+    {'verbose': False, 'debug': False}
     >>> p.parse_args("--debug")
-    [('verbose', False), ('debug', True)]
+    {'verbose': False, 'debug': True}
     >>> p.parse_args("--verbose")
-    [('verbose', True), ('debug', False)]
+    {'verbose': True, 'debug': False}
     >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
     >>> p.parse_args("--verbose", "--debug")
-    [('verbose', True), ('debug', True)]
+    {'verbose': True, 'debug': True}
     >>> p.parse_args("--verbose")
-    [('verbose', True), ('debug', False)]
+    {'verbose': True, 'debug': False}
     >>> p.parse_args("--debug")
-    [('verbose', False), ('debug', True)]
+    {'verbose': False, 'debug': True}
     >>> p.parse_args()
-    [('verbose', False), ('debug', False)]
+    {'verbose': False, 'debug': False}
     >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False), argument("a"))
     >>> p.parse_args("--debug", "hello", "--verbose")
-    [('debug', True), ('a', 'hello'), ('verbose', True)]
+    {'debug': True, 'a': 'hello', 'verbose': True}
     """
     if not parsers:
         return Parser[Sequence[B]].empty()
@@ -189,21 +192,21 @@ def option(
 ) -> Parser[Sequence[KeyValue[str]]]:
     """
     >>> option("value").parse_args("--value", "x")
-    [('value', 'x')]
+    {'value': 'x'}
     >>> option("value").parse_args("--value")
     MissingError(missing='value')
     >>> option("value").parse_args()
     MissingError(missing='--value')
     >>> option("value", default=1).parse_args()
-    [('value', 1)]
+    {'value': 1}
     >>> option("value", default=1).parse_args("--value")
-    [('value', 1)]
+    {'value': 1}
     >>> option("value", default=1).parse_args("--value", "x")
-    [('value', 'x')]
+    {'value': 'x'}
     >>> option("v").parse_args("-v", "x")
-    [('v', 'x')]
+    {'v': 'x'}
     >>> option("v", flag="--value").parse_args("--value", "x")
-    [('v', 'x')]
+    {'v': 'x'}
     """
 
     def f(
@@ -278,9 +281,9 @@ class Args:
     ...     s: str = "a"
     >>> p = MyArgs()
     >>> MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")
-    [('t', False), ('f', True), ('i', 2), ('s', 'b')]
+    {'t': False, 'f': True, 'i': 2, 's': 'b'}
     >>> MyArgs().parse_args("--no-t")
-    [('t', False), ('f', False), ('i', 1), ('s', 'a')]
+    {'t': False, 'f': False, 'i': 1, 's': 'a'}
     """
 
     @property

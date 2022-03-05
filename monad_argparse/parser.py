@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 from dataclasses import asdict
 from functools import lru_cache
-from typing import Callable, Generator, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
 
@@ -31,13 +31,13 @@ class Parser(MonadPlus[A]):
         >>> from monad_argparse import argument, option, done, flag
         >>> p = option("option") | flag("verbose")
         >>> p.parse_args("--verbose")
-        [('verbose', True)]
+        {'verbose': True}
         >>> p.parse_args("--verbose", "--option", "x")
-        [('verbose', True)]
+        {'verbose': True}
         >>> (p >> done()).parse_args("--verbose", "--option", "x")
         UnexpectedError(unexpected='--option')
         >>> p.parse_args("--option", "x")
-        [('option', 'x')]
+        {'option': 'x'}
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A | B]]:
@@ -58,7 +58,7 @@ class Parser(MonadPlus[A]):
         >>> from monad_argparse import argument, flag
         >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
-        [('first', 'a'), ('second', 'b')]
+        {'first': 'a', 'second': 'b'}
         >>> p.parse_args("a")
         MissingError(missing='second')
         >>> p.parse_args("b")
@@ -66,9 +66,9 @@ class Parser(MonadPlus[A]):
         >>> p1 = flag("verbose", default=False) | flag("quiet", default=False) | flag("yes", default=False)
         >>> p = p1 >> argument("a")
         >>> p.parse_args("--verbose", "value")
-        [('verbose', True), ('a', 'value')]
+        {'verbose': True, 'a': 'value'}
         >>> p.parse_args("value")
-        [('verbose', False), ('a', 'value')]
+        {'verbose': False, 'a': 'value'}
         >>> p.parse_args("--verbose")
         MissingError(missing='a')
         """
@@ -101,19 +101,19 @@ class Parser(MonadPlus[A]):
         """
         >>> from monad_argparse import argument, flag
         >>> p = argument("as-many-as-you-like").many()
-        >>> p.parse_args()
+        >>> p.parse_args(return_dict=False)
         []
         >>> p = argument("as-many-as-you-like").many()
-        >>> p.parse_args("a")
+        >>> p.parse_args("a", return_dict=False)
         [('as-many-as-you-like', 'a')]
         >>> p = argument("as-many-as-you-like").many()
-        >>> p.parse_args("a", "b")
+        >>> p.parse_args("a", "b", return_dict=False)
         [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
         >>> p = flag("verbose") | flag("quiet")
         >>> p = p.many()  # parse zero or more copies
-        >>> p.parse_args("--quiet", "--quiet", "--quiet")
+        >>> p.parse_args("--quiet", "--quiet", "--quiet", return_dict=False)
         [('quiet', True), ('quiet', True), ('quiet', True)]
-        >>> p.parse_args("--verbose", "--quiet", "--quiet")
+        >>> p.parse_args("--verbose", "--quiet", "--quiet", return_dict=False)
         [('verbose', True), ('quiet', True), ('quiet', True)]
         """
         return self.many1() | Parser[Sequence[B]].empty()
@@ -136,13 +136,15 @@ class Parser(MonadPlus[A]):
         return self.f(cs)
 
     def parse_args(
-        self: "Parser[Sequence[KeyValue]]", *args: str
-    ) -> typing.Sequence[KeyValueTuple] | Exception:
+        self: "Parser[Sequence[KeyValue]]", *args: str, return_dict: bool = True
+    ) -> typing.Sequence[KeyValueTuple] | Exception | Dict[str, Any]:
         result = self.parse(Sequence(list(args))).get
         if isinstance(result, Exception):
             return result
         parse: Parse[Sequence[KeyValue]] = result
         kvs: Sequence[KeyValue] = parse.parsed
+        if return_dict:
+            return {kv.key: kv.value for kv in kvs}
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
@@ -151,7 +153,7 @@ class Parser(MonadPlus[A]):
         """
         >>> from monad_argparse.key_value import KeyValue
         >>> Parser.return_(([KeyValue("some-key", "some-value")])).parse_args()
-        [('some-key', 'some-value')]
+        {'some-key': 'some-value'}
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A]]:
