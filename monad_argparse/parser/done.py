@@ -16,9 +16,9 @@ def done() -> Parser[Sequence[A]]:
     [('arg', 'a')]
     >>> (argument("arg") >> done()).parse_args("a", "b")
     UnexpectedError(unexpected='b')
-    >>> (flag("arg", require=True).many() >> done()).parse_args("--arg", "--arg")
+    >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg")
     [('arg', True), ('arg', True)]
-    >>> (flag("arg", require=True).many() >> done()).parse_args("--arg", "--arg", "x")
+    >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg", "x")
     UnexpectedError(unexpected='x')
     """
 

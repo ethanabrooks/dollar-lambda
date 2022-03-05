@@ -16,7 +16,7 @@ A = TypeVar("A")
 def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     """
     >>> from monad_argparse import argument, flag
-    >>> p = nonpositional(flag("verbose"), flag("debug"))
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
     >>> p.parse_args("--verbose", "--debug")
     [('verbose', True), ('debug', True)]
     >>> p.parse_args("--debug", "--verbose")
@@ -36,7 +36,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     [('verbose', False), ('debug', True)]
     >>> p.parse_args()
     [('verbose', False), ('debug', False)]
-    >>> p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False), argument("a"))
     >>> p.parse_args("--debug", "hello", "--verbose")
     [('debug', True), ('a', 'hello'), ('verbose', True)]
     """

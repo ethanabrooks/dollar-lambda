@@ -11,20 +11,16 @@ from monad_argparse.parser.sequence import Sequence
 def flag(
     dest: str,
     string: Optional[str] = None,
-    default: bool = False,
-    require: bool = False,
+    default: Optional[bool] = None,
 ) -> Parser[Sequence[KeyValue[bool]]]:
     """
-    >>> flag("verbose").parse_args("--verbose")
+    >>> p = flag("verbose", default=False)
+    >>> p.parse_args("--verbose")
     [('verbose', True)]
-    >>> flag("verbose").parse_args()
+    >>> p.parse_args()
     [('verbose', False)]
-    >>> flag("verbose", default=True).parse_args()
+    >>> p.parse_args("--verbose", "--verbose", "--verbose")
     [('verbose', True)]
-    >>> flag("verbose").parse_args("--verbose", "--verbose", "--verbose")
-    [('verbose', True)]
-    >>> flag("value", default=False).parse_args("--value")
-    [('value', True)]
     >>> flag("v", string="--value").parse_args("--value")
     [('v', True)]
     """
@@ -42,6 +38,6 @@ def flag(
         return parser.parse(cs)
 
     parser = Parser(f)
-    if not require:
+    if default is not None:
         parser = parser | parser.key_values(**{dest: default})
     return parser

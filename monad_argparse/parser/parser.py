@@ -62,7 +62,7 @@ class Parser(MonadPlus[A]):
         MissingError(missing='second')
         >>> p.parse_args("b")
         MissingError(missing='second')
-        >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
+        >>> p1 = flag("verbose", default=False) | flag("quiet", default=False) | flag("yes", default=False)
         >>> p = p1 >> argument("a")
         >>> p.parse_args("--verbose", "value")
         [('verbose', True), ('a', 'value')]
@@ -108,7 +108,7 @@ class Parser(MonadPlus[A]):
         >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args("a", "b")
         [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-        >>> p = flag("verbose", require=True) | flag("quiet", require=True)
+        >>> p = flag("verbose") | flag("quiet")
         >>> p = p.many()  # parse zero or more copies
         >>> p.parse_args("--quiet", "--quiet", "--quiet")
         [('quiet', True), ('quiet', True), ('quiet', True)]

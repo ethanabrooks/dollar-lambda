@@ -1,232 +1,126 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,py:percent,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.13.7
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
 # Monad Argparse
 
 ### An alternative to `argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
 
+<!-- #region pycharm={"name": "#%% md\n"} -->
 Arguments
+<!-- #endregion -->
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 from monad_argparse import argument
 
 argument("name").parse_args("Ethan")
 ```
 
-
-
-
-    [('name', 'Ethan')]
-
-
-
 Flags
 
-
 ```python
-from monad_argparse import Flag
+from monad_argparse import flag
 
-Flag("verbose").parse_args("--verbose")
+flag("verbose").parse_args("--verbose")
 ```
-
-
-
-
-    [('verbose', True)]
-
-
 
 Options
 
+```python pycharm={"name": "#%%\n"}
+from monad_argparse import option
 
-```python
-from monad_argparse import Option
-
-Option("value").parse_args("--value", "x")
+option("value").parse_args("--value", "x")
 ```
-
-
-
-
-    [('value', 'x')]
-
-
 
 Failure
 
-
-```python
-Option("value").parse_args("--value")
+```python pycharm={"name": "#%%\n"}
+option("value").parse_args("--value")
 ```
-
-
-
-
-    ArgumentError(token=None, description='Missing: argument for --value')
-
-
 
 Alternatives (or "Sums")
 
-
-```python
-p = Flag("verbose") | Option("value")
+```python pycharm={"name": "#%%\n"}
+p = flag("verbose") | option("value")
 p.parse_args("--verbose")
 ```
 
-
-
-
-    [('verbose', True)]
-
-
-
-
-```python
+```python pycharm={"name": "#%%\n"}
 p.parse_args("--value", "x")
 ```
 
-
-
-
-    [('value', 'x')]
-
-
-
 Sequencing
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 p = argument("first") >> argument("second")
 p.parse_args("a", "b")
 ```
 
-
-
-
-    [('first', 'a'), ('second', 'b')]
-
-
-
 Variable arguments
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 p = argument("many").many()
 p.parse_args("a", "b")
 ```
 
-
-
-
-    [('many', 'a'), ('many', 'b')]
-
-
-
-
-```python
-p = (Flag("verbose") | Flag("quiet")).many()
+```python pycharm={"name": "#%%\n"}
+p = (flag("verbose") | flag("quiet")).many()
 p.parse_args("--verbose", "--quiet")
 ```
 
-
-
-
-    [('verbose', True), ('quiet', True)]
-
-
-
-
-```python
+```python pycharm={"name": "#%%\n"}
 p.parse_args("--quiet", "--verbose")
 ```
 
-
-
-
-    [('quiet', True), ('verbose', True)]
-
-
-
-
-```python
+```python pycharm={"name": "#%%\n"}
 p.parse_args("--quiet")
 ```
 
-
-
-
-    [('quiet', True)]
-
-
-
-
-```python
+```python pycharm={"name": "#%%\n"}
 p.parse_args("--quiet", "--quiet", "--quiet")
 ```
 
-
-
-
-    [('quiet', True), ('quiet', True), ('quiet', True)]
-
-
-
 Combine sequences and sums
 
-from typing import Sequence, Union
-
-
-```python
-p1 = Flag("verbose") | Flag("quiet") | Flag("yes")
+```python pycharm={"name": "#%%\n"}
+p1 = flag("verbose") | flag("quiet") | flag("yes")
 p2 = argument("a")
 p = p1 >> argument("a")
 p.parse_args("--verbose", "value")
 ```
 
-
-
-
-    [('verbose', True), ('a', 'value')]
-
-
-
 What about doing this many times?
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 p2 = p1.many()
 p = p2 >> argument("a")
 p.parse_args("--verbose", "value")
 ```
 
-
-
-
-    [('verbose', True), ('a', 'value')]
-
-
-
 `monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
 First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 from monad_argparse import Parser
 
 p = Parser.empty()
 p.parse_args("any", "arguments")
 ```
 
-
-
-
-    []
-
-
-
 Using this function, we can define a parser for nonpositional arguments.
 
-
-```python
+```python pycharm={"name": "#%%\n"}
 from functools import reduce
 
 
@@ -250,40 +144,20 @@ def nonpositional(*parsers):
     )  # This applies the `|` operator to all the parsers in `get_alternatives()`
 ```
 
+
 Let's test it:
 
 
-```python
-p = nonpositional(Flag("verbose"), Flag("debug"))
+```python pycharm={"name": "#%%\n"}
+p = nonpositional(flag("verbose"), flag("debug"))
 p.parse_args("--verbose", "--debug")
 ```
 
-
-
-
-    [('verbose', True), ('debug', True)]
-
-
-
-
-```python
+```python pycharm={"name": "#%%\n"}
 p.parse_args("--debug", "--verbose")
 ```
 
-
-
-
-    [('debug', True), ('verbose', True)]
-
-
-
-
-```python
-p = nonpositional(Flag("verbose"), Flag("debug"), argument("a"))
+```python pycharm={"name": "#%%\n"}
+p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
 p.parse_args("--debug", "hello", "--verbose")
 ```
-
-
-
-
-    [('debug', True), ('a', 'hello'), ('verbose', True)]
