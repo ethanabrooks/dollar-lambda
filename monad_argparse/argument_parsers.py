@@ -6,6 +6,7 @@ from functools import partial, reduce
 from typing import Any, Callable, Generator, Optional, TypeVar
 
 from pytypeclass import MonadPlus
+from pytypeclass.nonempty_list import NonemptyList
 
 from monad_argparse.error import (
     ArgumentError,
@@ -26,17 +27,15 @@ D = TypeVar("D", bound=MonadPlus)
 
 
 def apply(f: Callable[[D], Result[C]], parser: Parser[D]) -> Parser[C]:
-    def h(parsed: D) -> Parser[C]:
-        y = f(parsed)
-        if isinstance(y.get, Exception):
-            return Parser[C].zero(y.get)
-        return Parser[C].return_(y.get)
+    def h(parse: Parse[D]) -> Result[Parse[C]]:
+        def i(c: C) -> Result[Parse[C]]:  # type: ignore[misc]
+            return Result.return_(Parse(parsed=c, unparsed=parse.unparsed))
 
-    def g(
-        cs: Sequence[str],
-    ) -> Result[Parse[C]]:
-        p: Parser[C] = parser >= h
-        return p.parse(cs)
+        return f(parse.parsed) >= i
+
+    def g(cs: Sequence[str]) -> Result[Parse[C]]:
+        p: Result[Parse[D]] = parser.parse(cs)
+        return p >= h
 
     return Parser(g)
 
@@ -48,7 +47,7 @@ def apply_item(f: Callable[[str], C], description: str) -> Parser[C]:
             y = f(kv.value)
         except Exception as e:
             return Result(e)
-        return Result(y)
+        return Result.return_(y)
 
     return apply(g, item(description))
 
@@ -61,6 +60,10 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
     MissingError(missing='name')
     """
     return item(dest)
+
+
+def default(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
+    return Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
 
 
 def done() -> Parser[Sequence[B]]:
@@ -83,7 +86,7 @@ def done() -> Parser[Sequence[B]]:
         if cs:
             c, *_ = cs
             return Result(UnexpectedError(c))
-        return Result(Parse(parsed=Sequence([]), unparsed=cs))
+        return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
 
     return Parser(f)
 
@@ -145,9 +148,11 @@ def item(
         if cs:
             head, *tail = cs
             return Result(
-                Parse(
-                    parsed=Sequence([KeyValue(name, head)]),
-                    unparsed=Sequence(tail),
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(tail),
+                    )
                 )
             )
         return Result(MissingError(name))
@@ -230,7 +235,7 @@ def option(
         parser = parser | parser.key_values(**{dest: default})
     if short:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
-        parser = parser2 | parser
+        parser = parser | parser2
     return parser
 
 
@@ -240,7 +245,7 @@ def sat(
     on_fail: Callable[[A], ArgumentError],
 ) -> Parser[A]:
     def f(x: A) -> Result[A]:
-        return Result(x if predicate(x) else on_fail(x))
+        return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)
 
@@ -273,7 +278,7 @@ def type_(
         except Exception as e:
             return Result(e)
 
-        return Result(Sequence([*tail, head]))
+        return Result(NonemptyList(Sequence([*tail, head])))
 
     return apply(g, parser)
 

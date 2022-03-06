@@ -9,6 +9,7 @@ from functools import lru_cache
 from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 from monad_argparse.key_value import KeyValue, KeyValueTuple
 from monad_argparse.parse import Parse
@@ -50,13 +51,7 @@ class Parser(MonadPlus[A]):
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A | B]]:
-            r1: Result[Parse[A]] = self.parse(cs)
-            r2: Result[Parse[B]] = other.parse(cs)
-            choices: Result[Parse[A | B]] = r1 | r2
-            if not isinstance(choices.get, Exception):
-                return choices
-            else:
-                return r2
+            return self.parse(cs) | other.parse(cs)
 
         return Parser(f)
 
@@ -79,8 +74,21 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("value")
         {'verbose': False, 'a': 'value'}
         >>> p.parse_args("--verbose")
+        {'verbose': False, 'a': '--verbose'}
+        >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
+        >>> p = p1 >> argument("a")
+        >>> p.parse_args("--verbose")
         MissingError(missing='a')
+        >>> p.parse_args("a")
+        UnequalError(left='--verbose', right='a')
         """
+        # def f(p1: Sequence[D]) -> Parser[Parse[Sequence[D | B]]]:
+        #     def g(p2: Sequence[B]) -> Parser[Sequence[D | B]]:
+        #         return Parser.return_(p1 + p2)
+
+        #     return p >= g
+
+        # return self >= f
         return self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
 
     def bind(self, f: Callable[[A], Parser[B]]) -> Parser[B]:
@@ -88,7 +96,7 @@ class Parser(MonadPlus[A]):
             return f(parse.parsed).parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -> Result[Parse[B]]:
-            return self.parse(cs).bind(h)
+            return self.parse(cs) >= h
 
         return Parser(g)
 
@@ -150,7 +158,8 @@ class Parser(MonadPlus[A]):
         result = self.parse(Sequence(list(args))).get
         if isinstance(result, Exception):
             return result
-        parse: Parse[Sequence[KeyValue]] = result
+        nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
+        parse: Parse[Sequence[KeyValue]] = nel.head
         kvs: Sequence[KeyValue] = parse.parsed
         if return_dict:
             return {kv.key: kv.value for kv in kvs}
@@ -166,7 +175,7 @@ class Parser(MonadPlus[A]):
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A]]:
-            return Result(Parse(a, cs))
+            return Result.return_(Parse(a, cs))
 
         return Parser(f)
 
@@ -174,13 +183,10 @@ class Parser(MonadPlus[A]):
     def zero(cls: Type[Parser[A]], error: Optional[Exception] = None) -> Parser[A]:
         """
         >>> Parser.zero().parse_args()
-        RuntimeError('zero')
+        ZeroError()
         >>> Parser.zero().parse_args("a")
-        RuntimeError('zero')
+        ZeroError()
         >>> Parser.zero(error=RuntimeError("This is a test.")).parse_args("a")
         RuntimeError('This is a test.')
         """
-        if error is None:
-            error = RuntimeError("zero")
-        result: Result[Parse[A]] = Result(error)
-        return Parser(lambda _: result)
+        return Parser(lambda _: Result.zero(error=error))

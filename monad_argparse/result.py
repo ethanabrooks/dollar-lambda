@@ -4,37 +4,73 @@ Results represent either success or failure (an exception). This is how errors g
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Type, TypeVar
+from functools import reduce
+from typing import Callable, Optional, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 from monad_argparse.error import ZeroError
+from monad_argparse.sequence import Sequence
 
 A = TypeVar("A", covariant=True, bound=Monoid)
 B = TypeVar("B", bound=Monoid)
+C = TypeVar("C")
+D = TypeVar("D")
 
 
 @dataclass
 class Result(MonadPlus[A]):
-    get: A | Exception
+    get: NonemptyList[A] | Exception
 
     def __or__(self, other: Result[B]) -> Result[A | B]:
-        if not isinstance(self.get, Exception):
+        a = self.get
+        b = other.get
+        if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
+            return Result(a + b)
+        if isinstance(b, Exception):
             return self
-        if not isinstance(other.get, Exception):
+        if isinstance(a, Exception):
             return other
-        return self
+        raise RuntimeError("unreachable")
+
+    def __rshift__(
+        self: Result[Sequence[C]], other: Result[Sequence[D]]
+    ) -> Result[Result[Sequence[C | D]]]:
+        """
+        Sequence cs >> ds for each (cs, ds) in self.get * other.get.
+        Short circuit at Exceptions.
+        """
+        return self >= (lambda cs: other >= (lambda ds: Result(NonemptyList(cs + ds))))
 
     def bind(self, f: Callable[[A], Result[B]]) -> Result[B]:
-        y = self.get
-        if isinstance(y, Exception):
-            return Result(y)
-        return f(y)
+        x = self.get
+        if isinstance(x, Exception):
+            return Result(x)
+        else:
+
+            def g(acc: Result[B], new: A) -> Result[B]:  # type: ignore[misc]
+                y = f(new)
+                a = acc.get
+                b = y.get
+
+                if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
+                    return Result(a + b)
+
+                return next(
+                    (x for x in (acc, y) if isinstance(x.get, NonemptyList)),
+                    acc,
+                )
+
+            tail = [] if x.tail is None else list(x.tail)
+            return reduce(g, tail, f(x.head))
 
     @classmethod
     def return_(cls: "Type[Result[A]]", a: B) -> "Result[B]":
-        return Result(a)
+        return Result(NonemptyList(a))
 
     @classmethod
-    def zero(cls: "Type[Result[A]]") -> "Result[A]":
-        return Result(ZeroError())
+    def zero(cls: "Type[Result[A]]", error: Optional[Exception] = None) -> "Result[A]":
+        if error is None:
+            error = ZeroError()
+        return Result(error)

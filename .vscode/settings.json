@@ -13,5 +13,6 @@
         "argparse",
         "Monoid",
         "pytypeclass"
-    ]
+    ],
+    "python.linting.enabled": false
 }
