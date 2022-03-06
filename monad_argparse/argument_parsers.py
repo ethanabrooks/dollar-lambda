@@ -27,17 +27,12 @@ D = TypeVar("D", bound=MonadPlus)
 
 
 def apply(f: Callable[[D], Result[C]], parser: Parser[D]) -> Parser[C]:
-    def h(parse: Parse[D]) -> Result[Parse[C]]:
-        def i(c: C) -> Result[Parse[C]]:  # type: ignore[misc]
-            return Result.return_(Parse(parsed=c, unparsed=parse.unparsed))
-
-        return f(parse.parsed) >= i
-
-    def g(cs: Sequence[str]) -> Result[Parse[C]]:
-        p: Result[Parse[D]] = parser.parse(cs)
-        return p >= h
-
-    return Parser(g)
+    return parser >= (
+        lambda d: Parser(
+            lambda unparsed: f(d)
+            >= (lambda parsed: Result.return_(Parse(parsed, unparsed)))
+        )
+    )
 
 
 def apply_item(f: Callable[[str], C], description: str) -> Parser[C]:
