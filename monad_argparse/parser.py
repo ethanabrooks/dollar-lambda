@@ -26,7 +26,7 @@ class Parser(MonadPlus[A]):
     def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
 
-    def __add__(
+    def __or__(
         self: Parser[A],
         other: Parser[B],
     ) -> Parser[A | B]:

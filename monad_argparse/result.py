@@ -18,7 +18,7 @@ B = TypeVar("B", bound=Monoid)
 class Result(MonadPlus[A]):
     get: A | Exception
 
-    def __add__(self, other: Result[B]) -> Result[A | B]:
+    def __or__(self, other: Result[B]) -> Result[A | B]:
         if not isinstance(self.get, Exception):
             return self
         if not isinstance(other.get, Exception):

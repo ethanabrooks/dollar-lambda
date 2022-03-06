@@ -1114,7 +1114,7 @@ develop = false
 type = "git"
 url = "https://github.com/ethanabrooks/pytypeclass.git"
 reference = "main"
-resolved_reference = "2fd548d07d92e9a6d98e7e7435a5085c5eb0cef0"
+resolved_reference = "fe6813e69c1def160c77dea1752f4235820793df"
 
 [[package]]
 name = "pywin32"

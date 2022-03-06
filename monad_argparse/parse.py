@@ -19,7 +19,7 @@ class Parse(MonadPlus[A]):
     parsed: A
     unparsed: Sequence[str]
 
-    def __add__(self, other: "Parse[B]") -> Parse[A | B]:
+    def __or__(self, other: "Parse[B]") -> Parse[A | B]:
         return Parse(
             parsed=self.parsed | other.parsed,
             unparsed=max(self.unparsed, other.unparsed, key=len),

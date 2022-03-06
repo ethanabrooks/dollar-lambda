@@ -52,8 +52,11 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     def __len__(self) -> int:
         return len(self.get)
 
-    def __add__(self, other: Sequence[B]) -> Sequence[A | B]:
+    def __or__(self, other: Sequence[B]) -> Sequence[A | B]:
         return Sequence([*self, *other])
+
+    def __add__(self, other: Sequence[B]) -> Sequence[A | B]:
+        return self | other
 
     def bind(self, f: Callable[[A], Sequence[B]]) -> Sequence[B]:
         def g() -> Iterator[B]:
