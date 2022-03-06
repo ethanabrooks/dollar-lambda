@@ -8,28 +8,32 @@ Here is an example developed in the `argparse` tutorial:
 >>> import argparse
 
 >>> parser = argparse.ArgumentParser(description="calculate X to the power of Y")
->>> group = parser.add_mutually_exclusive_group()
->>> group.add_argument("-v", "--verbose", action="store_true")
->>> group.add_argument("-q", "--quiet", action="store_true")
->>> parser.add_argument("x", type=int, help="the base")
->>> parser.add_argument("y", type=int, help="the exponent")
->>> args = parser.parse_args()
->>> answer = args.x**args.y
+... group = parser.add_mutually_exclusive_group()
+... group.add_argument("-v", "--verbose", action="store_true")
+... group.add_argument("-q", "--quiet", action="store_true")
+... parser.add_argument("x", type=int, help="the base")
+... parser.add_argument("y", type=int, help="the exponent")
+... args = parser.parse_args()
+... dict(args)
+
 ```
 Here is the equivalent in this package:
 ```
 >>> from dataclasses import dataclass
 
 >>> @dataclass
->>> class MyArgs(Args):
->>>     x: int = 0
->>>     y: int = 0
+... class MyArgs(Args):
+...     x: int = 0
+...     y: int = 0
 
->>> nonpositional(
->>>     MyArgs().parser,
->>>     (flag("verbose") >> done()) | (flag("quiet") >> done()),
->>> )
-```
+>>> p1 = MyArgs().parser
+>>> p = nonpositional(
+...     p1, flag("verbose", default=False)
+... ) | nonpositional(
+...     p1, flag("debug", default=False)
+... )
+>>> p.parse_args("-x", "1", "-y", "2")
+{'x': 1, 'y': 2, 'verbose': False}
 """
 
 
