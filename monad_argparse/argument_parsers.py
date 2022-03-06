@@ -162,7 +162,7 @@ def item(
 
 def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     """
-    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False)) >> done()
     >>> p.parse_args("--verbose", "--debug")
     {'verbose': True, 'debug': True}
     >>> p.parse_args("--debug", "--verbose")
@@ -173,7 +173,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     {'verbose': False, 'debug': True}
     >>> p.parse_args("--verbose")
     {'verbose': True, 'debug': False}
-    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False))
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False)) >> done()
     >>> p.parse_args("--verbose", "--debug")
     {'verbose': True, 'debug': True}
     >>> p.parse_args("--verbose")
@@ -182,7 +182,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     {'verbose': False, 'debug': True}
     >>> p.parse_args()
     {'verbose': False, 'debug': False}
-    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False), argument("a"))
+    >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False), argument("a")) >> done()
     >>> p.parse_args("--debug", "hello", "--verbose")
     {'debug': True, 'a': 'hello', 'verbose': True}
     """
@@ -192,7 +192,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     def get_alternatives():
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail) >> done()
+            yield head >> nonpositional(*tail)
 
     return reduce(lambda p1, p2: p1 | p2, get_alternatives())
 
@@ -297,6 +297,13 @@ class Args:
     {'t': False, 'f': True, 'i': 2, 's': 'b'}
     >>> MyArgs().parse_args("--no-t")
     {'t': False, 'f': False, 'i': 1, 's': 'a'}
+    >>> @dataclass
+    ... class MyArgs(Args):
+    ...     b: bool = False
+    >>> p = MyArgs().parser
+    >>> p1 = p >> argument("a")
+    >>> p1.parse_args("-b", "hello")
+    {'b': True, 'a': 'hello'}
     """
 
     @property
@@ -325,4 +332,4 @@ class Args:
         return nonpositional(*get_parsers())
 
     def parse_args(self, *args):
-        return self.parser.parse_args(*args)
+        return (self.parser >> done()).parse_args(*args)
