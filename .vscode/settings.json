@@ -11,6 +11,7 @@
     "python.formatting.provider": "black",
     "cSpell.words": [
         "argparse",
-        "Monoid"
+        "Monoid",
+        "pytypeclass"
     ]
 }

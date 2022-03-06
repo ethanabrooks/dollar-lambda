@@ -18,6 +18,7 @@ from monad_argparse.sequence import Sequence
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C")
+D = TypeVar("D", bound=Monoid)
 
 
 class Parser(MonadPlus[A]):
@@ -25,6 +26,11 @@ class Parser(MonadPlus[A]):
 
     def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
         self.f = f
+
+    def __add__(
+        self: Parser[Sequence[D]], other: Parser[Sequence[B]]
+    ) -> Parser[Sequence[D | B]]:
+        return (self >> other) | (other >> self)
 
     def __or__(
         self: Parser[A],
@@ -55,8 +61,8 @@ class Parser(MonadPlus[A]):
         return Parser(f)
 
     def __rshift__(
-        self: Parser[Sequence[A]], p: Parser[Sequence[B]]
-    ) -> Parser[Sequence[A | B]]:
+        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
+    ) -> Parser[Sequence[D | B]]:
         """
         >>> from monad_argparse import argument, flag
         >>> p = argument("first") >> argument("second")
