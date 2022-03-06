@@ -4,7 +4,7 @@ This means that this package can handle many kinds of argument-parsing patterns 
 
 # Example
 Here is an example developed in the `argparse` tutorial:
-```
+
 >>> import argparse
 
 >>> parser = argparse.ArgumentParser(description="calculate X to the power of Y")
@@ -14,11 +14,9 @@ Here is an example developed in the `argparse` tutorial:
 ... parser.add_argument("x", type=int, help="the base")
 ... parser.add_argument("y", type=int, help="the exponent")
 ... args = parser.parse_args()
-... dict(args)
 
-```
 Here is the equivalent in this package:
-```
+
 >>> from dataclasses import dataclass
 
 >>> @dataclass
@@ -27,15 +25,14 @@ Here is the equivalent in this package:
 ...     y: int = 0
 
 >>> p1 = MyArgs().parser
->>> p = nonpositional(
-...     p1, flag("verbose", default=False)
-... ) | nonpositional(
-...     p1, flag("debug", default=False)
+>>> p = (
+...     p1 + flag("verbose", default=False)
+... ) | (
+...     p1 + flag("debug", default=False)
 ... )
 >>> p.parse_args("-x", "1", "-y", "2")
 {'x': 1, 'y': 2, 'verbose': False}
 """
-
 
 from monad_argparse.argument_parsers import (
     Args,
