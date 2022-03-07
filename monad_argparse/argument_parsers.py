@@ -17,7 +17,7 @@ from monad_argparse.error import (
 )
 from monad_argparse.key_value import KeyValue
 from monad_argparse.parse import Parse
-from monad_argparse.parser import Parser
+from monad_argparse.parser import Parser, empty
 from monad_argparse.result import Result
 from monad_argparse.sequence import Sequence
 
@@ -58,7 +58,7 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
     return item(dest)
 
 
-def default(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
+def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
     return Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
 
 
@@ -121,14 +121,12 @@ def flag(
         cs: Sequence[str],
         s: str,
     ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
-        parser = equals(s) >= (
-            lambda _: Parser[Sequence[KeyValue[bool]]].key_values(**{dest: not default})
-        )
+        parser = equals(s) >= (lambda _: defaults(**{dest: not default}))
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string))
     if default is not None:
-        parser = parser | parser.key_values(**{dest: default})
+        parser = parser | defaults(**{dest: default})
     if short:
         parser2 = flag(dest, short=False, string=f"-{dest[0]}", default=default)
         parser = parser | parser2
@@ -183,7 +181,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
     {'debug': True, 'a': 'hello', 'verbose': True}
     """
     if not parsers:
-        return Parser[Sequence[B]].empty()
+        return empty()
 
     def get_alternatives():
         for i, head in enumerate(parsers):
@@ -228,7 +226,7 @@ def option(
 
     parser = Parser(f)
     if default:
-        parser = parser | parser.key_values(**{dest: default})
+        parser = parser | defaults(**{dest: default})
     if short:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2

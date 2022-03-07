@@ -22,6 +22,14 @@ C = TypeVar("C")
 D = TypeVar("D", bound=Monoid)
 
 
+def const(b: B) -> Parser[Sequence[B]]:
+    return Parser.return_(Sequence([b]))
+
+
+def empty() -> Parser[Sequence[B]]:
+    return Parser.return_(Sequence([]))
+
+
 class Parser(MonadPlus[A]):
     D = TypeVar("D", bound="Parser")
 
@@ -100,20 +108,6 @@ class Parser(MonadPlus[A]):
 
         return Parser(g)
 
-    @classmethod
-    def const(cls: Type[Parser[Sequence[B]]], b: B) -> Parser[Sequence[B]]:
-        return cls.return_(Sequence([b]))
-
-    @classmethod
-    def key_values(
-        cls: Type[Parser[Sequence[KeyValue[C]]]], **kwargs: C
-    ) -> Parser[Sequence[KeyValue[C]]]:
-        return cls.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
-
-    @classmethod
-    def empty(cls: Type[Parser[Sequence[B]]]) -> Parser[Sequence[B]]:
-        return cls.return_(Sequence([]))
-
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
         >>> from monad_argparse import argument, flag
@@ -133,7 +127,7 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("--verbose", "--quiet", "--quiet", return_dict=False)
         [('verbose', True), ('quiet', True), ('quiet', True)]
         """
-        return self.many1() | Parser[Sequence[B]].empty()
+        return self.many1() | empty()
 
     def many1(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         def g() -> Generator["Parser[Sequence[B]]", Sequence[B], None]:

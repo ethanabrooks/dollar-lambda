@@ -17,28 +17,30 @@ Here is an example developed in the `argparse` tutorial:
 
 Here is the equivalent in this package:
 
->>> from dataclasses import dataclass
-
->>> @dataclass
-... class MyArgs(Args):
-...     x: int = 0
-...     y: int = 0
-
->>> p1 = MyArgs().parser
->>> p = (
-...     p1 + flag("verbose", default=False)
-... ) | (
-...     p1 + flag("debug", default=False)
-... )
+>>> p = nonpositional(
+...     (
+...         defaults(verbose=False, quiet=False)
+...         | flag("verbose") + defaults(quiet=False)
+...         | flag("quiet") + defaults(verbose=False)
+...     ),
+...     option("x"),
+...     option("y"),
+... ) >> done()
 >>> p.parse_args("-x", "1", "-y", "2")
-{'x': 1, 'y': 2, 'verbose': False}
+{'verbose': False, 'quiet': False, 'x': '1', 'y': '2'}
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+{'x': '1', 'y': '2', 'verbose': True, 'quiet': False}
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
+UnexpectedError(unexpected='--verbose')
 """
+
 
 from monad_argparse.argument_parsers import (
     Args,
     apply,
     apply_item,
     argument,
+    defaults,
     done,
     equals,
     flag,
@@ -66,4 +68,5 @@ __all__ = [
     "sat_item",
     "type_",
     "Args",
+    "defaults",
 ]
