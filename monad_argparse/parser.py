@@ -8,7 +8,7 @@ import operator
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
-from typing import Any, Callable, Dict, Generator, NoReturn, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -29,6 +29,9 @@ A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C")
 D = TypeVar("D", bound=Monoid)
+
+global TESTING
+TESTING = False
 
 
 def const(b: B) -> Parser[Sequence[B]]:
@@ -71,7 +74,6 @@ class Parser(MonadPlus[A]):
         {'verbose': True}
         >>> p.parse_args("--verbose", "--option", "x")
         {'verbose': True}
-        >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
         >>> (p >> done()).parse_args("--verbose", "--option", "x")
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option
@@ -96,7 +98,6 @@ class Parser(MonadPlus[A]):
         >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
         {'first': 'a', 'second': 'b'}
-        >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
         >>> p.parse_args("a")
         usage: first second
         The following arguments are required: second
@@ -113,7 +114,6 @@ class Parser(MonadPlus[A]):
         {'verbose': False, 'a': '--verbose'}
         >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
         >>> p = p1 >> argument("a")
-        >>> Parser._exit = lambda _: ()
         >>> p.parse_args("--verbose")
         usage: [[--verbose | --quiet] | --yes] a
         The following arguments are required: a
@@ -141,10 +141,6 @@ class Parser(MonadPlus[A]):
             return self.parse(cs) >= h
 
         return Parser(g, usage=None, helps=self.helps)
-
-    @staticmethod
-    def _exit() -> NoReturn:
-        exit()
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
@@ -213,8 +209,10 @@ class Parser(MonadPlus[A]):
                     print(f"{k}: {v}")
             if result.usage:
                 print(result.usage)
-            self._exit()
-            return
+            if TESTING:
+                return  # type: ignore[return-value]
+            else:
+                exit()
 
         nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
         parse: Parse[Sequence[KeyValue]] = nel.head
@@ -240,7 +238,6 @@ class Parser(MonadPlus[A]):
     @classmethod
     def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -> Parser[A]:
         """
-        >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
         >>> Parser.zero().parse_args()
         zero
         >>> Parser.zero().parse_args("a")
@@ -486,7 +483,6 @@ def option(
     """
     >>> option("value").parse_args("--value", "x")
     {'value': 'x'}
-    >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
     >>> option("value").parse_args("--value")
     usage: --value VALUE
     The following arguments are required: VALUE

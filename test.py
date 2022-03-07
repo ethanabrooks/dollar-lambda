@@ -8,6 +8,8 @@ from monad_argparse import parser, result, sequence
 
 
 def load_tests(_, tests, __):
+
+    parser.TESTING = True
     for mod in [
         parser,
         sequence,

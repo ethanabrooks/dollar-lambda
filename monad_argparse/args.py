@@ -69,7 +69,6 @@ class Args:
     ...     n: int = field(default=0, help="a number to increment", type=lambda x: 1 + int(x))
     >>> MyArgs.parse_args("-n", "1")
     {'n': 2}
-    >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
     >>> MyArgs.parse_args()
     n: a number to increment
     The following arguments are required: -n

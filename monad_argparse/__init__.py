@@ -30,7 +30,6 @@ Here is the equivalent in this package:
 Let's see it in action:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
->>> Parser._exit = lambda _: ()
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
 usage:
     [--verbose | --quiet]

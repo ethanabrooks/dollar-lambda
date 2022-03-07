@@ -56,7 +56,6 @@ Failure
 ```python
 from monad_argparse import Parser
 
-Parser._exit = lambda _: None  # In order to prevent jupyter notebook from exitting
 option("value").parse_args("--value")
 ```
 
