@@ -153,6 +153,24 @@ Initialized the database
 Dropped the database
 >>> p.parse_args()
 MissingError(missing='dropdb')
+
+Alternarely, if you want to define defaults in the argument parser itself:
+>>> p1 = flag("dropdb", string="dropdb") + defaults(initdb=False)
+>>> p2 = flag("initdb", string="initdb") + defaults(dropdb=False)
+>>> p = (p1 | p2) >> done()
+
+>>> def main(dropdb: bool, initdb: bool):
+...    if dropdb:
+...        print("Dropped the database")
+...    if initdb:
+...        print("Initialized the database")
+
+>>> main(**p.parse_args("initdb"))
+Initialized the database
+>>> main(**p.parse_args("dropdb"))
+Dropped the database
+>>> p.parse_args()
+MissingError(missing='dropdb')
 """
 
 from monad_argparse.argument_parsers import (
