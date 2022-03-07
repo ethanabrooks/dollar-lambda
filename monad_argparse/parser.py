@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import operator
+import os
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
@@ -31,7 +32,7 @@ C = TypeVar("C")
 D = TypeVar("D", bound=Monoid)
 
 global TESTING
-TESTING = False
+TESTING = os.environ.get("TESTING", False)
 
 
 def const(b: B) -> Parser[Sequence[B]]:

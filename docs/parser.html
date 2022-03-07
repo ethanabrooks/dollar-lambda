@@ -1,0 +1,1789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>monad_argparse.parser API documentation</title>
+<meta name="description" content="`Parser` is the class that powers `monad_argparse`." />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>monad_argparse.parser</code></h1>
+</header>
+<section id="section-intro">
+<p><code><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></code> is the class that powers <code><a title="monad_argparse" href="index.html">monad_argparse</a></code>.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+`Parser` is the class that powers `monad_argparse`.
+&#34;&#34;&#34;
+# pyright: reportGeneralTypeIssues=false
+from __future__ import annotations
+
+import operator
+import os
+import typing
+from dataclasses import asdict, dataclass, replace
+from functools import lru_cache, partial, reduce
+from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
+
+from pytypeclass import MonadPlus, Monoid
+from pytypeclass.nonempty_list import NonemptyList
+
+from monad_argparse.error import (
+    ArgumentError,
+    HelpError,
+    MissingError,
+    UnequalError,
+    UnexpectedError,
+)
+from monad_argparse.key_value import KeyValue, KeyValueTuple
+from monad_argparse.parse import Parse
+from monad_argparse.result import Result
+from monad_argparse.sequence import Sequence
+
+A = TypeVar(&#34;A&#34;, bound=Monoid, covariant=True)
+B = TypeVar(&#34;B&#34;, bound=Monoid)
+C = TypeVar(&#34;C&#34;)
+D = TypeVar(&#34;D&#34;, bound=Monoid)
+
+global TESTING
+TESTING = os.environ.get(&#34;TESTING&#34;, False)
+
+
+def const(b: B) -&gt; Parser[Sequence[B]]:
+    return Parser.return_(Sequence([b]))
+
+
+def empty() -&gt; Parser[Sequence[B]]:
+    return Parser.return_(Sequence([]))
+
+
+def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
+    no_nones = [x for x in (a, b) if x is not None]
+    usage = op.join(no_nones)
+    if len(no_nones) &gt; 1 and add_brackets:
+        usage = f&#34;[{usage}]&#34;
+    return usage or None
+
+
+@dataclass
+class Parser(MonadPlus[A]):
+    f: Callable[[Sequence[str]], Result[Parse[A]]]
+    usage: Optional[str]
+    helps: Dict[str, str]
+
+    def __add__(
+        self: Parser[Sequence[D]], other: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[D | B]]:
+        p = (self &gt;&gt; other) | (other &gt;&gt; self)
+        usage = binary_usage(self.usage, &#34; &#34;, other.usage, add_brackets=False)
+        return replace(p, usage=usage)
+
+    def __or__(
+        self: Parser[A],
+        other: Parser[B],
+    ) -&gt; Parser[A | B]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, option, done, flag
+        &gt;&gt;&gt; p = option(&#34;option&#34;) | flag(&#34;verbose&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        {&#39;verbose&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        {&#39;verbose&#39;: True}
+        &gt;&gt;&gt; (p &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        usage: [--option OPTION | --verbose]
+        Unrecognized argument: --option
+        &gt;&gt;&gt; p.parse_args(&#34;--option&#34;, &#34;x&#34;)
+        {&#39;option&#39;: &#39;x&#39;}
+        &#34;&#34;&#34;
+
+        def f(cs: Sequence[str]) -&gt; Result[Parse[A | B]]:
+            return self.parse(cs) | other.parse(cs)
+
+        return Parser(
+            f,
+            usage=binary_usage(self.usage, &#34; | &#34;, other.usage),
+            helps={**self.helps, **other.helps},
+        )
+
+    def __rshift__(
+        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[D | B]]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, flag
+        &gt;&gt;&gt; p = argument(&#34;first&#34;) &gt;&gt; argument(&#34;second&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;)
+        {&#39;first&#39;: &#39;a&#39;, &#39;second&#39;: &#39;b&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
+        usage: first second
+        The following arguments are required: second
+        &gt;&gt;&gt; p.parse_args(&#34;b&#34;)
+        usage: first second
+        The following arguments are required: second
+        &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;, default=False) | flag(&#34;quiet&#34;, default=False) | flag(&#34;yes&#34;, default=False)
+        &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
+        {&#39;verbose&#39;: True, &#39;a&#39;: &#39;value&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
+        {&#39;verbose&#39;: False, &#39;a&#39;: &#39;value&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        {&#39;verbose&#39;: False, &#39;a&#39;: &#39;--verbose&#39;}
+        &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;) | flag(&#34;yes&#34;)
+        &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        usage: [[--verbose | --quiet] | --yes] a
+        The following arguments are required: a
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
+        usage: [[--verbose | --quiet] | --yes] a
+        Expected &#39;--verbose&#39;. Got &#39;a&#39;
+        &#34;&#34;&#34;
+        # def f(p1: Sequence[D]) -&gt; Parser[Parse[Sequence[D | B]]]:
+        #     def g(p2: Sequence[B]) -&gt; Parser[Sequence[D | B]]:
+        #         return Parser.return_(p1 + p2)
+
+        #     return p &gt;= g
+
+        # return self &gt;= f
+        parser = self &gt;= (lambda p1: (p &gt;= (lambda p2: Parser.return_(p1 + p2))))
+        return replace(
+            parser, usage=binary_usage(self.usage, &#34; &#34;, p.usage, add_brackets=False)
+        )
+
+    def bind(self, f: Callable[[A], Parser[B]]) -&gt; Parser[B]:
+        def h(parse: Parse[A]) -&gt; Result[Parse[B]]:
+            return f(parse.parsed).parse(parse.unparsed)
+
+        def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
+            return self.parse(cs) &gt;= h
+
+        return Parser(g, usage=None, helps=self.helps)
+
+    def many(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, flag
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(return_dict=False)
+        []
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, return_dict=False)
+        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;)]
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
+        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+        &gt;&gt;&gt; p = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
+        &gt;&gt;&gt; p = p.many()  # parse zero or more copies
+        &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+        [(&#39;quiet&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+        [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+        &#34;&#34;&#34;
+        p = self.many1() | empty()
+        return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
+
+    def many1(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+        def g() -&gt; Generator[&#34;Parser[Sequence[B]]&#34;, Sequence[B], None]:
+            # noinspection PyTypeChecker
+            r1: Sequence[B] = yield self
+            # noinspection PyTypeChecker
+            r2: Sequence[B] = yield self.many()
+            yield Parser[Sequence[B]].return_(r1 + r2)
+
+        @lru_cache()
+        def f(cs: tuple):
+            return Parser.do(g).parse(Sequence(list(cs)))
+
+        return Parser(
+            lambda cs: f(tuple(cs)),
+            usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
+            helps=self.helps,
+        )
+
+    def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A]]:
+        return self.f(cs)
+
+    def parse_args(
+        self: &#34;Parser[Sequence[KeyValue]]&#34;,
+        *args: str,
+        return_dict: bool = True,
+        check_help: bool = True,
+    ) -&gt; typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+        if check_help:
+            return wrap_help(self).parse_args(
+                *args, return_dict=return_dict, check_help=False
+            )
+        result = self.parse(Sequence(list(args))).get
+        if isinstance(result, ArgumentError):
+            if self.usage and not isinstance(result, HelpError):
+                print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
+                if &#34;\n&#34; in self.usage:
+                    usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
+                else:
+                    usage = self.usage
+                print(usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f&#34;{k}: {v}&#34;)
+            if result.usage:
+                print(result.usage)
+            if TESTING:
+                return  # type: ignore[return-value]
+            else:
+                exit()
+
+        nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
+        parse: Parse[Sequence[KeyValue]] = nel.head
+        kvs: Sequence[KeyValue] = parse.parsed
+        if return_dict:
+            return {kv.key: kv.value for kv in kvs}
+        return [KeyValueTuple(**asdict(kv)) for kv in kvs]
+
+    @classmethod
+    def return_(cls, a: A) -&gt; Parser[A]:  # type: ignore[misc]
+        # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse.key_value import KeyValue
+        &gt;&gt;&gt; Parser.return_(([KeyValue(&#34;some-key&#34;, &#34;some-value&#34;)])).parse_args()
+        {&#39;some-key&#39;: &#39;some-value&#39;}
+        &#34;&#34;&#34;
+
+        def f(cs: Sequence[str]) -&gt; Result[Parse[A]]:
+            return Result.return_(Parse(a, cs))
+
+        return Parser(f, usage=None, helps={})
+
+    @classmethod
+    def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -&gt; Parser[A]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; Parser.zero().parse_args()
+        zero
+        &gt;&gt;&gt; Parser.zero().parse_args(&#34;a&#34;)
+        zero
+        &gt;&gt;&gt; Parser.zero(error=ArgumentError(&#34;This is a test.&#34;)).parse_args(&#34;a&#34;)
+        This is a test.
+        &#34;&#34;&#34;
+        return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
+
+
+E = TypeVar(&#34;E&#34;, bound=MonadPlus)
+F = TypeVar(&#34;F&#34;)
+G = TypeVar(&#34;G&#34;, covariant=True, bound=MonadPlus)
+
+
+def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -&gt; Parser[G]:
+    def g(a: E) -&gt; Parser[G]:
+        usage = f&#34;invalid value for {f.__name__}: {a}&#34;
+        usage = f&#34;argument {parser.usage}: {usage}&#34;
+        return Parser(
+            lambda unparsed: f(a)
+            &gt;= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            usage=usage,
+            helps=parser.helps,
+        )
+
+    return parser &gt;= g
+
+
+def apply_item(f: Callable[[str], G], description: str) -&gt; Parser[G]:
+    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[G]:
+        [kv] = parsed
+        try:
+            y = f(kv.value)
+        except ArgumentError as e:
+            return Result(e)
+        return Result.return_(y)
+
+    return apply(g, item(description))
+
+
+def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
+    {&#39;name&#39;: &#39;Alice&#39;}
+    &gt;&gt;&gt; argument(&#34;name&#34;).parse_args()
+    usage: name
+    The following arguments are required: name
+    &#34;&#34;&#34;
+    return item(dest)
+
+
+def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
+    return replace(p, usage=None)
+
+
+def done() -&gt; Parser[Sequence[F]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; done().parse_args()
+    {}
+    &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
+    Unrecognized argument: arg
+    &gt;&gt;&gt; (argument(&#34;arg&#34;) &gt;&gt; done()).parse_args(&#34;a&#34;)
+    {&#39;arg&#39;: &#39;a&#39;}
+    &gt;&gt;&gt; (argument(&#34;arg&#34;) &gt;&gt; done()).parse_args(&#34;a&#34;, &#34;b&#34;)
+    usage: arg
+    Unrecognized argument: b
+    &gt;&gt;&gt; (flag(&#34;arg&#34;).many() &gt;&gt; done()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, return_dict=False)
+    [(&#39;arg&#39;, True), (&#39;arg&#39;, True)]
+    &gt;&gt;&gt; (flag(&#34;arg&#34;).many() &gt;&gt; done()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, &#34;x&#34;)
+    usage: [--arg ...]
+    Unrecognized argument: x
+    &#34;&#34;&#34;
+
+    def f(cs: Sequence[str]) -&gt; Result[Parse[Sequence[F]]]:
+        if cs:
+            c, *_ = cs
+            return Result(
+                UnexpectedError(unexpected=c, usage=f&#34;Unrecognized argument: {c}&#34;)
+            )
+        return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
+
+    return Parser(f, usage=None, helps={})
+
+
+def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+    if peak:
+        return sat_peak(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )
+    else:
+        return sat_item(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )
+
+
+def flag(
+    dest: str,
+    default: Optional[bool] = None,
+    help: Optional[str] = None,
+    short: bool = True,
+    string: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[bool]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+    &gt;&gt;&gt; flag(&#34;v&#34;, string=&#34;--value&#34;).parse_args(&#34;--value&#34;)
+    {&#39;v&#39;: True}
+    &#34;&#34;&#34;
+    if string is None:
+        _string = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
+    else:
+        _string = string
+
+    def f(
+        cs: Sequence[str],
+        s: str,
+    ) -&gt; Result[Parse[Sequence[KeyValue[bool]]]]:
+        parser = equals(s) &gt;= (lambda _: defaults(**{dest: not default}))
+        return parser.parse(cs)
+
+    parser = Parser(partial(f, s=_string), usage=None, helps={})
+    if default is not None:
+        parser = parser | defaults(**{dest: default})
+    if short:
+        short_string = f&#34;-{dest[0]}&#34;
+        parser2 = flag(dest, short=False, string=short_string, default=default)
+        parser = parser | parser2
+    if default:
+        help = f&#34;{help + &#39; &#39; if help else &#39;&#39;}(default: {default})&#34;
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=_string, helps=helps)
+
+
+def help_parser(usage: str, parsed: B) -&gt; Parser[B]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[B]]:
+        result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
+        if isinstance(result.get, ArgumentError):
+            return Result.return_(Parse(parsed=parsed, unparsed=cs))
+        return Result(HelpError(usage=usage))
+
+    return Parser(f, usage=None, helps={})
+
+
+def wrap_help(parser: Parser[Sequence[C]]) -&gt; Parser[Sequence[C]]:
+    _help_parser: Parser[Sequence[C]] = help_parser(
+        parser.usage or &#34;No usage provided.&#34;, Sequence([])
+    )
+
+    p = _help_parser &gt;= (lambda _: parser)
+    return replace(p, usage=parser.usage, helps=parser.helps)
+
+
+def item(
+    name: str,
+    description: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *tail = cs
+            return Result(
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(tail),
+                    )
+                )
+            )
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f&#34;The following arguments are required: {description or name}&#34;,
+            )
+        )
+
+    return Parser(f, usage=name, helps={})
+
+
+def nonpositional(*parsers: &#34;Parser[Sequence[F]]&#34;) -&gt; &#34;Parser[Sequence[F]]&#34;:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;, &#34;--verbose&#34;)
+    {&#39;debug&#39;: True, &#39;verbose&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;)
+    {&#39;verbose&#39;: False, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;)
+    {&#39;verbose&#39;: False, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False), argument(&#34;a&#34;)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;, &#34;hello&#34;, &#34;--verbose&#34;)
+    {&#39;debug&#39;: True, &#39;a&#39;: &#39;hello&#39;, &#39;verbose&#39;: True}
+    &#34;&#34;&#34;
+    if not parsers:
+        return empty()
+
+    def get_alternatives():
+        for i, head in enumerate(parsers):
+            tail = [p for j, p in enumerate(parsers) if j != i]
+            yield head &gt;&gt; nonpositional(*tail)
+
+    parser = reduce(operator.or_, get_alternatives())
+    return replace(parser, usage=&#34;\n&#34;.join([p.usage or &#34;&#34; for p in parsers]))
+
+
+def option(
+    dest: str,
+    flag: Optional[str] = None,
+    default=None,
+    help: Optional[str] = None,
+    short: bool = True,
+    type: Callable[[str], Any] = str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;value&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args(&#34;--value&#34;)
+    usage: --value VALUE
+    The following arguments are required: VALUE
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args()
+    usage: --value VALUE
+    The following arguments are required: --value
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args()
+    {&#39;value&#39;: 1}
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args(&#34;--value&#34;)
+    {&#39;value&#39;: 1}
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;value&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;v&#34;).parse_args(&#34;-v&#34;, &#34;x&#34;)
+    {&#39;v&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;v&#34;, flag=&#34;--value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;v&#39;: &#39;x&#39;}
+    &#34;&#34;&#34;
+
+    if flag is None:
+        _flag = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
+    else:
+        _flag = flag
+
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        parser = equals(_flag) &gt;= (lambda _: item(dest, description=dest.upper()))
+        return parser.parse(cs)
+
+    parser = Parser(f, usage=None, helps={})
+    if default:
+        parser = parser | defaults(**{dest: default})
+    if short and len(dest) &gt; 1:
+        parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
+        parser = parser | parser2
+    if type is not str:
+        parser = type_(type, parser)
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)
+
+
+def peak(
+    name: str,
+    description: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *_ = cs
+            return Result(
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(cs),
+                    )
+                )
+            )
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f&#34;The following arguments are required: {description or name}&#34;,
+            )
+        )
+
+    return Parser(f, usage=name, helps={})
+
+
+def sat(
+    parser: Parser[E],
+    predicate: Callable[[E], bool],
+    on_fail: Callable[[E], ArgumentError],
+) -&gt; Parser[E]:
+    def f(x: E) -&gt; Result[E]:
+        return Result(NonemptyList(x) if predicate(x) else on_fail(x))
+
+    return apply(f, parser)
+
+
+def sat_item(
+    predicate: Callable[[str], bool],
+    on_fail: Callable[[str], ArgumentError],
+    name: str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
+        [kv] = parsed
+        return predicate(kv.value)
+
+    def _on_fail(parsed: Sequence[KeyValue[str]]) -&gt; ArgumentError:
+        [kv] = parsed
+        return on_fail(kv.value)
+
+    return sat(item(name), _predicate, _on_fail)
+
+
+def sat_peak(
+    predicate: Callable[[str], bool],
+    on_fail: Callable[[str], ArgumentError],
+    name: str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
+        [kv] = parsed
+        return predicate(kv.value)
+
+    def _on_fail(parsed: Sequence[KeyValue[str]]) -&gt; ArgumentError:
+        [kv] = parsed
+        return on_fail(kv.value)
+
+    return sat(peak(name), _predicate, _on_fail)
+
+
+def type_(
+    f: Callable[[str], Any], parser: Parser[Sequence[KeyValue[str]]]
+) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    def g(
+        kvs: Sequence[KeyValue[str]],
+    ) -&gt; Result[Sequence[KeyValue[Any]]]:
+        head, *tail = kvs.get
+        try:
+            head = replace(head, value=f(head.value))
+        except ArgumentError as e:
+            return Result(e)
+
+        return Result(NonemptyList(Sequence([*tail, head])))
+
+    return apply(g, parser)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="monad_argparse.parser.apply"><code class="name flex">
+<span>def <span class="ident">apply</span></span>(<span>f: Callable[[E], Result[G]], parser: <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[E]) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[+G]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -&gt; Parser[G]:
+    def g(a: E) -&gt; Parser[G]:
+        usage = f&#34;invalid value for {f.__name__}: {a}&#34;
+        usage = f&#34;argument {parser.usage}: {usage}&#34;
+        return Parser(
+            lambda unparsed: f(a)
+            &gt;= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            usage=usage,
+            helps=parser.helps,
+        )
+
+    return parser &gt;= g</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.apply_item"><code class="name flex">
+<span>def <span class="ident">apply_item</span></span>(<span>f: Callable[[str], G], description: str) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[+G]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_item(f: Callable[[str], G], description: str) -&gt; Parser[G]:
+    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[G]:
+        [kv] = parsed
+        try:
+            y = f(kv.value)
+        except ArgumentError as e:
+            return Result(e)
+        return Result.return_(y)
+
+    return apply(g, item(description))</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.argument"><code class="name flex">
+<span>def <span class="ident">argument</span></span>(<span>dest: str) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;name&quot;).parse_args(&quot;Alice&quot;)
+{'name': 'Alice'}
+&gt;&gt;&gt; argument(&quot;name&quot;).parse_args()
+usage: name
+The following arguments are required: name
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
+    {&#39;name&#39;: &#39;Alice&#39;}
+    &gt;&gt;&gt; argument(&#34;name&#34;).parse_args()
+    usage: name
+    The following arguments are required: name
+    &#34;&#34;&#34;
+    return item(dest)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.binary_usage"><code class="name flex">
+<span>def <span class="ident">binary_usage</span></span>(<span>a: Optional[str], op: str, b: Optional[str], add_brackets=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
+    no_nones = [x for x in (a, b) if x is not None]
+    usage = op.join(no_nones)
+    if len(no_nones) &gt; 1 and add_brackets:
+        usage = f&#34;[{usage}]&#34;
+    return usage or None</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.const"><code class="name flex">
+<span>def <span class="ident">const</span></span>(<span>b: B) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~B]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def const(b: B) -&gt; Parser[Sequence[B]]:
+    return Parser.return_(Sequence([b]))</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.defaults"><code class="name flex">
+<span>def <span class="ident">defaults</span></span>(<span>**kwargs: Any) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
+    return replace(p, usage=None)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.done"><code class="name flex">
+<span>def <span class="ident">done</span></span>(<span>) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~F]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; done().parse_args()
+{}
+&gt;&gt;&gt; done().parse_args(&quot;arg&quot;)
+Unrecognized argument: arg
+&gt;&gt;&gt; (argument(&quot;arg&quot;) &gt;&gt; done()).parse_args(&quot;a&quot;)
+{'arg': 'a'}
+&gt;&gt;&gt; (argument(&quot;arg&quot;) &gt;&gt; done()).parse_args(&quot;a&quot;, &quot;b&quot;)
+usage: arg
+Unrecognized argument: b
+&gt;&gt;&gt; (flag(&quot;arg&quot;).many() &gt;&gt; done()).parse_args(&quot;--arg&quot;, &quot;--arg&quot;, return_dict=False)
+[('arg', True), ('arg', True)]
+&gt;&gt;&gt; (flag(&quot;arg&quot;).many() &gt;&gt; done()).parse_args(&quot;--arg&quot;, &quot;--arg&quot;, &quot;x&quot;)
+usage: [--arg ...]
+Unrecognized argument: x
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def done() -&gt; Parser[Sequence[F]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; done().parse_args()
+    {}
+    &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
+    Unrecognized argument: arg
+    &gt;&gt;&gt; (argument(&#34;arg&#34;) &gt;&gt; done()).parse_args(&#34;a&#34;)
+    {&#39;arg&#39;: &#39;a&#39;}
+    &gt;&gt;&gt; (argument(&#34;arg&#34;) &gt;&gt; done()).parse_args(&#34;a&#34;, &#34;b&#34;)
+    usage: arg
+    Unrecognized argument: b
+    &gt;&gt;&gt; (flag(&#34;arg&#34;).many() &gt;&gt; done()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, return_dict=False)
+    [(&#39;arg&#39;, True), (&#39;arg&#39;, True)]
+    &gt;&gt;&gt; (flag(&#34;arg&#34;).many() &gt;&gt; done()).parse_args(&#34;--arg&#34;, &#34;--arg&#34;, &#34;x&#34;)
+    usage: [--arg ...]
+    Unrecognized argument: x
+    &#34;&#34;&#34;
+
+    def f(cs: Sequence[str]) -&gt; Result[Parse[Sequence[F]]]:
+        if cs:
+            c, *_ = cs
+            return Result(
+                UnexpectedError(unexpected=c, usage=f&#34;Unrecognized argument: {c}&#34;)
+            )
+        return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
+
+    return Parser(f, usage=None, helps={})</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.empty"><code class="name flex">
+<span>def <span class="ident">empty</span></span>(<span>) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~B]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def empty() -&gt; Parser[Sequence[B]]:
+    return Parser.return_(Sequence([]))</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.equals"><code class="name flex">
+<span>def <span class="ident">equals</span></span>(<span>s: str, peak=False) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+    if peak:
+        return sat_peak(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )
+    else:
+        return sat_item(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.flag"><code class="name flex">
+<span>def <span class="ident">flag</span></span>(<span>dest: str, default: Optional[bool] = None, help: Optional[str] = None, short: bool = True, string: Optional[str] = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[bool]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
+{'verbose': True}
+&gt;&gt;&gt; p.parse_args()
+{'verbose': False}
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;, &quot;--verbose&quot;)
+{'verbose': True}
+&gt;&gt;&gt; flag(&quot;v&quot;, string=&quot;--value&quot;).parse_args(&quot;--value&quot;)
+{'v': True}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flag(
+    dest: str,
+    default: Optional[bool] = None,
+    help: Optional[str] = None,
+    short: bool = True,
+    string: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[bool]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+    &gt;&gt;&gt; flag(&#34;v&#34;, string=&#34;--value&#34;).parse_args(&#34;--value&#34;)
+    {&#39;v&#39;: True}
+    &#34;&#34;&#34;
+    if string is None:
+        _string = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
+    else:
+        _string = string
+
+    def f(
+        cs: Sequence[str],
+        s: str,
+    ) -&gt; Result[Parse[Sequence[KeyValue[bool]]]]:
+        parser = equals(s) &gt;= (lambda _: defaults(**{dest: not default}))
+        return parser.parse(cs)
+
+    parser = Parser(partial(f, s=_string), usage=None, helps={})
+    if default is not None:
+        parser = parser | defaults(**{dest: default})
+    if short:
+        short_string = f&#34;-{dest[0]}&#34;
+        parser2 = flag(dest, short=False, string=short_string, default=default)
+        parser = parser | parser2
+    if default:
+        help = f&#34;{help + &#39; &#39; if help else &#39;&#39;}(default: {default})&#34;
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=_string, helps=helps)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.help_parser"><code class="name flex">
+<span>def <span class="ident">help_parser</span></span>(<span>usage: str, parsed: B) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def help_parser(usage: str, parsed: B) -&gt; Parser[B]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[B]]:
+        result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
+        if isinstance(result.get, ArgumentError):
+            return Result.return_(Parse(parsed=parsed, unparsed=cs))
+        return Result(HelpError(usage=usage))
+
+    return Parser(f, usage=None, helps={})</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.item"><code class="name flex">
+<span>def <span class="ident">item</span></span>(<span>name: str, description: Optional[str] = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def item(
+    name: str,
+    description: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *tail = cs
+            return Result(
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(tail),
+                    )
+                )
+            )
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f&#34;The following arguments are required: {description or name}&#34;,
+            )
+        )
+
+    return Parser(f, usage=name, helps={})</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.nonpositional"><code class="name flex">
+<span>def <span class="ident">nonpositional</span></span>(<span>*parsers: "'<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[F]]'") ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~F]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;debug&quot;, default=False)) &gt;&gt; done()
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--debug&quot;)
+{'verbose': True, 'debug': True}
+&gt;&gt;&gt; p.parse_args(&quot;--debug&quot;, &quot;--verbose&quot;)
+{'debug': True, 'verbose': True}
+&gt;&gt;&gt; p.parse_args()
+{'verbose': False, 'debug': False}
+&gt;&gt;&gt; p.parse_args(&quot;--debug&quot;)
+{'verbose': False, 'debug': True}
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
+{'verbose': True, 'debug': False}
+&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;debug&quot;, default=False)) &gt;&gt; done()
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--debug&quot;)
+{'verbose': True, 'debug': True}
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
+{'verbose': True, 'debug': False}
+&gt;&gt;&gt; p.parse_args(&quot;--debug&quot;)
+{'verbose': False, 'debug': True}
+&gt;&gt;&gt; p.parse_args()
+{'verbose': False, 'debug': False}
+&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;debug&quot;, default=False), argument(&quot;a&quot;)) &gt;&gt; done()
+&gt;&gt;&gt; p.parse_args(&quot;--debug&quot;, &quot;hello&quot;, &quot;--verbose&quot;)
+{'debug': True, 'a': 'hello', 'verbose': True}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def nonpositional(*parsers: &#34;Parser[Sequence[F]]&#34;) -&gt; &#34;Parser[Sequence[F]]&#34;:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;, &#34;--verbose&#34;)
+    {&#39;debug&#39;: True, &#39;verbose&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;)
+    {&#39;verbose&#39;: False, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;)
+    {&#39;verbose&#39;: False, &#39;debug&#39;: True}
+    &gt;&gt;&gt; p.parse_args()
+    {&#39;verbose&#39;: False, &#39;debug&#39;: False}
+    &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;debug&#34;, default=False), argument(&#34;a&#34;)) &gt;&gt; done()
+    &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;, &#34;hello&#34;, &#34;--verbose&#34;)
+    {&#39;debug&#39;: True, &#39;a&#39;: &#39;hello&#39;, &#39;verbose&#39;: True}
+    &#34;&#34;&#34;
+    if not parsers:
+        return empty()
+
+    def get_alternatives():
+        for i, head in enumerate(parsers):
+            tail = [p for j, p in enumerate(parsers) if j != i]
+            yield head &gt;&gt; nonpositional(*tail)
+
+    parser = reduce(operator.or_, get_alternatives())
+    return replace(parser, usage=&#34;\n&#34;.join([p.usage or &#34;&#34; for p in parsers]))</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.option"><code class="name flex">
+<span>def <span class="ident">option</span></span>(<span>dest: str, flag: Optional[str] = None, default=None, help: Optional[str] = None, short: bool = True, type: Callable[[str], Any] = builtins.str) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;value&quot;).parse_args(&quot;--value&quot;, &quot;x&quot;)
+{'value': 'x'}
+&gt;&gt;&gt; option(&quot;value&quot;).parse_args(&quot;--value&quot;)
+usage: --value VALUE
+The following arguments are required: VALUE
+&gt;&gt;&gt; option(&quot;value&quot;).parse_args()
+usage: --value VALUE
+The following arguments are required: --value
+&gt;&gt;&gt; option(&quot;value&quot;, default=1).parse_args()
+{'value': 1}
+&gt;&gt;&gt; option(&quot;value&quot;, default=1).parse_args(&quot;--value&quot;)
+{'value': 1}
+&gt;&gt;&gt; option(&quot;value&quot;, default=1).parse_args(&quot;--value&quot;, &quot;x&quot;)
+{'value': 'x'}
+&gt;&gt;&gt; option(&quot;v&quot;).parse_args(&quot;-v&quot;, &quot;x&quot;)
+{'v': 'x'}
+&gt;&gt;&gt; option(&quot;v&quot;, flag=&quot;--value&quot;).parse_args(&quot;--value&quot;, &quot;x&quot;)
+{'v': 'x'}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def option(
+    dest: str,
+    flag: Optional[str] = None,
+    default=None,
+    help: Optional[str] = None,
+    short: bool = True,
+    type: Callable[[str], Any] = str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;value&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args(&#34;--value&#34;)
+    usage: --value VALUE
+    The following arguments are required: VALUE
+    &gt;&gt;&gt; option(&#34;value&#34;).parse_args()
+    usage: --value VALUE
+    The following arguments are required: --value
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args()
+    {&#39;value&#39;: 1}
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args(&#34;--value&#34;)
+    {&#39;value&#39;: 1}
+    &gt;&gt;&gt; option(&#34;value&#34;, default=1).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;value&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;v&#34;).parse_args(&#34;-v&#34;, &#34;x&#34;)
+    {&#39;v&#39;: &#39;x&#39;}
+    &gt;&gt;&gt; option(&#34;v&#34;, flag=&#34;--value&#34;).parse_args(&#34;--value&#34;, &#34;x&#34;)
+    {&#39;v&#39;: &#39;x&#39;}
+    &#34;&#34;&#34;
+
+    if flag is None:
+        _flag = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
+    else:
+        _flag = flag
+
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        parser = equals(_flag) &gt;= (lambda _: item(dest, description=dest.upper()))
+        return parser.parse(cs)
+
+    parser = Parser(f, usage=None, helps={})
+    if default:
+        parser = parser | defaults(**{dest: default})
+    if short and len(dest) &gt; 1:
+        parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
+        parser = parser | parser2
+    if type is not str:
+        parser = type_(type, parser)
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.peak"><code class="name flex">
+<span>def <span class="ident">peak</span></span>(<span>name: str, description: Optional[str] = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def peak(
+    name: str,
+    description: Optional[str] = None,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *_ = cs
+            return Result(
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(cs),
+                    )
+                )
+            )
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f&#34;The following arguments are required: {description or name}&#34;,
+            )
+        )
+
+    return Parser(f, usage=name, helps={})</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.sat"><code class="name flex">
+<span>def <span class="ident">sat</span></span>(<span>parser: <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[E], predicate: Callable[[E], bool], on_fail: Callable[[E], ArgumentError]) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[~E]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat(
+    parser: Parser[E],
+    predicate: Callable[[E], bool],
+    on_fail: Callable[[E], ArgumentError],
+) -&gt; Parser[E]:
+    def f(x: E) -&gt; Result[E]:
+        return Result(NonemptyList(x) if predicate(x) else on_fail(x))
+
+    return apply(f, parser)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.sat_item"><code class="name flex">
+<span>def <span class="ident">sat_item</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat_item(
+    predicate: Callable[[str], bool],
+    on_fail: Callable[[str], ArgumentError],
+    name: str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
+        [kv] = parsed
+        return predicate(kv.value)
+
+    def _on_fail(parsed: Sequence[KeyValue[str]]) -&gt; ArgumentError:
+        [kv] = parsed
+        return on_fail(kv.value)
+
+    return sat(item(name), _predicate, _on_fail)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.sat_peak"><code class="name flex">
+<span>def <span class="ident">sat_peak</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat_peak(
+    predicate: Callable[[str], bool],
+    on_fail: Callable[[str], ArgumentError],
+    name: str,
+) -&gt; Parser[Sequence[KeyValue[str]]]:
+    def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
+        [kv] = parsed
+        return predicate(kv.value)
+
+    def _on_fail(parsed: Sequence[KeyValue[str]]) -&gt; ArgumentError:
+        [kv] = parsed
+        return on_fail(kv.value)
+
+    return sat(peak(name), _predicate, _on_fail)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.type_"><code class="name flex">
+<span>def <span class="ident">type_</span></span>(<span>f: Callable[[str], Any], parser: <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[KeyValue[str]]]) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[<a title="monad_argparse.key_value.KeyValue" href="key_value.html#monad_argparse.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def type_(
+    f: Callable[[str], Any], parser: Parser[Sequence[KeyValue[str]]]
+) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    def g(
+        kvs: Sequence[KeyValue[str]],
+    ) -&gt; Result[Sequence[KeyValue[Any]]]:
+        head, *tail = kvs.get
+        try:
+            head = replace(head, value=f(head.value))
+        except ArgumentError as e:
+            return Result(e)
+
+        return Result(NonemptyList(Sequence([*tail, head])))
+
+    return apply(g, parser)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.wrap_help"><code class="name flex">
+<span>def <span class="ident">wrap_help</span></span>(<span>parser: <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[C]]) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~C]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wrap_help(parser: Parser[Sequence[C]]) -&gt; Parser[Sequence[C]]:
+    _help_parser: Parser[Sequence[C]] = help_parser(
+        parser.usage or &#34;No usage provided.&#34;, Sequence([])
+    )
+
+    p = _help_parser &gt;= (lambda _: parser)
+    return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="monad_argparse.parser.Parser"><code class="flex name class">
+<span>class <span class="ident">Parser</span></span>
+<span>(</span><span>f: Callable[[Sequence[str]], Result[Parse[A]]], usage: Optional[str], helps: Dict[str, str])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parser(f: 'Callable[[Sequence[str]], Result[Parse[A]]]', usage: 'Optional[str]', helps: 'Dict[str, str]')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class Parser(MonadPlus[A]):
+    f: Callable[[Sequence[str]], Result[Parse[A]]]
+    usage: Optional[str]
+    helps: Dict[str, str]
+
+    def __add__(
+        self: Parser[Sequence[D]], other: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[D | B]]:
+        p = (self &gt;&gt; other) | (other &gt;&gt; self)
+        usage = binary_usage(self.usage, &#34; &#34;, other.usage, add_brackets=False)
+        return replace(p, usage=usage)
+
+    def __or__(
+        self: Parser[A],
+        other: Parser[B],
+    ) -&gt; Parser[A | B]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, option, done, flag
+        &gt;&gt;&gt; p = option(&#34;option&#34;) | flag(&#34;verbose&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        {&#39;verbose&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        {&#39;verbose&#39;: True}
+        &gt;&gt;&gt; (p &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
+        usage: [--option OPTION | --verbose]
+        Unrecognized argument: --option
+        &gt;&gt;&gt; p.parse_args(&#34;--option&#34;, &#34;x&#34;)
+        {&#39;option&#39;: &#39;x&#39;}
+        &#34;&#34;&#34;
+
+        def f(cs: Sequence[str]) -&gt; Result[Parse[A | B]]:
+            return self.parse(cs) | other.parse(cs)
+
+        return Parser(
+            f,
+            usage=binary_usage(self.usage, &#34; | &#34;, other.usage),
+            helps={**self.helps, **other.helps},
+        )
+
+    def __rshift__(
+        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[D | B]]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, flag
+        &gt;&gt;&gt; p = argument(&#34;first&#34;) &gt;&gt; argument(&#34;second&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;)
+        {&#39;first&#39;: &#39;a&#39;, &#39;second&#39;: &#39;b&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
+        usage: first second
+        The following arguments are required: second
+        &gt;&gt;&gt; p.parse_args(&#34;b&#34;)
+        usage: first second
+        The following arguments are required: second
+        &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;, default=False) | flag(&#34;quiet&#34;, default=False) | flag(&#34;yes&#34;, default=False)
+        &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
+        {&#39;verbose&#39;: True, &#39;a&#39;: &#39;value&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
+        {&#39;verbose&#39;: False, &#39;a&#39;: &#39;value&#39;}
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        {&#39;verbose&#39;: False, &#39;a&#39;: &#39;--verbose&#39;}
+        &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;) | flag(&#34;yes&#34;)
+        &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+        usage: [[--verbose | --quiet] | --yes] a
+        The following arguments are required: a
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
+        usage: [[--verbose | --quiet] | --yes] a
+        Expected &#39;--verbose&#39;. Got &#39;a&#39;
+        &#34;&#34;&#34;
+        # def f(p1: Sequence[D]) -&gt; Parser[Parse[Sequence[D | B]]]:
+        #     def g(p2: Sequence[B]) -&gt; Parser[Sequence[D | B]]:
+        #         return Parser.return_(p1 + p2)
+
+        #     return p &gt;= g
+
+        # return self &gt;= f
+        parser = self &gt;= (lambda p1: (p &gt;= (lambda p2: Parser.return_(p1 + p2))))
+        return replace(
+            parser, usage=binary_usage(self.usage, &#34; &#34;, p.usage, add_brackets=False)
+        )
+
+    def bind(self, f: Callable[[A], Parser[B]]) -&gt; Parser[B]:
+        def h(parse: Parse[A]) -&gt; Result[Parse[B]]:
+            return f(parse.parsed).parse(parse.unparsed)
+
+        def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
+            return self.parse(cs) &gt;= h
+
+        return Parser(g, usage=None, helps=self.helps)
+
+    def many(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse import argument, flag
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(return_dict=False)
+        []
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, return_dict=False)
+        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;)]
+        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
+        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+        &gt;&gt;&gt; p = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
+        &gt;&gt;&gt; p = p.many()  # parse zero or more copies
+        &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+        [(&#39;quiet&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+        [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+        &#34;&#34;&#34;
+        p = self.many1() | empty()
+        return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
+
+    def many1(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+        def g() -&gt; Generator[&#34;Parser[Sequence[B]]&#34;, Sequence[B], None]:
+            # noinspection PyTypeChecker
+            r1: Sequence[B] = yield self
+            # noinspection PyTypeChecker
+            r2: Sequence[B] = yield self.many()
+            yield Parser[Sequence[B]].return_(r1 + r2)
+
+        @lru_cache()
+        def f(cs: tuple):
+            return Parser.do(g).parse(Sequence(list(cs)))
+
+        return Parser(
+            lambda cs: f(tuple(cs)),
+            usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
+            helps=self.helps,
+        )
+
+    def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A]]:
+        return self.f(cs)
+
+    def parse_args(
+        self: &#34;Parser[Sequence[KeyValue]]&#34;,
+        *args: str,
+        return_dict: bool = True,
+        check_help: bool = True,
+    ) -&gt; typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+        if check_help:
+            return wrap_help(self).parse_args(
+                *args, return_dict=return_dict, check_help=False
+            )
+        result = self.parse(Sequence(list(args))).get
+        if isinstance(result, ArgumentError):
+            if self.usage and not isinstance(result, HelpError):
+                print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
+                if &#34;\n&#34; in self.usage:
+                    usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
+                else:
+                    usage = self.usage
+                print(usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f&#34;{k}: {v}&#34;)
+            if result.usage:
+                print(result.usage)
+            if TESTING:
+                return  # type: ignore[return-value]
+            else:
+                exit()
+
+        nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
+        parse: Parse[Sequence[KeyValue]] = nel.head
+        kvs: Sequence[KeyValue] = parse.parsed
+        if return_dict:
+            return {kv.key: kv.value for kv in kvs}
+        return [KeyValueTuple(**asdict(kv)) for kv in kvs]
+
+    @classmethod
+    def return_(cls, a: A) -&gt; Parser[A]:  # type: ignore[misc]
+        # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; from monad_argparse.key_value import KeyValue
+        &gt;&gt;&gt; Parser.return_(([KeyValue(&#34;some-key&#34;, &#34;some-value&#34;)])).parse_args()
+        {&#39;some-key&#39;: &#39;some-value&#39;}
+        &#34;&#34;&#34;
+
+        def f(cs: Sequence[str]) -&gt; Result[Parse[A]]:
+            return Result.return_(Parse(a, cs))
+
+        return Parser(f, usage=None, helps={})
+
+    @classmethod
+    def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -&gt; Parser[A]:
+        &#34;&#34;&#34;
+        &gt;&gt;&gt; Parser.zero().parse_args()
+        zero
+        &gt;&gt;&gt; Parser.zero().parse_args(&#34;a&#34;)
+        zero
+        &gt;&gt;&gt; Parser.zero(error=ArgumentError(&#34;This is a test.&#34;)).parse_args(&#34;a&#34;)
+        This is a test.
+        &#34;&#34;&#34;
+        return Parser(lambda _: Result.zero(error=error), usage=None, helps={})</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pytypeclass.monoid.MonadPlus</li>
+<li>pytypeclass.monad.Monad</li>
+<li>pytypeclass.monoid.Monoid</li>
+<li>typing.Protocol</li>
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="monad_argparse.parser.Parser.f"><code class="name">var <span class="ident">f</span> : Callable[[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[str]], <a title="monad_argparse.result.Result" href="result.html#monad_argparse.result.Result">Result</a>[<a title="monad_argparse.parse.Parse" href="parse.html#monad_argparse.parse.Parse">Parse</a>[+A]]]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="monad_argparse.parser.Parser.helps"><code class="name">var <span class="ident">helps</span> : Dict[str, str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="monad_argparse.parser.Parser.usage"><code class="name">var <span class="ident">usage</span> : Optional[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="monad_argparse.parser.Parser.return_"><code class="name flex">
+<span>def <span class="ident">return_</span></span>(<span>a: A) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[+A]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; from monad_argparse.key_value import KeyValue
+&gt;&gt;&gt; Parser.return_(([KeyValue(&quot;some-key&quot;, &quot;some-value&quot;)])).parse_args()
+{'some-key': 'some-value'}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def return_(cls, a: A) -&gt; Parser[A]:  # type: ignore[misc]
+    # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; from monad_argparse.key_value import KeyValue
+    &gt;&gt;&gt; Parser.return_(([KeyValue(&#34;some-key&#34;, &#34;some-value&#34;)])).parse_args()
+    {&#39;some-key&#39;: &#39;some-value&#39;}
+    &#34;&#34;&#34;
+
+    def f(cs: Sequence[str]) -&gt; Result[Parse[A]]:
+        return Result.return_(Parse(a, cs))
+
+    return Parser(f, usage=None, helps={})</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>error: Optional[ArgumentError] = None) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[+A]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Parser.zero().parse_args()
+zero
+&gt;&gt;&gt; Parser.zero().parse_args(&quot;a&quot;)
+zero
+&gt;&gt;&gt; Parser.zero(error=ArgumentError(&quot;This is a test.&quot;)).parse_args(&quot;a&quot;)
+This is a test.
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -&gt; Parser[A]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; Parser.zero().parse_args()
+    zero
+    &gt;&gt;&gt; Parser.zero().parse_args(&#34;a&#34;)
+    zero
+    &gt;&gt;&gt; Parser.zero(error=ArgumentError(&#34;This is a test.&#34;)).parse_args(&#34;a&#34;)
+    This is a test.
+    &#34;&#34;&#34;
+    return Parser(lambda _: Result.zero(error=error), usage=None, helps={})</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="monad_argparse.parser.Parser.bind"><code class="name flex">
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A], <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[B]]) ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bind(self, f: Callable[[A], Parser[B]]) -&gt; Parser[B]:
+    def h(parse: Parse[A]) -&gt; Result[Parse[B]]:
+        return f(parse.parsed).parse(parse.unparsed)
+
+    def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
+        return self.parse(cs) &gt;= h
+
+    return Parser(g, usage=None, helps=self.helps)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.many"><code class="name flex">
+<span>def <span class="ident">many</span></span>(<span>self: "'<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[B]]'") ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~B]]</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; from monad_argparse import argument, flag
+&gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
+&gt;&gt;&gt; p.parse_args(return_dict=False)
+[]
+&gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
+&gt;&gt;&gt; p.parse_args(&quot;a&quot;, return_dict=False)
+[('as-many-as-you-like', 'a')]
+&gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
+&gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;, return_dict=False)
+[('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+&gt;&gt;&gt; p = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
+&gt;&gt;&gt; p = p.many()  # parse zero or more copies
+&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--quiet&quot;, &quot;--quiet&quot;, return_dict=False)
+[('quiet', True), ('quiet', True), ('quiet', True)]
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;, &quot;--quiet&quot;, return_dict=False)
+[('verbose', True), ('quiet', True), ('quiet', True)]
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def many(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; from monad_argparse import argument, flag
+    &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+    &gt;&gt;&gt; p.parse_args(return_dict=False)
+    []
+    &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+    &gt;&gt;&gt; p.parse_args(&#34;a&#34;, return_dict=False)
+    [(&#39;as-many-as-you-like&#39;, &#39;a&#39;)]
+    &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
+    &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
+    [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
+    &gt;&gt;&gt; p = p.many()  # parse zero or more copies
+    &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+    [(&#39;quiet&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;, &#34;--quiet&#34;, return_dict=False)
+    [(&#39;verbose&#39;, True), (&#39;quiet&#39;, True), (&#39;quiet&#39;, True)]
+    &#34;&#34;&#34;
+    p = self.many1() | empty()
+    return replace(p, usage=f&#34;[{self.usage} ...]&#34;)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.many1"><code class="name flex">
+<span>def <span class="ident">many1</span></span>(<span>self: "'<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[B]]'") ‑> <a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[<a title="monad_argparse.sequence.Sequence" href="sequence.html#monad_argparse.sequence.Sequence">Sequence</a>[~B]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def many1(self: &#34;Parser[Sequence[B]]&#34;) -&gt; &#34;Parser[Sequence[B]]&#34;:
+    def g() -&gt; Generator[&#34;Parser[Sequence[B]]&#34;, Sequence[B], None]:
+        # noinspection PyTypeChecker
+        r1: Sequence[B] = yield self
+        # noinspection PyTypeChecker
+        r2: Sequence[B] = yield self.many()
+        yield Parser[Sequence[B]].return_(r1 + r2)
+
+    @lru_cache()
+    def f(cs: tuple):
+        return Parser.do(g).parse(Sequence(list(cs)))
+
+    return Parser(
+        lambda cs: f(tuple(cs)),
+        usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
+        helps=self.helps,
+    )</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.parse"><code class="name flex">
+<span>def <span class="ident">parse</span></span>(<span>self, cs: Sequence[str]) ‑> <a title="monad_argparse.result.Result" href="result.html#monad_argparse.result.Result">Result</a>[<a title="monad_argparse.parse.Parse" href="parse.html#monad_argparse.parse.Parse">Parse</a>[+A]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A]]:
+    return self.f(cs)</code></pre>
+</details>
+</dd>
+<dt id="monad_argparse.parser.Parser.parse_args"><code class="name flex">
+<span>def <span class="ident">parse_args</span></span>(<span>self: "'<a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a>[Sequence[KeyValue]]'", *args: str, return_dict: bool = True, check_help: bool = True) ‑> typing.Sequence[KeyValueTuple] | Dict[str, Any]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_args(
+    self: &#34;Parser[Sequence[KeyValue]]&#34;,
+    *args: str,
+    return_dict: bool = True,
+    check_help: bool = True,
+) -&gt; typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+    if check_help:
+        return wrap_help(self).parse_args(
+            *args, return_dict=return_dict, check_help=False
+        )
+    result = self.parse(Sequence(list(args))).get
+    if isinstance(result, ArgumentError):
+        if self.usage and not isinstance(result, HelpError):
+            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
+            if &#34;\n&#34; in self.usage:
+                usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
+            else:
+                usage = self.usage
+            print(usage)
+        if self.helps:
+            for k, v in self.helps.items():
+                print(f&#34;{k}: {v}&#34;)
+        if result.usage:
+            print(result.usage)
+        if TESTING:
+            return  # type: ignore[return-value]
+        else:
+            exit()
+
+    nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
+    parse: Parse[Sequence[KeyValue]] = nel.head
+    kvs: Sequence[KeyValue] = parse.parsed
+    if return_dict:
+        return {kv.key: kv.value for kv in kvs}
+    return [KeyValueTuple(**asdict(kv)) for kv in kvs]</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="monad_argparse" href="index.html">monad_argparse</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="monad_argparse.parser.apply" href="#monad_argparse.parser.apply">apply</a></code></li>
+<li><code><a title="monad_argparse.parser.apply_item" href="#monad_argparse.parser.apply_item">apply_item</a></code></li>
+<li><code><a title="monad_argparse.parser.argument" href="#monad_argparse.parser.argument">argument</a></code></li>
+<li><code><a title="monad_argparse.parser.binary_usage" href="#monad_argparse.parser.binary_usage">binary_usage</a></code></li>
+<li><code><a title="monad_argparse.parser.const" href="#monad_argparse.parser.const">const</a></code></li>
+<li><code><a title="monad_argparse.parser.defaults" href="#monad_argparse.parser.defaults">defaults</a></code></li>
+<li><code><a title="monad_argparse.parser.done" href="#monad_argparse.parser.done">done</a></code></li>
+<li><code><a title="monad_argparse.parser.empty" href="#monad_argparse.parser.empty">empty</a></code></li>
+<li><code><a title="monad_argparse.parser.equals" href="#monad_argparse.parser.equals">equals</a></code></li>
+<li><code><a title="monad_argparse.parser.flag" href="#monad_argparse.parser.flag">flag</a></code></li>
+<li><code><a title="monad_argparse.parser.help_parser" href="#monad_argparse.parser.help_parser">help_parser</a></code></li>
+<li><code><a title="monad_argparse.parser.item" href="#monad_argparse.parser.item">item</a></code></li>
+<li><code><a title="monad_argparse.parser.nonpositional" href="#monad_argparse.parser.nonpositional">nonpositional</a></code></li>
+<li><code><a title="monad_argparse.parser.option" href="#monad_argparse.parser.option">option</a></code></li>
+<li><code><a title="monad_argparse.parser.peak" href="#monad_argparse.parser.peak">peak</a></code></li>
+<li><code><a title="monad_argparse.parser.sat" href="#monad_argparse.parser.sat">sat</a></code></li>
+<li><code><a title="monad_argparse.parser.sat_item" href="#monad_argparse.parser.sat_item">sat_item</a></code></li>
+<li><code><a title="monad_argparse.parser.sat_peak" href="#monad_argparse.parser.sat_peak">sat_peak</a></code></li>
+<li><code><a title="monad_argparse.parser.type_" href="#monad_argparse.parser.type_">type_</a></code></li>
+<li><code><a title="monad_argparse.parser.wrap_help" href="#monad_argparse.parser.wrap_help">wrap_help</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="monad_argparse.parser.Parser" href="#monad_argparse.parser.Parser">Parser</a></code></h4>
+<ul class="two-column">
+<li><code><a title="monad_argparse.parser.Parser.bind" href="#monad_argparse.parser.Parser.bind">bind</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.f" href="#monad_argparse.parser.Parser.f">f</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.helps" href="#monad_argparse.parser.Parser.helps">helps</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.many" href="#monad_argparse.parser.Parser.many">many</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.many1" href="#monad_argparse.parser.Parser.many1">many1</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.parse" href="#monad_argparse.parser.Parser.parse">parse</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.parse_args" href="#monad_argparse.parser.Parser.parse_args">parse_args</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.return_" href="#monad_argparse.parser.Parser.return_">return_</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.usage" href="#monad_argparse.parser.Parser.usage">usage</a></code></li>
+<li><code><a title="monad_argparse.parser.Parser.zero" href="#monad_argparse.parser.Parser.zero">zero</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
