@@ -32,3 +32,8 @@ class ZeroError(ArgumentError):
 @dataclass
 class UnexpectedError(ArgumentError):
     unexpected: str
+
+
+@dataclass
+class HelpError(ArgumentError):
+    usage: str

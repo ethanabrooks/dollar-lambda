@@ -205,6 +205,7 @@ from monad_argparse.parser import (
     sat,
     sat_item,
     type_,
+    wrap_help,
 )
 
 __all__ = [
@@ -225,4 +226,5 @@ __all__ = [
     "Args",
     "defaults",
     "field",
+    "wrap_help",
 ]

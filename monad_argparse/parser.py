@@ -15,6 +15,7 @@ from pytypeclass.nonempty_list import NonemptyList
 
 from monad_argparse.error import (
     ArgumentError,
+    HelpError,
     MissingError,
     UnequalError,
     UnexpectedError,
@@ -189,11 +190,18 @@ class Parser(MonadPlus[A]):
         return self.f(cs)
 
     def parse_args(
-        self: "Parser[Sequence[KeyValue]]", *args: str, return_dict: bool = True
+        self: "Parser[Sequence[KeyValue]]",
+        *args: str,
+        return_dict: bool = True,
+        check_help: bool = True,
     ) -> typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+        if check_help:
+            return wrap_help(self).parse_args(
+                *args, return_dict=return_dict, check_help=False
+            )
         result = self.parse(Sequence(list(args))).get
         if isinstance(result, ArgumentError):
-            if self.usage:
+            if self.usage and not isinstance(result, HelpError):
                 print("usage:", end="\n" if "\n" in self.usage else " ")
                 if "\n" in self.usage:
                     usage = "\n".join(["    " + u for u in self.usage.split("\n")])
@@ -319,14 +327,23 @@ def done() -> Parser[Sequence[F]]:
     return Parser(f, usage=None, helps={})
 
 
-def equals(s: str) -> Parser[Sequence[KeyValue[str]]]:
-    return sat_item(
-        predicate=lambda _s: _s == s,
-        on_fail=lambda _s: UnequalError(
-            left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
-        ),
-        description=s,
-    )
+def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
+    if peak:
+        return sat_peak(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
+            ),
+            name=s,
+        )
+    else:
+        return sat_item(
+            predicate=lambda _s: _s == s,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
+            ),
+            name=s,
+        )
 
 
 def flag(
@@ -370,6 +387,27 @@ def flag(
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     return replace(parser, usage=_string, helps=helps)
+
+
+def help_parser(usage: str, parsed: B) -> Parser[B]:
+    def f(
+        cs: Sequence[str],
+    ) -> Result[Parse[B]]:
+        result = (equals("--help", peak=True) | equals("-h", peak=True)).parse(cs)
+        if isinstance(result.get, ArgumentError):
+            return Result.return_(Parse(parsed=parsed, unparsed=cs))
+        return Result(HelpError(usage=usage))
+
+    return Parser(f, usage=None, helps={})
+
+
+def wrap_help(parser: Parser[Sequence[C]]) -> Parser[Sequence[C]]:
+    _help_parser: Parser[Sequence[C]] = help_parser(
+        parser.usage or "No usage provided.", Sequence([])
+    )
+
+    p = _help_parser >= (lambda _: parser)
+    return replace(p, usage=parser.usage, helps=parser.helps)
 
 
 def item(
@@ -490,6 +528,33 @@ def option(
     return replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
 
 
+def peak(
+    name: str,
+    description: Optional[str] = None,
+) -> Parser[Sequence[KeyValue[str]]]:
+    def f(
+        cs: Sequence[str],
+    ) -> Result[Parse[Sequence[KeyValue[str]]]]:
+        if cs:
+            head, *_ = cs
+            return Result(
+                NonemptyList(
+                    Parse(
+                        parsed=Sequence([KeyValue(name, head)]),
+                        unparsed=Sequence(cs),
+                    )
+                )
+            )
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f"The following arguments are required: {description or name}",
+            )
+        )
+
+    return Parser(f, usage=name, helps={})
+
+
 def sat(
     parser: Parser[E],
     predicate: Callable[[E], bool],
@@ -504,7 +569,7 @@ def sat(
 def sat_item(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
-    description: str,
+    name: str,
 ) -> Parser[Sequence[KeyValue[str]]]:
     def _predicate(parsed: Sequence[KeyValue[str]]) -> bool:
         [kv] = parsed
@@ -514,7 +579,23 @@ def sat_item(
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(item(description), _predicate, _on_fail)
+    return sat(item(name), _predicate, _on_fail)
+
+
+def sat_peak(
+    predicate: Callable[[str], bool],
+    on_fail: Callable[[str], ArgumentError],
+    name: str,
+) -> Parser[Sequence[KeyValue[str]]]:
+    def _predicate(parsed: Sequence[KeyValue[str]]) -> bool:
+        [kv] = parsed
+        return predicate(kv.value)
+
+    def _on_fail(parsed: Sequence[KeyValue[str]]) -> ArgumentError:
+        [kv] = parsed
+        return on_fail(kv.value)
+
+    return sat(peak(name), _predicate, _on_fail)
 
 
 def type_(
