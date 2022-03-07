@@ -3,6 +3,7 @@ name = "dollar-lambda"
 version = "0.1.0"
 description = ""
 authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]
+include = ["dollar_lambda/py.typed"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
