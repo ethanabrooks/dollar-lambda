@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from functools import lru_cache
 from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
 
@@ -31,11 +31,9 @@ def empty() -> Parser[Sequence[B]]:
     return Parser.return_(Sequence([]))
 
 
+@dataclass
 class Parser(MonadPlus[A]):
-    D = TypeVar("D", bound="Parser")
-
-    def __init__(self, f: Callable[[Sequence[str]], Result[Parse[A]]]):
-        self.f = f
+    f: Callable[[Sequence[str]], Result[Parse[A]]]
 
     def __add__(
         self: Parser[Sequence[D]], other: Parser[Sequence[B]]
