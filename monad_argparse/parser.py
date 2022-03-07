@@ -1,6 +1,7 @@
 """
 `Parser` is the class that powers `monad_argparse`.
 """
+# pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
 
 import typing

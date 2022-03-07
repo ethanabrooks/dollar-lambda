@@ -1,6 +1,7 @@
 """
 Contains all the functions for generating parsers tailored for parsing command line arguments.
 """
+# pyright: reportGeneralTypeIssues=false
 import operator
 from dataclasses import Field, dataclass, fields, replace
 from functools import partial, reduce
