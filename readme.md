@@ -1,6 +1,6 @@
 # $λ
 `$λ` is an argument parser for python.
-It was built from functional first principles.
+It was built with minimal dependencies from functional first principles.
 As a result, it is the most
 
 - versatile
@@ -11,7 +11,7 @@ As a result, it is the most
 argument parser on the market.
 ### Help yourself to the [docs](https://ethanabrooks.github.io/dollar-lambda/)!
 
-Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life for me.
+Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life.
 ## Installing
 ```
 pip install -U dollar-lambda
@@ -75,9 +75,9 @@ But not both:
 
 
 ```python
-p.parse_args("--many", "--different", "--args", "abc")
+p.parse_args("--many", "2", "--different", "--args", "abc")
 ```
 
     usage: [--many MANY --args ARGS | --different --args ARGS]
     args: this is a set!
-    argument Sequence(get=[KeyValue(key='many', value='--different')]): raised exception invalid literal for int() with base 10: '--different'
+    Expected '--args'. Got '--different'

@@ -476,7 +476,7 @@ __all__ = [
         try:
             y = f(a)
         except Exception as e:
-            usage = f&#34;argument {a}: raised exception {e}&#34;
+            usage = f&#34;An argument {a}: raised exception {e}&#34;
             y = Result(ArgumentError(usage))
         return Parser(
             lambda unparsed: y
@@ -977,11 +977,12 @@ The following arguments are required: --value
     ) -&gt; Result[Sequence[KeyValue[Any]]]:
         head, *tail = kvs.get
         try:
-            head = replace(head, value=f(head.value))
-        except ArgumentError as e:
-            return Result(e)
-
-        return Result(NonemptyList(Sequence([*tail, head])))
+            y = f(head.value)
+        except Exception as e:
+            usage = f&#34;argument {head.value}: raised exception {e}&#34;
+            return Result(ArgumentError(usage))
+        head = replace(head, value=y)
+        return Result.return_(Sequence([*tail, head]))
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>

@@ -259,7 +259,7 @@ def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
         try:
             y = f(a)
         except Exception as e:
-            usage = f"argument {a}: raised exception {e}"
+            usage = f"An argument {a}: raised exception {e}"
             y = Result(ArgumentError(usage))
         return Parser(
             lambda unparsed: y
@@ -610,11 +610,12 @@ def type_(
     ) -> Result[Sequence[KeyValue[Any]]]:
         head, *tail = kvs.get
         try:
-            head = replace(head, value=f(head.value))
-        except ArgumentError as e:
-            return Result(e)
-
-        return Result(NonemptyList(Sequence([*tail, head])))
+            y = f(head.value)
+        except Exception as e:
+            usage = f"argument {head.value}: raised exception {e}"
+            return Result(ArgumentError(usage))
+        head = replace(head, value=y)
+        return Result.return_(Sequence([*tail, head]))
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)
