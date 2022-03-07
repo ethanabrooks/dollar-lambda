@@ -1,6 +1,7 @@
 """
 Contains all the functions for generating parsers tailored for parsing command line arguments.
 """
+import operator
 from dataclasses import Field, dataclass, fields, replace
 from functools import partial, reduce
 from typing import Any, Callable, Generator, Optional, TypeVar
@@ -189,7 +190,7 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
             tail = [p for j, p in enumerate(parsers) if j != i]
             yield head >> nonpositional(*tail)
 
-    return reduce(lambda p1, p2: p1 | p2, get_alternatives())
+    return reduce(operator.or_, get_alternatives())
 
 
 def option(
