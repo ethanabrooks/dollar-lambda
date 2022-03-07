@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:percent,md
+#     formats: py:percent,ipynb
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -14,150 +14,56 @@
 # ---
 
 # %% [markdown]
-# # Monad Argparse
+# # $λ
+# `$λ` is an argument parser for python.
+# It was built from functional first principles.
+# As a result, it is the most
 #
-# ### An alternative to `monad_argparse` based on [Functional Pearls: Monadic Parsing in Haskell](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf)
+# - versatile
+# - type-safe
+# - intuitive (with a little practice)
+# - and (in many cases) concise
 #
-# Arguments
-
-# %%
-from monad_argparse import argument
-
-argument("name").parse_args("Ethan")
-
-# %% [markdown]
-# Flags
-
-# %%
-from monad_argparse import flag
-
-flag("verbose").parse_args("--verbose")
-# %% [markdown]
-# Options
-
-# %%
-from monad_argparse import option
-
-option("value").parse_args("--value", "x")
-# %% [markdown]
-# Failure
-
-# %%
-from monad_argparse import Parser
-
-option("value").parse_args("--value")
-# %% [markdown]
-# Alternatives (or "Sums")
-
-# %%
-p = flag("verbose") | option("value")
-p.parse_args("--verbose")
-
-# %%
-p.parse_args("--value", "x")
-# %% [markdown]
-# Sequencing
-
-# %%
-p = argument("first") >> argument("second")
-p.parse_args("a", "b")
-# %% [markdown]
-# Variable arguments
-
-# %%
-p = argument("many").many()
-p.parse_args("a", "b")
-# %% [markdown]
+# argument parser on the market.
+# ### Help yourself to the [docs](https://ethanabrooks.github.io/dollar-lambda/)!
 #
+# Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life for me.
+# ## Installing
+# ```
+# pip install -U dollar-lambda
+# ```
+# ## An Example
 # %%
-p = (flag("verbose") | flag("quiet")).many()
-p.parse_args("--verbose", "--quiet")
+from dataclasses import dataclass, field
+
+from dollar_lambda import Args, done
+
+
+@dataclass
+class Args1(Args):
+    many: int
+    args: list = field(default_factory=list)
+
+
+from dollar_lambda import field
+
+
+@dataclass
+class Args2(Args):
+    different: bool
+    args: set = field(type=lambda s: {int(x) for x in s}, help="this is a set!")
+
+
+p = (Args1.parser() | Args2.parser()) >> done()
 # %% [markdown]
-#
+# You can run this parser with one set of args:
 # %%
-p.parse_args("--quiet", "--verbose")
+p.parse_args("--many", "2", "--args", "abc")
 # %% [markdown]
-#
+# Or the other set of args:
 # %%
-p.parse_args("--quiet")
+p.parse_args("--args", "123", "--different")  # order doesn't matter
 # %% [markdown]
-#
+# But not both:
 # %%
-p.parse_args("--quiet", "--quiet", "--quiet")
-# %% [markdown]
-# Combine sequences and sums
-
-# %%
-p1 = flag("verbose") | flag("quiet") | flag("yes")
-p2 = argument("a")
-p = p1 >> argument("a")
-p.parse_args("--verbose", "value")
-# %% [markdown]
-# What about doing this many times?
-
-# %%
-p2 = p1.many()
-p = p2 >> argument("a")
-p.parse_args("--verbose", "value")
-# %% [markdown]
-# `monad_monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
-# First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
-
-# %%
-from monad_argparse import empty
-
-p = empty()
-p.parse_args("any", "arguments")
-import operator
-
-# %% [markdown]
-# Using this function, we can define a parser for nonpositional arguments.
-#
-# %%
-from functools import reduce
-
-
-def nonpositional(*parsers):
-    if not parsers:
-        return empty()
-
-    def get_alternatives():
-        """
-        For each parser in `parsers`, this function returns a new parser,
-        sequencing that parser with `nonpositional` applied to the rest of the parsers.
-        """
-        for i, head in enumerate(parsers):
-            tail = [
-                p for j, p in enumerate(parsers) if j != i
-            ]  # get the parsers not including `head`
-            yield head >> nonpositional(*tail)
-
-    return reduce(operator.or_, get_alternatives())
-
-
-# %% [markdown]
-# Let's test it:
-
-# %%
-from monad_argparse import done
-
-p = (
-    nonpositional(flag("verbose", default=False), flag("debug", default=False))
-    >> done()
-)
-p.parse_args("--verbose", "--debug")
-# %% [markdown]
-#
-# %%
-p.parse_args("--debug", "--verbose")
-# %%
-p.parse_args("--debug")
-# %%
-p.parse_args("--verbose")
-# %% [markdown]
-#
-# %%
-p = nonpositional(flag("verbose"), flag("debug"), argument("a"))
-p.parse_args("--debug", "hello", "--verbose")
-# %% [markdown]
-#
+p.parse_args("--many", "--different", "--args", "abc")

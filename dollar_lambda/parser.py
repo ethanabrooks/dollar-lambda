@@ -1,5 +1,5 @@
 """
-`Parser` is the class that powers `monad_argparse`.
+`Parser` is the class that powers `dollar_lambda`.
 """
 # pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
@@ -14,17 +14,17 @@ from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from monad_argparse.error import (
+from dollar_lambda.error import (
     ArgumentError,
     HelpError,
     MissingError,
     UnequalError,
     UnexpectedError,
 )
-from monad_argparse.key_value import KeyValue, KeyValueTuple
-from monad_argparse.parse import Parse
-from monad_argparse.result import Result
-from monad_argparse.sequence import Sequence
+from dollar_lambda.key_value import KeyValue, KeyValueTuple
+from dollar_lambda.parse import Parse
+from dollar_lambda.result import Result
+from dollar_lambda.sequence import Sequence
 
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
@@ -69,7 +69,7 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -> Parser[A | B]:
         """
-        >>> from monad_argparse import argument, option, done, flag
+        >>> from dollar_lambda import argument, option, done, flag
         >>> p = option("option") | flag("verbose")
         >>> p.parse_args("--verbose")
         {'verbose': True}
@@ -95,7 +95,7 @@ class Parser(MonadPlus[A]):
         self: Parser[Sequence[D]], p: Parser[Sequence[B]]
     ) -> Parser[Sequence[D | B]]:
         """
-        >>> from monad_argparse import argument, flag
+        >>> from dollar_lambda import argument, flag
         >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
         {'first': 'a', 'second': 'b'}
@@ -145,7 +145,7 @@ class Parser(MonadPlus[A]):
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
-        >>> from monad_argparse import argument, flag
+        >>> from dollar_lambda import argument, flag
         >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args(return_dict=False)
         []
@@ -226,7 +226,7 @@ class Parser(MonadPlus[A]):
     def return_(cls, a: A) -> Parser[A]:  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
-        >>> from monad_argparse.key_value import KeyValue
+        >>> from dollar_lambda.key_value import KeyValue
         >>> Parser.return_(([KeyValue("some-key", "some-value")])).parse_args()
         {'some-key': 'some-value'}
         """
@@ -256,12 +256,15 @@ G = TypeVar("G", covariant=True, bound=MonadPlus)
 
 def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
     def g(a: E) -> Parser[G]:
-        usage = f"invalid value for {f.__name__}: {a}"
-        usage = f"argument {parser.usage}: {usage}"
+        try:
+            y = f(a)
+        except Exception as e:
+            usage = f"argument {a}: raised exception {e}"
+            y = Result(ArgumentError(usage))
         return Parser(
-            lambda unparsed: f(a)
+            lambda unparsed: y
             >= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
-            usage=usage,
+            usage=parser.usage,
             helps=parser.helps,
         )
 
@@ -271,10 +274,13 @@ def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
 def apply_item(f: Callable[[str], G], description: str) -> Parser[G]:
     def g(parsed: Sequence[KeyValue[str]]) -> Result[G]:
         [kv] = parsed
+        if kv.key == "args":
+            breakpoint()
         try:
             y = f(kv.value)
-        except ArgumentError as e:
-            return Result(e)
+        except Exception as e:
+            usage = f"argument {kv.value}: raised exception {e}"
+            return Result(ArgumentError(usage))
         return Result.return_(y)
 
     return apply(g, item(description))
@@ -470,7 +476,8 @@ def nonpositional(*parsers: "Parser[Sequence[F]]") -> "Parser[Sequence[F]]":
             yield head >> nonpositional(*tail)
 
     parser = reduce(operator.or_, get_alternatives())
-    return replace(parser, usage="\n".join([p.usage or "" for p in parsers]))
+    sep = " " if len(parsers) <= 3 else "\n"
+    return replace(parser, usage=sep.join([p.usage or "" for p in parsers]))
 
 
 def option(
@@ -609,4 +616,5 @@ def type_(
 
         return Result(NonemptyList(Sequence([*tail, head])))
 
-    return apply(g, parser)
+    p = apply(g, parser)
+    return replace(p, usage=parser.usage, helps=parser.helps)

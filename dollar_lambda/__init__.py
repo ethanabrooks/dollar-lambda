@@ -2,7 +2,8 @@
 λ This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
 
-# Example
+# Examples
+## From `argparse`
 Here is an example developed in the `argparse` tutorial:
 
 ```
@@ -31,10 +32,7 @@ Let's see it in action:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
-usage:
-    [--verbose | --quiet]
-    -x X
-    -y Y
+usage: [--verbose | --quiet] -x X -y Y
 x: the base
 y: the exponent
 Unrecognized argument: --quiet
@@ -78,10 +76,7 @@ Now:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3, 'quiet': False}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
-usage:
-    [--verbose --verbosity VERBOSITY | --quiet]
-    -x X
-    -y Y
+usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Unrecognized argument: --verbose
 
 What if we want to specify verbosity by the number of times that `--verbose` or `-v` appears?
@@ -122,7 +117,7 @@ Expected '--verbose'. Got '-x'
 usage: [--verbose | --quiet] -x X -y Y
 Expected '-x'. Got '-y'
 
-# Another Example
+## From `click`
 Another popular argument parsing library is [`click`](https://click.palletsprojects.com/en/7.x/).
 Let's look at an example from that library:
 
@@ -187,8 +182,8 @@ usage: [dropdb | initdb]
 The following arguments are required: dropdb
 """
 
-from monad_argparse.args import Args, field
-from monad_argparse.parser import (
+from dollar_lambda.args import Args, field
+from dollar_lambda.parser import (
     Parser,
     apply,
     apply_item,

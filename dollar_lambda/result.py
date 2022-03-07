@@ -10,8 +10,8 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from monad_argparse.error import ArgumentError, ZeroError
-from monad_argparse.sequence import Sequence
+from dollar_lambda.error import ArgumentError, ZeroError
+from dollar_lambda.sequence import Sequence
 
 A = TypeVar("A", covariant=True, bound=Monoid)
 B = TypeVar("B", bound=Monoid)

@@ -3,8 +3,8 @@ import doctest
 import unittest
 from abc import ABC, abstractmethod
 
-import monad_argparse
-from monad_argparse import parser, result, sequence
+import dollar_lambda
+from dollar_lambda import parser, result, sequence
 
 
 def load_tests(_, tests, __):
@@ -14,7 +14,7 @@ def load_tests(_, tests, __):
         parser,
         sequence,
         result,
-        monad_argparse,
+        dollar_lambda,
     ]:
         tests.addTests(doctest.DocTestSuite(mod))
     return tests

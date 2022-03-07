@@ -2,9 +2,9 @@ import dataclasses
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Generator, Optional, Union
 
-from monad_argparse.key_value import KeyValue
-from monad_argparse.parser import Parser, done, flag, nonpositional, option, type_
-from monad_argparse.sequence import Sequence
+from dollar_lambda.key_value import KeyValue
+from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
+from dollar_lambda.sequence import Sequence
 
 
 def field(
@@ -39,8 +39,11 @@ class ArgsField:
             help_ = field.metadata["help"]
         else:
             help_ = None
+        default = field.default
+        if field.default is dataclasses.MISSING:
+            default = None
 
-        return ArgsField(name=field.name, default=field.default, help=help_, type=type_)
+        return ArgsField(name=field.name, default=default, help=help_, type=type_)
 
 
 @dataclass
@@ -75,16 +78,13 @@ class Args:
     """
 
     @classmethod
-    def parser(cls) -> Parser[Sequence[KeyValue[Any]]]:
+    def parser(cls, flip_bools: bool = True) -> Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -> Generator[Parser, None, None]:
             field: Field
             for field in fields(cls):
                 args_field = ArgsField.parse(field)
                 if args_field.type == bool:
-                    assert isinstance(
-                        args_field.default, bool
-                    ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    if args_field.default is True:
+                    if args_field.default is True and flip_bools:
                         string = f"--no-{field.name}"
                     else:
                         string = None

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>monad_argparse.sequence API documentation</title>
+<title>dollar_lambda.sequence API documentation</title>
 <meta name="description" content="A `Sequence` is a strongly-typed immutable list that implements `MonadPlus`." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,10 +19,10 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>monad_argparse.sequence</code></h1>
+<h1 class="title">Module <code>dollar_lambda.sequence</code></h1>
 </header>
 <section id="section-intro">
-<p>A <code><a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a></code> is a strongly-typed immutable list that implements <code>MonadPlus</code>.</p>
+<p>A <code><a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a></code> is a strongly-typed immutable list that implements <code>MonadPlus</code>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -112,7 +112,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="monad_argparse.sequence.Sequence"><code class="flex name class">
+<dt id="dollar_lambda.sequence.Sequence"><code class="flex name class">
 <span>class <span class="ident">Sequence</span></span>
 <span>(</span><span>get: typing.Sequence[A])</span>
 </code></dt>
@@ -211,15 +211,15 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="monad_argparse.sequence.Sequence.get"><code class="name">var <span class="ident">get</span> : <a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a>[+A]</code></dt>
+<dt id="dollar_lambda.sequence.Sequence.get"><code class="name">var <span class="ident">get</span> : <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
 <dl>
-<dt id="monad_argparse.sequence.Sequence.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: B) ‑> <a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a>[~B]</span>
+<dt id="dollar_lambda.sequence.Sequence.return_"><code class="name flex">
+<span>def <span class="ident">return_</span></span>(<span>a: B) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-haskell">return :: a -&gt; m a
@@ -233,8 +233,8 @@ def return_(a: B) -&gt; Sequence[B]:
     return Sequence([a])</code></pre>
 </details>
 </dd>
-<dt id="monad_argparse.sequence.Sequence.zero"><code class="name flex">
-<span>def <span class="ident">zero</span></span>(<span>) ‑> <a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a>[+A]</span>
+<dt id="dollar_lambda.sequence.Sequence.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -250,8 +250,8 @@ def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="monad_argparse.sequence.Sequence.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A], <a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a>[B]]) ‑> <a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a>[~B]</span>
+<dt id="dollar_lambda.sequence.Sequence.bind"><code class="name flex">
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A], <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[B]]) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -280,18 +280,18 @@ def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="monad_argparse" href="index.html">monad_argparse</a></code></li>
+<li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="monad_argparse.sequence.Sequence" href="#monad_argparse.sequence.Sequence">Sequence</a></code></h4>
+<h4><code><a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a></code></h4>
 <ul class="">
-<li><code><a title="monad_argparse.sequence.Sequence.bind" href="#monad_argparse.sequence.Sequence.bind">bind</a></code></li>
-<li><code><a title="monad_argparse.sequence.Sequence.get" href="#monad_argparse.sequence.Sequence.get">get</a></code></li>
-<li><code><a title="monad_argparse.sequence.Sequence.return_" href="#monad_argparse.sequence.Sequence.return_">return_</a></code></li>
-<li><code><a title="monad_argparse.sequence.Sequence.zero" href="#monad_argparse.sequence.Sequence.zero">zero</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.bind" href="#dollar_lambda.sequence.Sequence.bind">bind</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.get" href="#dollar_lambda.sequence.Sequence.get">get</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.return_" href="#dollar_lambda.sequence.Sequence.return_">return_</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.zero" href="#dollar_lambda.sequence.Sequence.zero">zero</a></code></li>
 </ul>
 </li>
 </ul>

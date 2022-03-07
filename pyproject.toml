@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "monad_argparse"
+name = "dollar-lambda"
 version = "0.1.0"
 description = ""
 authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]

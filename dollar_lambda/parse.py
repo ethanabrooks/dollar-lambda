@@ -8,7 +8,7 @@ from typing import Callable, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
 
-from monad_argparse.sequence import Sequence
+from dollar_lambda.sequence import Sequence
 
 A = TypeVar("A", covariant=True, bound=Monoid)
 B = TypeVar("B", bound=Monoid)

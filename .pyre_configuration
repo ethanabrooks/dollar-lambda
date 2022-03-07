@@ -2,7 +2,7 @@
   "source_directories": [
     {
       "import_root": ".",
-      "source": "monad_argparse"
+      "source": "dollar_lambda"
     }
   ],
   "taint_models_path": "/Users/ethanbrooks/Library/Caches/pypoetry/virtualenvs/monad-argparse-EFcQZ39--py3.8/lib"

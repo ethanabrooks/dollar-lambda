@@ -14,6 +14,11 @@ A = TypeVar("A")
 
 
 @dataclass
+class ExceptionError(ArgumentError):
+    exception: Exception
+
+
+@dataclass
 class UnequalError(ArgumentError, Generic[A]):
     left: A
     right: A
