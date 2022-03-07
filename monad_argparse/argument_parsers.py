@@ -36,6 +36,7 @@ def apply(f: Callable[[D], Result[C]], parser: Parser[D]) -> Parser[C]:
             lambda unparsed: f(d)
             >= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
             usage=usage,
+            helps=parser.helps,
         )
 
     return parser >= g
@@ -95,7 +96,7 @@ def done() -> Parser[Sequence[B]]:
             )
         return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
 
-    return Parser(f, usage=None)
+    return Parser(f, usage=None, helps={})
 
 
 def equals(s: str) -> Parser[Sequence[KeyValue[str]]]:
@@ -110,9 +111,10 @@ def equals(s: str) -> Parser[Sequence[KeyValue[str]]]:
 
 def flag(
     dest: str,
+    default: Optional[bool] = None,
+    help: Optional[str] = None,
     short: bool = True,
     string: Optional[str] = None,
-    default: Optional[bool] = None,
 ) -> Parser[Sequence[KeyValue[bool]]]:
     """
     >>> p = flag("verbose", default=False)
@@ -137,14 +139,17 @@ def flag(
         parser = equals(s) >= (lambda _: defaults(**{dest: not default}))
         return parser.parse(cs)
 
-    parser = Parser(partial(f, s=_string), usage=None)
+    parser = Parser(partial(f, s=_string), usage=None, helps={})
     if default is not None:
         parser = parser | defaults(**{dest: default})
     if short:
         short_string = f"-{dest[0]}"
         parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
-    return replace(parser, usage=_string)
+    if default:
+        help = f"{help + ' ' if help else ''}(default: {default})"
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=_string, helps=helps)
 
 
 def item(
@@ -171,7 +176,7 @@ def item(
             )
         )
 
-    return Parser(f, usage=name)
+    return Parser(f, usage=name, helps={})
 
 
 def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
@@ -216,6 +221,7 @@ def option(
     dest: str,
     flag: Optional[str] = None,
     default=None,
+    help: Optional[str] = None,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -> Parser[Sequence[KeyValue[str]]]:
@@ -252,7 +258,7 @@ def option(
         parser = equals(_flag) >= (lambda _: item(dest, description=dest.upper()))
         return parser.parse(cs)
 
-    parser = Parser(f, usage=None)
+    parser = Parser(f, usage=None, helps={})
     if default:
         parser = parser | defaults(**{dest: default})
     if short and len(dest) > 1:
@@ -260,7 +266,8 @@ def option(
         parser = parser | parser2
     if type is not str:
         parser = type_(type, parser)
-    return replace(parser, usage=f"{_flag} {dest.upper()}")
+    helps = {dest: help} if help else {}
+    return replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
 
 
 def sat(

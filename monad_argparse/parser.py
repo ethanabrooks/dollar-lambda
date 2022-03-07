@@ -44,6 +44,7 @@ def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True)
 class Parser(MonadPlus[A]):
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
+    helps: Dict[str, str]
 
     def __add__(
         self: Parser[Sequence[D]], other: Parser[Sequence[B]]
@@ -74,7 +75,11 @@ class Parser(MonadPlus[A]):
         def f(cs: Sequence[str]) -> Result[Parse[A | B]]:
             return self.parse(cs) | other.parse(cs)
 
-        return Parser(f, usage=binary_usage(self.usage, " | ", other.usage))
+        return Parser(
+            f,
+            usage=binary_usage(self.usage, " | ", other.usage),
+            helps={**self.helps, **other.helps},
+        )
 
     def __rshift__(
         self: Parser[Sequence[D]], p: Parser[Sequence[B]]
@@ -128,7 +133,7 @@ class Parser(MonadPlus[A]):
         def g(cs: Sequence[str]) -> Result[Parse[B]]:
             return self.parse(cs) >= h
 
-        return Parser(g, usage=None)
+        return Parser(g, usage=None, helps=self.helps)
 
     @staticmethod
     def _exit() -> NoReturn:
@@ -168,7 +173,11 @@ class Parser(MonadPlus[A]):
         def f(cs: tuple):
             return Parser.do(g).parse(Sequence(list(cs)))
 
-        return Parser(lambda cs: f(tuple(cs)), usage=f"{self.usage} [{self.usage} ...]")
+        return Parser(
+            lambda cs: f(tuple(cs)),
+            usage=f"{self.usage} [{self.usage} ...]",
+            helps=self.helps,
+        )
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A]]:
         return self.f(cs)
@@ -185,6 +194,9 @@ class Parser(MonadPlus[A]):
                 else:
                     usage = self.usage
                 print(usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f"{k}: {v}")
             if result.usage:
                 print(result.usage)
             self._exit()
@@ -209,7 +221,7 @@ class Parser(MonadPlus[A]):
         def f(cs: Sequence[str]) -> Result[Parse[A]]:
             return Result.return_(Parse(a, cs))
 
-        return Parser(f, usage=None)
+        return Parser(f, usage=None, helps={})
 
     @classmethod
     def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -> Parser[A]:
@@ -222,4 +234,4 @@ class Parser(MonadPlus[A]):
         >>> Parser.zero(error=ArgumentError("This is a test.")).parse_args("a")
         This is a test.
         """
-        return Parser(lambda _: Result.zero(error=error), usage=None)
+        return Parser(lambda _: Result.zero(error=error), usage=None, helps={})

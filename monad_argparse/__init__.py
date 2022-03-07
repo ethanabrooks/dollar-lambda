@@ -23,8 +23,8 @@ Here is the equivalent in this package:
 ...         flag("verbose") + defaults(quiet=False)
 ...         | flag("quiet") + defaults(verbose=False)
 ...     ),
-...     option("x", type=int),
-...     option("y", type=int),
+...     option("x", type=int, help="the base"),
+...     option("y", type=int, help="the exponent"),
 ... ) >> done()
 
 Let's see it in action:
@@ -36,6 +36,8 @@ usage:
     [--verbose | --quiet]
     -x X
     -y Y
+x: the base
+y: the exponent
 Unrecognized argument: --quiet
 
 For `add_mutually_exclusive_group(required=False)`:
