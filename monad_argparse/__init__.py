@@ -30,8 +30,13 @@ Here is the equivalent in this package:
 Let's see it in action:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+>>> Parser._exit = lambda _: ()
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
-UnexpectedError(unexpected='--quiet')
+usage:
+    [--verbose | --quiet]
+    -x X
+    -y Y
+Unrecognized argument: --quiet
 
 For `add_mutually_exclusive_group(required=False)`:
 
@@ -72,7 +77,11 @@ Now:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3, 'quiet': False}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
-UnexpectedError(unexpected='--verbose')
+usage:
+    [--verbose --verbosity VERBOSITY | --quiet]
+    -x X
+    -y Y
+Unrecognized argument: --verbose
 
 What if we want to specify verbosity by the number of times that `--verbose` or `-v` appears?
 
@@ -106,9 +115,11 @@ Now `--quiet` and `--verbose` must appear before `-x`, and `-x` must appear befo
 >>> p.parse_args("--verbose", "-x", "1", "-y", "2")
 {'verbose': True, 'quiet': False, 'x': 1, 'y': 2}
 >>> p.parse_args("-x", "1", "--verbose", "-y", "2")
-UnequalError(left='--verbose', right='-x')
+usage: [--verbose | --quiet] -x X -y Y
+Expected '--verbose'. Got '-x'
 >>> p.parse_args("--verbose", "-y", "2", "-x", "1")
-UnequalError(left='-x', right='-y')
+usage: [--verbose | --quiet] -x X -y Y
+Expected '-x'. Got '-y'
 
 # Another Example
 Another popular argument parsing library is [`click`](https://click.palletsprojects.com/en/7.x/).
@@ -152,7 +163,8 @@ Initialized the database
 >>> main(**p.parse_args("dropdb"))
 Dropped the database
 >>> p.parse_args()
-MissingError(missing='dropdb')
+usage: [dropdb | initdb]
+The following arguments are required: dropdb
 
 Alternarely, if you want to define defaults in the argument parser itself:
 >>> p1 = flag("dropdb", string="dropdb") + defaults(initdb=False)
@@ -170,7 +182,8 @@ Initialized the database
 >>> main(**p.parse_args("dropdb"))
 Dropped the database
 >>> p.parse_args()
-MissingError(missing='dropdb')
+usage: [dropdb | initdb]
+The following arguments are required: dropdb
 """
 
 from monad_argparse.argument_parsers import (

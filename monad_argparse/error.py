@@ -7,7 +7,7 @@ from typing import Generic, TypeVar
 
 @dataclass
 class ArgumentError(Exception):
-    pass
+    usage: str
 
 
 A = TypeVar("A")

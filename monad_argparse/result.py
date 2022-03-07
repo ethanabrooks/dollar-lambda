@@ -10,7 +10,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from monad_argparse.error import ZeroError
+from monad_argparse.error import ArgumentError, ZeroError
 from monad_argparse.sequence import Sequence
 
 A = TypeVar("A", covariant=True, bound=Monoid)
@@ -21,16 +21,16 @@ D = TypeVar("D")
 
 @dataclass
 class Result(MonadPlus[A]):
-    get: NonemptyList[A] | Exception
+    get: NonemptyList[A] | ArgumentError
 
     def __or__(self, other: Result[B]) -> Result[A | B]:
         a = self.get
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
-        if isinstance(b, Exception):
+        if isinstance(b, ArgumentError):
             return self
-        if isinstance(a, Exception):
+        if isinstance(a, ArgumentError):
             return other
         raise RuntimeError("unreachable")
 
@@ -45,7 +45,7 @@ class Result(MonadPlus[A]):
 
     def bind(self, f: Callable[[A], Result[B]]) -> Result[B]:
         x = self.get
-        if isinstance(x, Exception):
+        if isinstance(x, ArgumentError):
             return Result(x)
         else:
 
@@ -70,7 +70,7 @@ class Result(MonadPlus[A]):
         return Result(NonemptyList(a))
 
     @classmethod
-    def zero(cls: "Type[Result[A]]", error: Optional[Exception] = None) -> "Result[A]":
-        if error is None:
-            error = ZeroError()
-        return Result(error)
+    def zero(
+        cls: "Type[Result[A]]", error: Optional[ArgumentError] = None
+    ) -> "Result[A]":
+        return Result(ZeroError("zero") if error is None else error)

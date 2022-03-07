@@ -29,12 +29,16 @@ D = TypeVar("D", bound=MonadPlus)
 
 
 def apply(f: Callable[[D], Result[C]], parser: Parser[D]) -> Parser[C]:
-    return parser >= (
-        lambda d: Parser(
+    def g(d: D) -> Parser[C]:
+        usage = f"invalid value for {f.__name__}: {d}"
+        usage = f"argument {parser.usage}: {usage}"
+        return Parser(
             lambda unparsed: f(d)
-            >= (lambda parsed: Result.return_(Parse(parsed, unparsed)))
+            >= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            usage=usage,
         )
-    )
+
+    return parser >= g
 
 
 def apply_item(f: Callable[[str], C], description: str) -> Parser[C]:
@@ -42,7 +46,7 @@ def apply_item(f: Callable[[str], C], description: str) -> Parser[C]:
         [kv] = parsed
         try:
             y = f(kv.value)
-        except Exception as e:
+        except ArgumentError as e:
             return Result(e)
         return Result.return_(y)
 
@@ -54,13 +58,15 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
     >>> argument("name").parse_args("Alice")
     {'name': 'Alice'}
     >>> argument("name").parse_args()
-    MissingError(missing='name')
+    usage: name
+    The following arguments are required: name
     """
     return item(dest)
 
 
 def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
-    return Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
+    p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
+    return replace(p, usage=None)
 
 
 def done() -> Parser[Sequence[B]]:
@@ -68,30 +74,36 @@ def done() -> Parser[Sequence[B]]:
     >>> done().parse_args()
     {}
     >>> done().parse_args("arg")
-    UnexpectedError(unexpected='arg')
+    Unrecognized argument: arg
     >>> (argument("arg") >> done()).parse_args("a")
     {'arg': 'a'}
     >>> (argument("arg") >> done()).parse_args("a", "b")
-    UnexpectedError(unexpected='b')
+    usage: arg
+    Unrecognized argument: b
     >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg", return_dict=False)
     [('arg', True), ('arg', True)]
     >>> (flag("arg").many() >> done()).parse_args("--arg", "--arg", "x")
-    UnexpectedError(unexpected='x')
+    usage: [--arg ...]
+    Unrecognized argument: x
     """
 
     def f(cs: Sequence[str]) -> Result[Parse[Sequence[B]]]:
         if cs:
             c, *_ = cs
-            return Result(UnexpectedError(c))
+            return Result(
+                UnexpectedError(unexpected=c, usage=f"Unrecognized argument: {c}")
+            )
         return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
 
-    return Parser(f)
+    return Parser(f, usage=None)
 
 
 def equals(s: str) -> Parser[Sequence[KeyValue[str]]]:
     return sat_item(
         predicate=lambda _s: _s == s,
-        on_fail=lambda _s: UnequalError(s, _s),
+        on_fail=lambda _s: UnequalError(
+            left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
+        ),
         description=s,
     )
 
@@ -125,17 +137,19 @@ def flag(
         parser = equals(s) >= (lambda _: defaults(**{dest: not default}))
         return parser.parse(cs)
 
-    parser = Parser(partial(f, s=_string))
+    parser = Parser(partial(f, s=_string), usage=None)
     if default is not None:
         parser = parser | defaults(**{dest: default})
     if short:
-        parser2 = flag(dest, short=False, string=f"-{dest[0]}", default=default)
+        short_string = f"-{dest[0]}"
+        parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
-    return parser
+    return replace(parser, usage=_string)
 
 
 def item(
     name: str,
+    description: Optional[str] = None,
 ) -> Parser[Sequence[KeyValue[str]]]:
     def f(
         cs: Sequence[str],
@@ -150,9 +164,14 @@ def item(
                     )
                 )
             )
-        return Result(MissingError(name))
+        return Result(
+            MissingError(
+                missing=name,
+                usage=f"The following arguments are required: {description or name}",
+            )
+        )
 
-    return Parser(f)
+    return Parser(f, usage=name)
 
 
 def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
@@ -189,7 +208,8 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
             tail = [p for j, p in enumerate(parsers) if j != i]
             yield head >> nonpositional(*tail)
 
-    return reduce(operator.or_, get_alternatives())
+    parser = reduce(operator.or_, get_alternatives())
+    return replace(parser, usage="\n".join([p.usage or "" for p in parsers]))
 
 
 def option(
@@ -202,10 +222,13 @@ def option(
     """
     >>> option("value").parse_args("--value", "x")
     {'value': 'x'}
+    >>> Parser._exit = lambda _: None  # Need to mock _exit for doctests
     >>> option("value").parse_args("--value")
-    MissingError(missing='value')
+    usage: --value VALUE
+    The following arguments are required: VALUE
     >>> option("value").parse_args()
-    MissingError(missing='--value')
+    usage: --value VALUE
+    The following arguments are required: --value
     >>> option("value", default=1).parse_args()
     {'value': 1}
     >>> option("value", default=1).parse_args("--value")
@@ -218,26 +241,26 @@ def option(
     {'v': 'x'}
     """
 
+    if flag is None:
+        _flag = f"--{dest}" if len(dest) > 1 else f"-{dest}"
+    else:
+        _flag = flag
+
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Sequence[KeyValue[str]]]]:
-        if flag is None:
-            _flag = f"--{dest}" if len(dest) > 1 else f"-{dest}"
-        else:
-            _flag = flag
-
-        parser = equals(_flag) >= (lambda _: item(dest))
+        parser = equals(_flag) >= (lambda _: item(dest, description=dest.upper()))
         return parser.parse(cs)
 
-    parser = Parser(f)
+    parser = Parser(f, usage=None)
     if default:
         parser = parser | defaults(**{dest: default})
-    if short:
+    if short and len(dest) > 1:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
     if type is not str:
         parser = type_(type, parser)
-    return parser
+    return replace(parser, usage=f"{_flag} {dest.upper()}")
 
 
 def sat(
@@ -276,7 +299,7 @@ def type_(
         head, *tail = kvs.get
         try:
             head = replace(head, value=f(head.value))
-        except Exception as e:
+        except ArgumentError as e:
             return Result(e)
 
         return Result(NonemptyList(Sequence([*tail, head])))

@@ -8,7 +8,13 @@ from monad_argparse import argument_parsers, parser, result, sequence
 
 
 def load_tests(_, tests, __):
-    for mod in [parser, argument_parsers, sequence, result, monad_argparse]:
+    for mod in [
+        parser,
+        argument_parsers,
+        sequence,
+        result,
+        monad_argparse,
+    ]:
         tests.addTests(doctest.DocTestSuite(mod))
     return tests
 

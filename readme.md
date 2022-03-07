@@ -54,14 +54,14 @@ Failure
 
 
 ```python
+from monad_argparse import Parser
+
+Parser._exit = lambda _: None  # In order to prevent jupyter notebook from exitting
 option("value").parse_args("--value")
 ```
 
-
-
-
-    MissingError(missing='value')
-
+    usage: --value VALUE
+    The following arguments are required: VALUE
 
 
 Alternatives (or "Sums")
@@ -220,14 +220,8 @@ from monad_argparse import empty
 
 p = empty()
 p.parse_args("any", "arguments")
+import operator
 ```
-
-
-
-
-    {}
-
-
 
 Using this function, we can define a parser for nonpositional arguments.
 
@@ -235,7 +229,6 @@ Using this function, we can define a parser for nonpositional arguments.
 
 ```python
 from functools import reduce
-import operator
 
 
 def nonpositional(*parsers):
