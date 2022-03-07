@@ -26,15 +26,14 @@ from monad_argparse.sequence import Sequence
 A = TypeVar("A", bound=MonadPlus)
 B = TypeVar("B")
 C = TypeVar("C", covariant=True, bound=MonadPlus)
-D = TypeVar("D", bound=MonadPlus)
 
 
-def apply(f: Callable[[D], Result[C]], parser: Parser[D]) -> Parser[C]:
-    def g(d: D) -> Parser[C]:
-        usage = f"invalid value for {f.__name__}: {d}"
+def apply(f: Callable[[A], Result[C]], parser: Parser[A]) -> Parser[C]:
+    def g(a: A) -> Parser[C]:
+        usage = f"invalid value for {f.__name__}: {a}"
         usage = f"argument {parser.usage}: {usage}"
         return Parser(
-            lambda unparsed: f(d)
+            lambda unparsed: f(a)
             >= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
             usage=usage,
             helps=parser.helps,
