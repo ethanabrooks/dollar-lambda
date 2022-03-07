@@ -2,10 +2,11 @@
 Contains all the functions for generating parsers tailored for parsing command line arguments.
 """
 # pyright: reportGeneralTypeIssues=false
+import dataclasses
 import operator
 from dataclasses import Field, dataclass, fields, replace
 from functools import partial, reduce
-from typing import Any, Callable, Generator, Optional, TypeVar
+from typing import Any, Callable, Generator, Optional, TypeVar, Union
 
 from pytypeclass import MonadPlus
 from pytypeclass.nonempty_list import NonemptyList
@@ -315,6 +316,42 @@ def type_(
 
 
 @dataclass
+class ArgsField:
+    name: str
+    default: Any = None
+    help: Optional[str] = None
+    type: Callable[[str], Any] = str
+
+    @staticmethod
+    def parse(field: Field) -> "ArgsField":
+        if "type" in field.metadata:
+            type_ = field.metadata["type"]
+        else:
+            type_ = field.type
+        if "help" in field.metadata:
+            help_ = field.metadata["help"]
+        else:
+            help_ = None
+
+        return ArgsField(name=field.name, default=field.default, help=help_, type=type_)
+
+
+def field(
+    metadata: dict = None,
+    type: Optional[Union[type, Callable[[str], Any]]] = None,
+    help: Optional[str] = None,
+    **kwargs,
+) -> Field:
+    if metadata is None:
+        metadata = {}
+    if type is not None:
+        metadata.update(type=type)
+    if help is not None:
+        metadata.update(help=help)
+    return dataclasses.field(metadata=metadata, **kwargs)
+
+
+@dataclass
 class Args:
     """
     >>> @dataclass
@@ -324,43 +361,57 @@ class Args:
     ...     i: int = 1
     ...     s: str = "a"
     >>> p = MyArgs()
-    >>> MyArgs().parse_args("--no-t", "-f", "-i", "2", "-s", "b")
+    >>> MyArgs.parse_args("--no-t", "-f", "-i", "2", "-s", "b")
     {'t': False, 'f': True, 'i': 2, 's': 'b'}
-    >>> MyArgs().parse_args("--no-t")
+    >>> MyArgs.parse_args("--no-t")
     {'t': False, 'f': False, 'i': 1, 's': 'a'}
     >>> @dataclass
     ... class MyArgs(Args):
     ...     b: bool = False
-    >>> p = MyArgs().parser
+    >>> p = MyArgs.parser()
     >>> p1 = p >> argument("a")
     >>> p1.parse_args("-b", "hello")
     {'b': True, 'a': 'hello'}
+    >>> @dataclass
+    ... class MyArgs(Args):
+    ...     n: int = field(default=0, help="a number to increment", type=lambda x: 1 + int(x))
+    >>> MyArgs.parse_args("-n", "1")
+    {'n': 2}
+    >>> MyArgs.parse_args()
+    n: a number to increment
+    The following arguments are required: -n
     """
 
-    @property
-    def parser(self) -> Parser[Sequence[KeyValue[Any]]]:
+    @classmethod
+    def parser(cls) -> Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -> Generator[Parser, None, None]:
             field: Field
-            for field in fields(self):
-                if field.type == bool:
+            for field in fields(cls):
+                args_field = ArgsField.parse(field)
+                if args_field.type == bool:
                     assert isinstance(
-                        field.default, bool
+                        args_field.default, bool
                     ), f"If `field.type == bool`, `field.default` must be a bool, not '{field.default}'."
-                    if field.default is True:
+                    if args_field.default is True:
                         string = f"--no-{field.name}"
                     else:
                         string = None
-                    yield flag(dest=field.name, string=string, default=field.default)
+                    yield flag(
+                        dest=args_field.name,
+                        string=string,
+                        default=args_field.default,
+                        help=args_field.help,
+                    )
                 else:
-                    opt = option(dest=field.name, default=field.default)
-                    try:
-                        t = field.metadata["type"]
-                    except (TypeError, KeyError):
-                        t = field.type
-
-                    yield type_(t, opt)
+                    opt = option(
+                        dest=args_field.name,
+                        default=args_field.default,
+                        help=args_field.help,
+                    )
+                    yield type_(args_field.type, opt)
 
         return nonpositional(*get_parsers())
 
-    def parse_args(self, *args):
-        return (self.parser >> done()).parse_args(*args)
+    @classmethod
+    def parse_args(cls, *args):
+        return (cls.parser() >> done()).parse_args(*args)
