@@ -106,13 +106,11 @@ from monad_argparse import empty
 
 p = empty()
 p.parse_args("any", "arguments")
+import operator
+
 # %% [markdown]
 # Using this function, we can define a parser for nonpositional arguments.
 #
-# import operator
-
-import operator
-
 # %%
 from functools import reduce
 

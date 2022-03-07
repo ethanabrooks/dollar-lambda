@@ -231,7 +231,6 @@ p.parse_args("any", "arguments")
 
 Using this function, we can define a parser for nonpositional arguments.
 
-import operator
 
 
 ```python

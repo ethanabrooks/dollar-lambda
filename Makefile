@@ -5,6 +5,7 @@ test:
 	python -m unittest test.py
 
 docs:
+	rm readme.md
 	jupytext --sync readme.py
 	jupyter nbconvert --to markdown --execute readme.ipynb
 	pdoc3 --html monad_argparse --force
