@@ -188,8 +188,9 @@ usage: [dropdb | initdb]
 The following arguments are required: dropdb
 """
 
-from monad_argparse.argument_parsers import (
-    Args,
+from monad_argparse.args import Args, field
+from monad_argparse.parser import (
+    Parser,
     apply,
     apply_item,
     argument,
@@ -205,7 +206,6 @@ from monad_argparse.argument_parsers import (
     sat_item,
     type_,
 )
-from monad_argparse.parser import Parser
 
 __all__ = [
     "Parser",
@@ -224,4 +224,5 @@ __all__ = [
     "type_",
     "Args",
     "defaults",
+    "field",
 ]

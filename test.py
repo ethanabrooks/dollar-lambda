@@ -4,13 +4,12 @@ import unittest
 from abc import ABC, abstractmethod
 
 import monad_argparse
-from monad_argparse import argument_parsers, parser, result, sequence
+from monad_argparse import parser, result, sequence
 
 
 def load_tests(_, tests, __):
     for mod in [
         parser,
-        argument_parsers,
         sequence,
         result,
         monad_argparse,
