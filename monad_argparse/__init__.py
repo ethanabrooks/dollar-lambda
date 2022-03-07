@@ -5,14 +5,16 @@ This means that this package can handle many kinds of argument-parsing patterns 
 # Example
 Here is an example developed in the `argparse` tutorial:
 
->>> import argparse
->>> parser = argparse.ArgumentParser(description="calculate X to the power of Y")
-... group = parser.add_mutually_exclusive_group(required=True)
-... group.add_argument("-v", "--verbose", action="store_true")
-... group.add_argument("-q", "--quiet", action="store_true")
-... parser.add_argument("x", type=int, help="the base")
-... parser.add_argument("y", type=int, help="the exponent")
-... args = parser.parse_args()
+```
+import argparse
+parser = argparse.ArgumentParser(description="calculate X to the power of Y")
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("-v", "--verbose", action="store_true")
+group.add_argument("-q", "--quiet", action="store_true")
+parser.add_argument("x", type=int, help="the base")
+parser.add_argument("y", type=int, help="the exponent")
+args = parser.parse_args()
+```
 
 Here is the equivalent in this package:
 
@@ -107,6 +109,50 @@ Now `--quiet` and `--verbose` must appear before `-x`, and `-x` must appear befo
 UnequalError(left='--verbose', right='-x')
 >>> p.parse_args("--verbose", "-y", "2", "-x", "1")
 UnequalError(left='-x', right='-y')
+
+# Another Example
+Another popular argument parsing library is [`click`](https://click.palletsprojects.com/en/7.x/).
+Let's look at an example from that library:
+
+```python
+import click
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command()
+def initdb():
+    click.echo("Initialized the database")
+
+
+@click.command()
+def dropdb():
+    click.echo("Dropped the database")
+
+
+cli.add_command(initdb)
+cli.add_command(dropdb)
+```
+
+Here is how you would write this in this package:
+>>> p = flag("dropdb", string="dropdb") | flag("initdb", string="initdb")
+>>> p = p >> done()
+
+>>> def main(dropdb: bool = False, initdb: bool = False):
+...    if dropdb:
+...        print("Dropped the database")
+...    if initdb:
+...        print("Initialized the database")
+
+>>> main(**p.parse_args("initdb"))
+Initialized the database
+>>> main(**p.parse_args("dropdb"))
+Dropped the database
+>>> p.parse_args()
+MissingError(missing='dropdb')
 """
 
 from monad_argparse.argument_parsers import (
