@@ -216,9 +216,9 @@ First let's introduce a simple utility function: `empty()`. This parser always r
 
 
 ```python
-from monad_argparse import Parser
+from monad_argparse import empty
 
-p = Parser.empty()
+p = empty()
 p.parse_args("any", "arguments")
 ```
 
@@ -231,6 +231,8 @@ p.parse_args("any", "arguments")
 
 Using this function, we can define a parser for nonpositional arguments.
 
+import operator
+
 
 ```python
 from functools import reduce
@@ -239,7 +241,7 @@ import operator
 
 def nonpositional(*parsers):
     if not parsers:
-        return Parser.empty()
+        return empty()
 
     def get_alternatives():
         """

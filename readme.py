@@ -102,12 +102,14 @@ p.parse_args("--verbose", "value")
 # First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 # %%
-from monad_argparse import Parser
+from monad_argparse import empty
 
-p = Parser.empty()
+p = empty()
 p.parse_args("any", "arguments")
 # %% [markdown]
 # Using this function, we can define a parser for nonpositional arguments.
+#
+# import operator
 
 import operator
 
@@ -117,7 +119,7 @@ from functools import reduce
 
 def nonpositional(*parsers):
     if not parsers:
-        return Parser.empty()
+        return empty()
 
     def get_alternatives():
         """

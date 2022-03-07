@@ -192,7 +192,11 @@ def nonpositional(*parsers: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
 
 
 def option(
-    dest: str, flag: Optional[str] = None, default=None, short: bool = True
+    dest: str,
+    flag: Optional[str] = None,
+    default=None,
+    short: bool = True,
+    type: Callable[[str], Any] = str,
 ) -> Parser[Sequence[KeyValue[str]]]:
     """
     >>> option("value").parse_args("--value", "x")
@@ -230,6 +234,8 @@ def option(
     if short:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
+    if type is not str:
+        parser = type_(type, parser)
     return parser
 
 

@@ -6,7 +6,6 @@ This means that this package can handle many kinds of argument-parsing patterns 
 Here is an example developed in the `argparse` tutorial:
 
 >>> import argparse
-
 >>> parser = argparse.ArgumentParser(description="calculate X to the power of Y")
 ... group = parser.add_mutually_exclusive_group()
 ... group.add_argument("-v", "--verbose", action="store_true")
@@ -23,13 +22,15 @@ Here is the equivalent in this package:
 ...         | flag("verbose") + defaults(quiet=False)
 ...         | flag("quiet") + defaults(verbose=False)
 ...     ),
-...     option("x"),
-...     option("y"),
+...     option("x", type=int),
+...     option("y", type=int),
 ... ) >> done()
+
+Let's see it in action:
 >>> p.parse_args("-x", "1", "-y", "2")
-{'verbose': False, 'quiet': False, 'x': '1', 'y': '2'}
+{'verbose': False, 'quiet': False, 'x': 1, 'y': 2}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
-{'x': '1', 'y': '2', 'verbose': True, 'quiet': False}
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
 UnexpectedError(unexpected='--verbose')
 """
@@ -42,6 +43,7 @@ from monad_argparse.argument_parsers import (
     argument,
     defaults,
     done,
+    empty,
     equals,
     flag,
     item,
@@ -55,6 +57,7 @@ from monad_argparse.parser import Parser
 
 __all__ = [
     "Parser",
+    "empty",
     "apply",
     "apply_item",
     "argument",
