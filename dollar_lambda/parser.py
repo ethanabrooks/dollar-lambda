@@ -295,8 +295,6 @@ class Parser(MonadPlus[A]):
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
 
-__pdoc__["Parser.__add__"] = True
-
 E = TypeVar("E", bound=MonadPlus)
 F = TypeVar("F")
 G = TypeVar("G", covariant=True, bound=MonadPlus)
@@ -667,3 +665,6 @@ def type_(
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)
+
+
+__pdoc__["Parser.__add__"] = True
