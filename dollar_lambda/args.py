@@ -1,3 +1,7 @@
+"""
+`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+from defining parsers with many arguments.
+"""
 import dataclasses
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Generator, Optional, Union
@@ -49,30 +53,43 @@ class ArgsField:
 @dataclass
 class Args:
     """
+    `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+    from defining parsers with many arguments.
+
     >>> @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = True
-    ...     f: bool = False
+    ...     t: bool = False
+    ...     f: bool = True
     ...     i: int = 1
     ...     s: str = "a"
     >>> p = MyArgs()
-    >>> MyArgs.parse_args("--no-t", "-f", "-i", "2", "-s", "b")
-    {'t': False, 'f': True, 'i': 2, 's': 'b'}
-    >>> MyArgs.parse_args("--no-t")
-    {'t': False, 'f': False, 'i': 1, 's': 'a'}
-    >>> @dataclass
-    ... class MyArgs(Args):
-    ...     b: bool = False
+
+    By using the `Args.parser()` method, `Args` can take advantage of all the same
+    combinators as other parsers:
+
+    >>> from dollar_lambda import argument
     >>> p = MyArgs.parser()
     >>> p1 = p >> argument("a")
-    >>> p1.parse_args("-b", "hello")
-    {'b': True, 'a': 'hello'}
+    >>> p1.parse_args("-t", "hello")
+    {'t': True, 'f': True, 'i': 1, 's': 'a', 'a': 'hello'}
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    >>> MyArgs.parse_args("--no-f")
+    {'t': False, 'f': False, 'i': 1, 's': 'a'}
+
+    To suppress this behavior, set `flip_bools=False`:
+    >>> MyArgs.parser(flip_bools=False).parse_args("--no-t", "-f", "-i", "2", "-s", "b")
+    {'t': False, 'f': True, 'i': 1, 's': 'a'}
+
+    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     >>> @dataclass
     ... class MyArgs(Args):
     ...     n: int = field(default=0, help="a number to increment", type=lambda x: 1 + int(x))
     >>> MyArgs.parse_args("-n", "1")
     {'n': 2}
     >>> MyArgs.parse_args()
+    usage: -n N
     n: a number to increment
     The following arguments are required: -n
     """

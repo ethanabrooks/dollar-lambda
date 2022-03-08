@@ -71,6 +71,30 @@ Unrecognized argument: --quiet
 <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;)
 {'quiet': False, 'verbose': False, 'x': 1, 'y': 2}
 </code></pre>
+<p>Use of the <code><a title="dollar_lambda.defaults" href="#dollar_lambda.defaults">defaults()</a></code> function is usually not required except for more logically
+complex parsers like this one.
+For this situation, an alternative would be to use a <code>main</code> function as the
+"source of truth" for defaults:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
+...     (
+...         empty()  # without this, either --verbose or --quiet is required
+...         | flag(&quot;verbose&quot;)
+...         | flag(&quot;quiet&quot;)
+...     ),
+...     option(&quot;x&quot;, type=int),
+...     option(&quot;y&quot;, type=int),
+... ) &gt;&gt; done()
+...
+&gt;&gt;&gt; def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;))
+{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
+&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;))
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--quiet&quot;)
+usage: [--verbose | --quiet] -x X -y Y
+Unrecognized argument: --verbose
+</code></pre>
 <p>Here is something you cannot do with argparse: what if there was a special argument, <code>verbosity</code>,
 that only makes sense if the user chooses <code>--verbose</code>?</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
@@ -255,6 +279,31 @@ Now you can omit both `--quiet` and `--verbose`:
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;)
 {&#39;quiet&#39;: False, &#39;verbose&#39;: False, &#39;x&#39;: 1, &#39;y&#39;: 2}
 
+Use of the `defaults` function is usually not required except for more logically
+complex parsers like this one.
+For this situation, an alternative would be to use a `main` function as the
+&#34;source of truth&#34; for defaults:
+
+&gt;&gt;&gt; p = nonpositional(
+...     (
+...         empty()  # without this, either --verbose or --quiet is required
+...         | flag(&#34;verbose&#34;)
+...         | flag(&#34;quiet&#34;)
+...     ),
+...     option(&#34;x&#34;, type=int),
+...     option(&#34;y&#34;, type=int),
+... ) &gt;&gt; done()
+...
+&gt;&gt;&gt; def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;))
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: False, &#39;quiet&#39;: False}
+&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;))
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--quiet&#34;)
+usage: [--verbose | --quiet] -x X -y Y
+Unrecognized argument: --verbose
+
 Here is something you cannot do with argparse: what if there was a special argument, `verbosity`,
 that only makes sense if the user chooses `--verbose`?
 
@@ -431,7 +480,8 @@ __all__ = [
 <dl>
 <dt><code class="name"><a title="dollar_lambda.args" href="args.html">dollar_lambda.args</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p><code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> is sugar for the <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> function and removes much of the boilerplate
+from defining parsers with many arguments.</p></div>
 </dd>
 <dt><code class="name"><a title="dollar_lambda.error" href="error.html">dollar_lambda.error</a></code></dt>
 <dd>
@@ -1065,25 +1115,41 @@ The following arguments are required: --value
 <span>class <span class="ident">Args</span></span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+<div class="desc"><p><code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> is sugar for the <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> function and removes much of the boilerplate
+from defining parsers with many arguments.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     t: bool = True
 ...     f: bool = False
 ...     i: int = 1
 ...     s: str = &quot;a&quot;
 &gt;&gt;&gt; p = MyArgs()
-&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
+</code></pre>
+<p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> will, by default
+add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
 {'t': False, 'f': True, 'i': 2, 's': 'b'}
-&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;)
+</code></pre>
+<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
+{'t': False, 'f': True, 'i': 2, 's': 'b'}
+</code></pre>
+<p>Note that defaults are supplied for absent arguments as expected:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;)
 {'t': False, 'f': False, 'i': 1, 's': 'a'}
-&gt;&gt;&gt; @dataclass
+</code></pre>
+<p>By using the <code><a title="dollar_lambda.parser" href="parser.html">dollar_lambda.parser</a></code> method, <code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> can take advantage of all the same
+combinators as other parsers:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     b: bool = False
 &gt;&gt;&gt; p = MyArgs.parser()
 &gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;-b&quot;, &quot;hello&quot;)
 {'b': True, 'a': 'hello'}
-&gt;&gt;&gt; @dataclass
+</code></pre>
+<p>To supply other metadata, like <code>help</code> text and more complex <code>type</code> converters, use <code><a title="dollar_lambda.field" href="#dollar_lambda.field">field()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     n: int = field(default=0, help=&quot;a number to increment&quot;, type=lambda x: 1 + int(x))
 &gt;&gt;&gt; MyArgs.parse_args(&quot;-n&quot;, &quot;1&quot;)
@@ -1099,6 +1165,9 @@ The following arguments are required: -n
 <pre><code class="python">@dataclass
 class Args:
     &#34;&#34;&#34;
+    `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+    from defining parsers with many arguments.
+
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     t: bool = True
@@ -1106,10 +1175,22 @@ class Args:
     ...     i: int = 1
     ...     s: str = &#34;a&#34;
     &gt;&gt;&gt; p = MyArgs()
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
+    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    Note that defaults are supplied for absent arguments as expected:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
+
+    By using the `parser()` method, `Args` can take advantage of all the same
+     combinators as other parsers:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     b: bool = False
@@ -1117,6 +1198,8 @@ class Args:
     &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
     &gt;&gt;&gt; p1.parse_args(&#34;-b&#34;, &#34;hello&#34;)
     {&#39;b&#39;: True, &#39;a&#39;: &#39;hello&#39;}
+
+    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     n: int = field(default=0, help=&#34;a number to increment&#34;, type=lambda x: 1 + int(x))

@@ -55,8 +55,10 @@ Now you can omit both `--quiet` and `--verbose`:
 >>> p.parse_args("-x", "1", "-y", "2")
 {'quiet': False, 'verbose': False, 'x': 1, 'y': 2}
 
-If `defaults` seems awkward, you can store defaults in a `main` function that
-receives the output of `parse_args`:
+Use of the `defaults` function is usually not required except for more logically
+complex parsers like this one.
+For this situation, an alternative would be to use a `main` function as the
+"source of truth" for defaults:
 
 >>> p = nonpositional(
 ...     (

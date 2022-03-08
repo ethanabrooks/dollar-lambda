@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda.args API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+from defining parsers with many arguments." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,11 +23,17 @@
 <h1 class="title">Module <code>dollar_lambda.args</code></h1>
 </header>
 <section id="section-intro">
+<p><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> is sugar for the <code>nonpositional</code> function and removes much of the boilerplate
+from defining parsers with many arguments.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import dataclasses
+<pre><code class="python">&#34;&#34;&#34;
+`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+from defining parsers with many arguments.
+&#34;&#34;&#34;
+import dataclasses
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Generator, Optional, Union
 
@@ -77,6 +84,9 @@ class ArgsField:
 @dataclass
 class Args:
     &#34;&#34;&#34;
+    `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+    from defining parsers with many arguments.
+
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     t: bool = True
@@ -84,10 +94,22 @@ class Args:
     ...     i: int = 1
     ...     s: str = &#34;a&#34;
     &gt;&gt;&gt; p = MyArgs()
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
+    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    Note that defaults are supplied for absent arguments as expected:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
+
+    By using the `parser()` method, `Args` can take advantage of all the same
+     combinators as other parsers:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     b: bool = False
@@ -95,6 +117,8 @@ class Args:
     &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
     &gt;&gt;&gt; p1.parse_args(&#34;-b&#34;, &#34;hello&#34;)
     {&#39;b&#39;: True, &#39;a&#39;: &#39;hello&#39;}
+
+    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     n: int = field(default=0, help=&#34;a number to increment&#34;, type=lambda x: 1 + int(x))
@@ -177,25 +201,41 @@ class Args:
 <span>class <span class="ident">Args</span></span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+<div class="desc"><p><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> is sugar for the <code>nonpositional</code> function and removes much of the boilerplate
+from defining parsers with many arguments.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     t: bool = True
 ...     f: bool = False
 ...     i: int = 1
 ...     s: str = &quot;a&quot;
 &gt;&gt;&gt; p = MyArgs()
-&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
+</code></pre>
+<p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> will, by default
+add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
 {'t': False, 'f': True, 'i': 2, 's': 'b'}
-&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;)
+</code></pre>
+<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
+{'t': False, 'f': True, 'i': 2, 's': 'b'}
+</code></pre>
+<p>Note that defaults are supplied for absent arguments as expected:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;)
 {'t': False, 'f': False, 'i': 1, 's': 'a'}
-&gt;&gt;&gt; @dataclass
+</code></pre>
+<p>By using the <code>parser()</code> method, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can take advantage of all the same
+combinators as other parsers:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     b: bool = False
 &gt;&gt;&gt; p = MyArgs.parser()
 &gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;-b&quot;, &quot;hello&quot;)
 {'b': True, 'a': 'hello'}
-&gt;&gt;&gt; @dataclass
+</code></pre>
+<p>To supply other metadata, like <code>help</code> text and more complex <code>type</code> converters, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     n: int = field(default=0, help=&quot;a number to increment&quot;, type=lambda x: 1 + int(x))
 &gt;&gt;&gt; MyArgs.parse_args(&quot;-n&quot;, &quot;1&quot;)
@@ -211,6 +251,9 @@ The following arguments are required: -n
 <pre><code class="python">@dataclass
 class Args:
     &#34;&#34;&#34;
+    `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
+    from defining parsers with many arguments.
+
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     t: bool = True
@@ -218,10 +261,22 @@ class Args:
     ...     i: int = 1
     ...     s: str = &#34;a&#34;
     &gt;&gt;&gt; p = MyArgs()
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
+    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+
+    Note that defaults are supplied for absent arguments as expected:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;)
     {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
+
+    By using the `parser()` method, `Args` can take advantage of all the same
+     combinators as other parsers:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     b: bool = False
@@ -229,6 +284,8 @@ class Args:
     &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
     &gt;&gt;&gt; p1.parse_args(&#34;-b&#34;, &#34;hello&#34;)
     {&#39;b&#39;: True, &#39;a&#39;: &#39;hello&#39;}
+
+    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
     ...     n: int = field(default=0, help=&#34;a number to increment&#34;, type=lambda x: 1 + int(x))
