@@ -1,5 +1,5 @@
 """
-_Not the parser that we need, but the parser we deserve._
+### **$λ** _Not the parser that we need, but the parser we deserve._
 
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
@@ -54,6 +54,29 @@ For `add_mutually_exclusive_group(required=False)`:
 Now you can omit both `--quiet` and `--verbose`:
 >>> p.parse_args("-x", "1", "-y", "2")
 {'quiet': False, 'verbose': False, 'x': 1, 'y': 2}
+
+If `defaults` seems awkward, you can store defaults in a `main` function that
+receives the output of `parse_args`:
+
+>>> p = nonpositional(
+...     (
+...         empty()  # without this, either --verbose or --quiet is required
+...         | flag("verbose")
+...         | flag("quiet")
+...     ),
+...     option("x", type=int),
+...     option("y", type=int),
+... ) >> done()
+...
+>>> def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+>>> main(**p.parse_args("-x", "1", "-y", "2"))
+{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
+>>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
+usage: [--verbose | --quiet] -x X -y Y
+Unrecognized argument: --verbose
 
 Here is something you cannot do with argparse: what if there was a special argument, `verbosity`,
 that only makes sense if the user chooses `--verbose`?
