@@ -16,6 +16,9 @@ B = TypeVar("B")
 @dataclass
 class Sequence(MonadPlus[A], typing.Sequence[A]):
     """
+    This class combines the functionality of [`MonadPlus`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24)
+    and [`typing.Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence).
+
     >>> s = Sequence([1, 2])
     >>> len(s)
     2
@@ -23,9 +26,9 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     1
     >>> s[-1]
     2
-    >>> s + s
+    >>> s + s  # sequences emulate list behavior when added
     Sequence(get=[1, 2, 1, 2])
-    >>> [x + 1 for x in s]
+    >>> [x + 1 for x in s]  # sequences can be iterated over
     [2, 3]
     >>> Sequence([1, 2]) >= (lambda x: Sequence([x, -x]))
     Sequence(get=[1, -1, 2, -2])
@@ -59,6 +62,11 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
         return self | other
 
     def bind(self, f: Callable[[A], Sequence[B]]) -> Sequence[B]:
+        """
+        >>> Sequence([1, 2]) >= (lambda x: Sequence([x, -x]))
+        Sequence(get=[1, -1, 2, -2])
+        """
+
         def g() -> Iterator[B]:
             for a in self:
                 yield from f(a)
@@ -67,6 +75,10 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 
     @staticmethod
     def return_(a: B) -> Sequence[B]:
+        """
+        >>> Sequence.return_(1)
+        Sequence(get=[1])
+        """
         return Sequence([a])
 
     @classmethod

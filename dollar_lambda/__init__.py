@@ -1,6 +1,4 @@
 """
-### **$λ** _Not the parser that we need, but the parser we deserve._
-
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
 

@@ -45,6 +45,17 @@ B = TypeVar(&#34;B&#34;, bound=Monoid)
 
 @dataclass
 class Parse(MonadPlus[A]):
+    &#34;&#34;&#34;
+    A `Parse` is the output of parsing.
+
+    Parameters
+    ----------
+    parsed : A
+        Component parsed by the parsed
+    unparsed : Sequence[str]
+        Component yet to be parsed
+    &#34;&#34;&#34;
+
     parsed: A
     unparsed: Sequence[str]
 
@@ -81,13 +92,31 @@ class Parse(MonadPlus[A]):
 <span>(</span><span>parsed: A, unparsed: Sequence[str])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parse(parsed: 'A', unparsed: 'Sequence[str]')</p></div>
+<div class="desc"><p>A <code><a title="dollar_lambda.parse.Parse" href="#dollar_lambda.parse.Parse">Parse</a></code> is the output of parsing.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>parsed</code></strong> :&ensp;<code>A</code></dt>
+<dd>Component parsed by the parsed</dd>
+<dt><strong><code>unparsed</code></strong> :&ensp;<code>Sequence[str]</code></dt>
+<dd>Component yet to be parsed</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
 class Parse(MonadPlus[A]):
+    &#34;&#34;&#34;
+    A `Parse` is the output of parsing.
+
+    Parameters
+    ----------
+    parsed : A
+        Component parsed by the parsed
+    unparsed : Sequence[str]
+        Component yet to be parsed
+    &#34;&#34;&#34;
+
     parsed: A
     unparsed: Sequence[str]
 
