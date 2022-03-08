@@ -26,6 +26,8 @@ from dollar_lambda.parse import Parse
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
+__pdoc__ = {}
+
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C")
@@ -53,9 +55,6 @@ def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True)
     if len(no_nones) > 1 and add_brackets:
         usage = f"[{usage}]"
     return usage or None
-
-
-__pdoc__ = {}
 
 
 @dataclass
@@ -120,7 +119,7 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("--verbose", "--option", "x")
         {'verbose': True}
 
-        If you want this to fail, add `>> done()` to the end (see `done`):
+        If you want this to fail, use `>>` (`Parser.__rshift__`) with `done()` or another parser:
         >>> (p >> done()).parse_args("--verbose", "--option", "x")
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option
@@ -141,6 +140,9 @@ class Parser(MonadPlus[A]):
         self: Parser[Sequence[D]], p: Parser[Sequence[B]]
     ) -> Parser[Sequence[D | B]]:
         """
+        This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
+        gets handed off to the second parser. If either parser fails, the whole thing fails.
+
         >>> from dollar_lambda import argument, flag
         >>> p = argument("first") >> argument("second")
         >>> p.parse_args("a", "b")
@@ -151,22 +153,6 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("b")
         usage: first second
         The following arguments are required: second
-        >>> p1 = flag("verbose", default=False) | flag("quiet", default=False) | flag("yes", default=False)
-        >>> p = p1 >> argument("a")
-        >>> p.parse_args("--verbose", "value")
-        {'verbose': True, 'a': 'value'}
-        >>> p.parse_args("value")
-        {'verbose': False, 'a': 'value'}
-        >>> p.parse_args("--verbose")
-        {'verbose': False, 'a': '--verbose'}
-        >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
-        >>> p = p1 >> argument("a")
-        >>> p.parse_args("--verbose")
-        usage: [[--verbose | --quiet] | --yes] a
-        The following arguments are required: a
-        >>> p.parse_args("a")
-        usage: [[--verbose | --quiet] | --yes] a
-        Expected '--verbose'. Got 'a'
         """
         # def f(p1: Sequence[D]) -> Parser[Parse[Sequence[D | B]]]:
         #     def g(p2: Sequence[B]) -> Parser[Sequence[D | B]]:
@@ -181,6 +167,35 @@ class Parser(MonadPlus[A]):
         )
 
     def bind(self, f: Callable[[A], Parser[B]]) -> Parser[B]:
+        """
+        Returns a new parser that
+
+        1. applies `self`;
+        2. if this succeeds, applies `f` to the parsed component of the result.
+
+        `bind` is one of the functions that makes `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). But most users will
+        avoid using it directly, preferring higher level combinators like `>>` (`Parser.__rshift__`),
+        `|` (`Parser.__or__`) and `+` (`Parser.__add__`).
+
+        Note that `>=` as a synonym for `bind` (as defined in [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26))
+        and we typically prefer using the infix operator to the spelled out method.
+
+        Let's start with our simplest parser, `argument`:
+        >>> p1 = argument("some_dest")
+
+        Now let's use the `equals` parser to write a function that takes the output of `p1` and fails unless
+        the next argument is the same as the first:
+        >>> def f(kvs: Sequence(KeyValue[str])) -> Sequence(KeyValue[str]):
+        ...     [kv] = kvs
+        ...     return equals(kv.value)
+
+        >>> p = p1 >= f
+        >>> p.parse_args("a", "a")
+        {'a': 'a'}
+        >>> p.parse_args("a", "b")
+        Expected 'a'. Got 'b'
+        """
+
         def h(parse: Parse[A]) -> Result[Parse[B]]:
             return f(parse.parsed).parse(parse.unparsed)
 
@@ -191,6 +206,8 @@ class Parser(MonadPlus[A]):
 
     def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
         """
+        Applies `self` zero or more times (like `*` in regexes).
+
         >>> from dollar_lambda import argument, flag
         >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args(return_dict=False)
@@ -199,19 +216,34 @@ class Parser(MonadPlus[A]):
         >>> p.parse_args("a", return_dict=False)
         [('as-many-as-you-like', 'a')]
         >>> p = argument("as-many-as-you-like").many()
-        >>> p.parse_args("a", "b", return_dict=False)
+        >>> p.parse_args("a", "b", return_dict=False)  # return_dict=False allows duplicate keys
         [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+
+        Note that if `self` contains `Parser.__or__`, the arguments can be
+        heterogenous:
         >>> p = flag("verbose") | flag("quiet")
-        >>> p = p.many()  # parse zero or more copies
-        >>> p.parse_args("--quiet", "--quiet", "--quiet", return_dict=False)
-        [('quiet', True), ('quiet', True), ('quiet', True)]
-        >>> p.parse_args("--verbose", "--quiet", "--quiet", return_dict=False)
-        [('verbose', True), ('quiet', True), ('quiet', True)]
+        >>> p = p.many()
+        >>> p.parse_args("--verbose", "--quiet", return_dict=False) # mix --verbose and --quiet
+        [('verbose', True), ('quiet', True)]
         """
         p = self.many1() | empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
     def many1(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
+        """
+        Applies `self` one or more times (like `+` in regexes).
+
+        >>> from dollar_lambda import argument, flag
+        >>> p = argument("1-or-more").many1()
+        >>> p.parse_args("1")
+        {'1-or-more': '1'}
+        >>> p.parse_args("1", "2", return_dict=False)  # return_dict=False allows duplicate keys
+        [('1-or-more', '1'), ('1-or-more', '2')]
+        >>> p.parse_args()
+        usage: 1-or-more [1-or-more ...]
+        The following arguments are required: 1-or-more
+        """
+
         def g() -> Generator["Parser[Sequence[B]]", Sequence[B], None]:
             # noinspection PyTypeChecker
             r1: Sequence[B] = yield self
@@ -230,6 +262,9 @@ class Parser(MonadPlus[A]):
         )
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A]]:
+        """
+        Applies the parser to the input sequence `cs`.
+        """
         return self.f(cs)
 
     def parse_args(
@@ -238,6 +273,29 @@ class Parser(MonadPlus[A]):
         return_dict: bool = True,
         check_help: bool = True,
     ) -> typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+        """
+        The main way the user extracts parsed results from the parser.
+
+        Parameters
+        ----------
+        args : str
+            A sequence of strings to parse (e.g. `sys.argv[1:]`).
+        return_dict : bool
+            Returns a sequence of tuples instead of dictionary, thereby allowing duplicate keys.
+            The tuples are `KeyValueTuple` namedtuples, with fields `key` and `value`.
+        check_help : bool
+            Before running the parser, checks if the input string is `--help` or `-h`.
+            If it is, returns the usage message.
+
+        >>> p = argument("as-many-as-you-like").many()
+        >>> p.parse_args("a", "b", return_dict=False)
+        [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+
+        >>> argument("a").parse_args("-h")
+        usage: a
+        >>> argument("a").parse_args("--help")
+        usage: a
+        """
         if check_help:
             return wrap_help(self).parse_args(
                 *args, return_dict=return_dict, check_help=False
@@ -255,6 +313,8 @@ class Parser(MonadPlus[A]):
                 for k, v in self.helps.items():
                     print(f"{k}: {v}")
             if result.usage:
+                if isinstance(result, HelpError):
+                    print("usage:", end="\n" if "\n" in result.usage else " ")
                 print(result.usage)
             if TESTING:
                 return  # type: ignore[return-value]
@@ -272,6 +332,10 @@ class Parser(MonadPlus[A]):
     def return_(cls, a: A) -> Parser[A]:  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
+        This method is required to make `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). It consumes none of the input
+        and always returns `a` as the result. For the most part, the user will not use
+        this method unless building custom parsers.
+
         >>> from dollar_lambda.key_value import KeyValue
         >>> Parser.return_(([KeyValue("some-key", "some-value")])).parse_args()
         {'some-key': 'some-value'}
@@ -285,6 +349,13 @@ class Parser(MonadPlus[A]):
     @classmethod
     def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -> Parser[A]:
         """
+        This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
+
+        Parameters
+        ----------
+        error : Optional[ArgumentError]
+            Customize the error returned by `zero`.
+
         >>> Parser.zero().parse_args()
         zero
         >>> Parser.zero().parse_args("a")
@@ -301,6 +372,10 @@ G = TypeVar("G", covariant=True, bound=MonadPlus)
 
 
 def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
+    """
+    Take the output of `parser` and apply `f` to it. Convert any errors that arise into `ArgumentError`.
+    """
+
     def g(a: E) -> Parser[G]:
         try:
             y = f(a)
@@ -320,8 +395,6 @@ def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
 def apply_item(f: Callable[[str], G], description: str) -> Parser[G]:
     def g(parsed: Sequence[KeyValue[str]]) -> Result[G]:
         [kv] = parsed
-        if kv.key == "args":
-            breakpoint()
         try:
             y = f(kv.value)
         except Exception as e:
@@ -413,6 +486,25 @@ def flag(
     {'verbose': True}
     >>> flag("v", string="--value").parse_args("--value")
     {'v': True}
+
+    >>> p1 = flag("verbose", default=False) | flag("quiet", default=False) | flag("yes", default=False)
+    >>> p = p1 >> done()
+    >>> p.parse_args("--verbose", "value")
+    usage: [[--verbose | --quiet] | --yes]
+    Unrecognized argument: value
+    >>> p.parse_args("value")
+    usage: [[--verbose | --quiet] | --yes]
+    Unrecognized argument: value
+    >>> p.parse_args("--verbose")
+    {'verbose': True}
+    >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
+    >>> p = p1 >> argument("a")
+    >>> p.parse_args("--verbose")
+    usage: [[--verbose | --quiet] | --yes] a
+    The following arguments are required: a
+    >>> p.parse_args("a")
+    usage: [[--verbose | --quiet] | --yes] a
+    Expected '--verbose'. Got 'a'
     """
     if string is None:
         _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
@@ -668,3 +760,6 @@ def type_(
 
 
 __pdoc__["Parser.__add__"] = True
+__pdoc__["Parser.__or__"] = True
+__pdoc__["Parser.__rshift__"] = True
+__pdoc__["Parser.__ge__"] = True
