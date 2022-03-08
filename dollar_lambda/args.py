@@ -17,6 +17,25 @@ def field(
     help: Optional[str] = None,
     **kwargs,
 ) -> Field:
+    """
+    This is a thin wrapper around [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    Parameters
+    ----------
+    metadata : str
+        Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+    type : Optional[Union[type, Callable[[str], Any]]]
+        A function that takes a string and returns a value just like the `type` argument for
+        [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
+    help : str
+        An optional help string for the argument.
+
+    Returns
+    -------
+    A `dataclasses.Field` object that can be used in place of a default argument as
+    described in the [`dataclasses.Field` documentation](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    """
     if metadata is None:
         metadata = {}
     if type is not None:

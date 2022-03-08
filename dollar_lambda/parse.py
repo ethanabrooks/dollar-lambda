@@ -16,6 +16,17 @@ B = TypeVar("B", bound=Monoid)
 
 @dataclass
 class Parse(MonadPlus[A]):
+    """
+    A `Parse` is the output of parsing.
+
+    Parameters
+    ----------
+    parsed : A
+        Component parsed by the parsed
+    unparsed : Sequence[str]
+        Component yet to be parsed
+    """
+
     parsed: A
     unparsed: Sequence[str]
 

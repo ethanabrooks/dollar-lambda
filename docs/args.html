@@ -48,6 +48,25 @@ def field(
     help: Optional[str] = None,
     **kwargs,
 ) -&gt; Field:
+    &#34;&#34;&#34;
+    This is a thin wrapper around [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    Parameters
+    ----------
+    metadata : str
+        Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+    type : Optional[Union[type, Callable[[str], Any]]]
+        A function that takes a string and returns a value just like the `type` argument for
+        [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
+    help : str
+        An optional help string for the argument.
+
+    Returns
+    -------
+    A `dataclasses.Field` object that can be used in place of a default argument as
+    described in the [`dataclasses.Field` documentation](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    &#34;&#34;&#34;
     if metadata is None:
         metadata = {}
     if type is not None:
@@ -89,34 +108,29 @@ class Args:
 
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = True
-    ...     f: bool = False
+    ...     t: bool = False
+    ...     f: bool = True
     ...     i: int = 1
     ...     s: str = &#34;a&#34;
     &gt;&gt;&gt; p = MyArgs()
 
+    By using the `Args.parser()` method, `Args` can take advantage of all the same
+    combinators as other parsers:
+
+    &gt;&gt;&gt; from dollar_lambda import argument
+    &gt;&gt;&gt; p = MyArgs.parser()
+    &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;-t&#34;, &#34;hello&#34;)
+    {&#39;t&#39;: True, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;, &#39;a&#39;: &#39;hello&#39;}
+
     Note that when the default value of an argument is `True`, `Args` will, by default
     add `--no-` to the front of the flag (while still assigning the value to the original key):
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-f&#34;)
+    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
 
     To suppress this behavior, set `flip_bools=False`:
     &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
-
-    Note that defaults are supplied for absent arguments as expected:
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
-
-    By using the `parser()` method, `Args` can take advantage of all the same
-     combinators as other parsers:
-    &gt;&gt;&gt; @dataclass
-    ... class MyArgs(Args):
-    ...     b: bool = False
-    &gt;&gt;&gt; p = MyArgs.parser()
-    &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p1.parse_args(&#34;-b&#34;, &#34;hello&#34;)
-    {&#39;b&#39;: True, &#39;a&#39;: &#39;hello&#39;}
+    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
 
     To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
@@ -125,6 +139,7 @@ class Args:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
     {&#39;n&#39;: 2}
     &gt;&gt;&gt; MyArgs.parse_args()
+    usage: -n N
     n: a number to increment
     The following arguments are required: -n
     &#34;&#34;&#34;
@@ -172,7 +187,20 @@ class Args:
 <span>def <span class="ident">field</span></span>(<span>metadata: Optional[dict] = None, type: Union[type, Callable[[str], Any], ForwardRef(None)] = None, help: Optional[str] = None, **kwargs) ‑> dataclasses.Field</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>This is a thin wrapper around <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>metadata</code></strong> :&ensp;<code>str</code></dt>
+<dd>Identical to the <code>metadata</code> argument for <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</dd>
+<dt><strong><code>type</code></strong> :&ensp;<code>Optional[Union[type, Callable[[str], Any]]]</code></dt>
+<dd>A function that takes a string and returns a value just like the <code>type</code> argument for
+<a href="https://docs.python.org/3/library/argparse.html#type"><code>ArgumentParser.add_argument</code></a>.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>str</code></dt>
+<dd>An optional help string for the argument.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>A <code>dataclasses.Field</code> object that can be used in place of a default argument as
+described in the <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.Field</code> documentation</a>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -183,6 +211,25 @@ class Args:
     help: Optional[str] = None,
     **kwargs,
 ) -&gt; Field:
+    &#34;&#34;&#34;
+    This is a thin wrapper around [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    Parameters
+    ----------
+    metadata : str
+        Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+    type : Optional[Union[type, Callable[[str], Any]]]
+        A function that takes a string and returns a value just like the `type` argument for
+        [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
+    help : str
+        An optional help string for the argument.
+
+    Returns
+    -------
+    A `dataclasses.Field` object that can be used in place of a default argument as
+    described in the [`dataclasses.Field` documentation](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    &#34;&#34;&#34;
     if metadata is None:
         metadata = {}
     if type is not None:
@@ -205,34 +252,28 @@ class Args:
 from defining parsers with many arguments.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
-...     t: bool = True
-...     f: bool = False
+...     t: bool = False
+...     f: bool = True
 ...     i: int = 1
 ...     s: str = &quot;a&quot;
 &gt;&gt;&gt; p = MyArgs()
 </code></pre>
+<p>By using the <code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">Args.parser()</a></code> method, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can take advantage of all the same
+combinators as other parsers:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument
+&gt;&gt;&gt; p = MyArgs.parser()
+&gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
+&gt;&gt;&gt; p1.parse_args(&quot;-t&quot;, &quot;hello&quot;)
+{'t': True, 'f': True, 'i': 1, 's': 'a', 'a': 'hello'}
+</code></pre>
 <p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> will, by default
 add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
-{'t': False, 'f': True, 'i': 2, 's': 'b'}
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-f&quot;)
+{'t': False, 'f': False, 'i': 1, 's': 'a'}
 </code></pre>
 <p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
-{'t': False, 'f': True, 'i': 2, 's': 'b'}
-</code></pre>
-<p>Note that defaults are supplied for absent arguments as expected:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-t&quot;)
-{'t': False, 'f': False, 'i': 1, 's': 'a'}
-</code></pre>
-<p>By using the <code>parser()</code> method, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can take advantage of all the same
-combinators as other parsers:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
-... class MyArgs(Args):
-...     b: bool = False
-&gt;&gt;&gt; p = MyArgs.parser()
-&gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
-&gt;&gt;&gt; p1.parse_args(&quot;-b&quot;, &quot;hello&quot;)
-{'b': True, 'a': 'hello'}
+{'t': False, 'f': True, 'i': 1, 's': 'a'}
 </code></pre>
 <p>To supply other metadata, like <code>help</code> text and more complex <code>type</code> converters, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
@@ -241,6 +282,7 @@ combinators as other parsers:</p>
 &gt;&gt;&gt; MyArgs.parse_args(&quot;-n&quot;, &quot;1&quot;)
 {'n': 2}
 &gt;&gt;&gt; MyArgs.parse_args()
+usage: -n N
 n: a number to increment
 The following arguments are required: -n
 </code></pre></div>
@@ -256,34 +298,29 @@ class Args:
 
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = True
-    ...     f: bool = False
+    ...     t: bool = False
+    ...     f: bool = True
     ...     i: int = 1
     ...     s: str = &#34;a&#34;
     &gt;&gt;&gt; p = MyArgs()
 
+    By using the `Args.parser()` method, `Args` can take advantage of all the same
+    combinators as other parsers:
+
+    &gt;&gt;&gt; from dollar_lambda import argument
+    &gt;&gt;&gt; p = MyArgs.parser()
+    &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;-t&#34;, &#34;hello&#34;)
+    {&#39;t&#39;: True, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;, &#39;a&#39;: &#39;hello&#39;}
+
     Note that when the default value of an argument is `True`, `Args` will, by default
     add `--no-` to the front of the flag (while still assigning the value to the original key):
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-f&#34;)
+    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
 
     To suppress this behavior, set `flip_bools=False`:
     &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 2, &#39;s&#39;: &#39;b&#39;}
-
-    Note that defaults are supplied for absent arguments as expected:
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-t&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
-
-    By using the `parser()` method, `Args` can take advantage of all the same
-     combinators as other parsers:
-    &gt;&gt;&gt; @dataclass
-    ... class MyArgs(Args):
-    ...     b: bool = False
-    &gt;&gt;&gt; p = MyArgs.parser()
-    &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p1.parse_args(&#34;-b&#34;, &#34;hello&#34;)
-    {&#39;b&#39;: True, &#39;a&#39;: &#39;hello&#39;}
+    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
 
     To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
@@ -292,6 +329,7 @@ class Args:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
     {&#39;n&#39;: 2}
     &gt;&gt;&gt; MyArgs.parse_args()
+    usage: -n N
     n: a number to increment
     The following arguments are required: -n
     &#34;&#34;&#34;
