@@ -445,7 +445,7 @@ __all__ = [
 </dd>
 <dt><code class="name"><a title="dollar_lambda.parser" href="parser.html">dollar_lambda.parser</a></code></dt>
 <dd>
-<div class="desc"><p><code><a title="dollar_lambda.Parser" href="#dollar_lambda.Parser">Parser</a></code> is the class that powers <code><a title="dollar_lambda" href="#dollar_lambda">dollar_lambda</a></code>.</p></div>
+<div class="desc"><p>Contains the <code><a title="dollar_lambda.Parser" href="#dollar_lambda.Parser">Parser</a></code> class and functions for building more specialized builder functions.</p></div>
 </dd>
 <dt><code class="name"><a title="dollar_lambda.result" href="result.html">dollar_lambda.result</a></code></dt>
 <dd>
@@ -607,12 +607,20 @@ Unrecognized argument: x
 <span>def <span class="ident">empty</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~B]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Always returns {}, no matter the input. Mostly useful for use in <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
+{}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def empty() -&gt; Parser[Sequence[B]]:
+    &#34;&#34;&#34;
+    Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+    &gt;&gt;&gt; empty().parse_args(&#34;any&#34;, &#34;arguments&#34;)
+    {}
+    &#34;&#34;&#34;
     return Parser.return_(Sequence([]))</code></pre>
 </details>
 </dd>
@@ -1168,13 +1176,17 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
 <span>(</span><span>f: Callable[[Sequence[str]], Result[Parse[A]]], usage: Optional[str], helps: Dict[str, str])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parser(f: 'Callable[[Sequence[str]], Result[Parse[A]]]', usage: 'Optional[str]', helps: 'Dict[str, str]')</p></div>
+<div class="desc"><p>Main class powering the argument parser.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
 class Parser(MonadPlus[A]):
+    &#34;&#34;&#34;
+    Main class powering the argument parser.
+    &#34;&#34;&#34;
+
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
     helps: Dict[str, str]
@@ -1182,6 +1194,33 @@ class Parser(MonadPlus[A]):
     def __add__(
         self: Parser[Sequence[D]], other: Parser[Sequence[B]]
     ) -&gt; Parser[Sequence[D | B]]:
+        &#34;&#34;&#34;
+        Parse two arguments in either order.
+        &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;debug&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
+        {&#39;verbose&#39;: True, &#39;debug&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;, &#34;--verbose&#34;)
+        {&#39;debug&#39;: True, &#39;verbose&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--debug&#34;)
+        usage: --verbose --debug
+        Expected &#39;--verbose&#39;. Got &#39;--debug&#39;
+
+        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
+        {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)   # this doesn&#39;t
+        usage: -a -b -c
+        Expected &#39;-b&#39;. Got &#39;-c&#39;
+
+        This makes more sense when one supplies the implicit parentheses:
+        &gt;&gt;&gt; p = (flag(&#34;a&#34;) + flag(&#34;b&#34;)) + flag(&#34;c&#34;)
+
+        In order to chain together more than two arguments, use `nonpositional`:
+        &gt;&gt;&gt; p = nonpositional(flag(&#34;a&#34;), flag(&#34;b&#34;), flag(&#34;c&#34;))
+        &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)
+        {&#39;a&#39;: True, &#39;c&#39;: True, &#39;b&#39;: True}
+        &#34;&#34;&#34;
         p = (self &gt;&gt; other) | (other &gt;&gt; self)
         usage = binary_usage(self.usage, &#34; &#34;, other.usage, add_brackets=False)
         return replace(p, usage=usage)
@@ -1191,12 +1230,20 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -&gt; Parser[A | B]:
         &#34;&#34;&#34;
+        Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.
+
         &gt;&gt;&gt; from dollar_lambda import argument, option, done, flag
         &gt;&gt;&gt; p = option(&#34;option&#34;) | flag(&#34;verbose&#34;)
+        &gt;&gt;&gt; p.parse_args(&#34;--option&#34;, &#34;x&#34;)
+        {&#39;option&#39;: &#39;x&#39;}
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
         {&#39;verbose&#39;: True}
+
+        Note that when both arguments are supplied, this will only parse the first:
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
         {&#39;verbose&#39;: True}
+
+        If you want this to fail, add `&gt;&gt; done()` to the end (see `done`):
         &gt;&gt;&gt; (p &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--option&#34;, &#34;x&#34;)
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option

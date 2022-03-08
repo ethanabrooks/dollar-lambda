@@ -1,5 +1,5 @@
 """
-`Parser` is the class that powers `dollar_lambda`.
+Contains the `Parser` class and functions for building more specialized builder functions.
 """
 # pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
@@ -35,15 +35,19 @@ global TESTING
 TESTING = os.environ.get("TESTING", False)
 
 
-def const(b: B) -> Parser[Sequence[B]]:
-    return Parser.return_(Sequence([b]))
-
-
 def empty() -> Parser[Sequence[B]]:
+    """
+    Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+    >>> empty().parse_args("any", "arguments")
+    {}
+    """
     return Parser.return_(Sequence([]))
 
 
 def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
+    """
+    Utility for generating usage strings for binary operators.
+    """
     no_nones = [x for x in (a, b) if x is not None]
     usage = op.join(no_nones)
     if len(no_nones) > 1 and add_brackets:
@@ -51,8 +55,15 @@ def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True)
     return usage or None
 
 
+__pdoc__ = {}
+
+
 @dataclass
 class Parser(MonadPlus[A]):
+    """
+    Main class powering the argument parser.
+    """
+
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
     helps: Dict[str, str]
@@ -60,6 +71,33 @@ class Parser(MonadPlus[A]):
     def __add__(
         self: Parser[Sequence[D]], other: Parser[Sequence[B]]
     ) -> Parser[Sequence[D | B]]:
+        """
+        Parse two arguments in either order.
+        >>> p = flag("verbose") + flag("debug")
+        >>> p.parse_args("--verbose", "--debug")
+        {'verbose': True, 'debug': True}
+        >>> p.parse_args("--debug", "--verbose")
+        {'debug': True, 'verbose': True}
+        >>> p.parse_args("--debug")
+        usage: --verbose --debug
+        Expected '--verbose'. Got '--debug'
+
+        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        >>> p = flag("a") + flag("b") + flag("c")
+        >>> p.parse_args("-c", "-a", "-b")   # this works
+        {'c': True, 'a': True, 'b': True}
+        >>> p.parse_args("-a", "-c", "-b")   # this doesn't
+        usage: -a -b -c
+        Expected '-b'. Got '-c'
+
+        This makes more sense when one supplies the implicit parentheses:
+        >>> p = (flag("a") + flag("b")) + flag("c")
+
+        In order to chain together more than two arguments, use `nonpositional`:
+        >>> p = nonpositional(flag("a"), flag("b"), flag("c"))
+        >>> p.parse_args("-a", "-c", "-b")
+        {'a': True, 'c': True, 'b': True}
+        """
         p = (self >> other) | (other >> self)
         usage = binary_usage(self.usage, " ", other.usage, add_brackets=False)
         return replace(p, usage=usage)
@@ -69,12 +107,20 @@ class Parser(MonadPlus[A]):
         other: Parser[B],
     ) -> Parser[A | B]:
         """
+        Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.
+
         >>> from dollar_lambda import argument, option, done, flag
         >>> p = option("option") | flag("verbose")
+        >>> p.parse_args("--option", "x")
+        {'option': 'x'}
         >>> p.parse_args("--verbose")
         {'verbose': True}
+
+        Note that when both arguments are supplied, this will only parse the first:
         >>> p.parse_args("--verbose", "--option", "x")
         {'verbose': True}
+
+        If you want this to fail, add `>> done()` to the end (see `done`):
         >>> (p >> done()).parse_args("--verbose", "--option", "x")
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option
@@ -248,6 +294,8 @@ class Parser(MonadPlus[A]):
         """
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
+
+__pdoc__["Parser.__add__"] = True
 
 E = TypeVar("E", bound=MonadPlus)
 F = TypeVar("F")
