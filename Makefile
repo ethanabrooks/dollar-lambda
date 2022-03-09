@@ -5,9 +5,10 @@ test:
 	python -m unittest test.py
 
 readme: readme.py
-	rm -rf readme.md
+	rm -rf readme.rst
 	jupytext --sync readme.py
-	TESTING=1 jupyter nbconvert --to markdown --execute readme.ipynb
+	TESTING=1 jupyter nbconvert --to rst --execute readme.ipynb
+	mv readme.rst README.rst
 
 docs: dollar_lambda/
 	rm -rf docs/

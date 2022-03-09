@@ -1489,6 +1489,11 @@ class Parser(MonadPlus[A]):
     Main class powering the argument parser.
     &#34;&#34;&#34;
 
+    __pdoc__[&#34;Parser.__add__&#34;] = True
+    __pdoc__[&#34;Parser.__or__&#34;] = True
+    __pdoc__[&#34;Parser.__rshift__&#34;] = True
+    __pdoc__[&#34;Parser.__ge__&#34;] = True
+
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
     helps: Dict[str, str]

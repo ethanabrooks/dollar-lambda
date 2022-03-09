@@ -55,7 +55,6 @@ from dollar_lambda.parse import Parse
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
-
 A = TypeVar(&#34;A&#34;, bound=Monoid, covariant=True)
 B = TypeVar(&#34;B&#34;, bound=Monoid)
 C = TypeVar(&#34;C&#34;)
@@ -93,6 +92,11 @@ class Parser(MonadPlus[A]):
     &#34;&#34;&#34;
     Main class powering the argument parser.
     &#34;&#34;&#34;
+
+    __pdoc__[&#34;Parser.__add__&#34;] = True
+    __pdoc__[&#34;Parser.__or__&#34;] = True
+    __pdoc__[&#34;Parser.__rshift__&#34;] = True
+    __pdoc__[&#34;Parser.__ge__&#34;] = True
 
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
@@ -396,11 +400,6 @@ class Parser(MonadPlus[A]):
         &#34;&#34;&#34;
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
-
-__pdoc__[&#34;Parser.__add__&#34;] = True
-__pdoc__[&#34;Parser.__or__&#34;] = True
-__pdoc__[&#34;Parser.__rshift__&#34;] = True
-__pdoc__[&#34;Parser.__ge__&#34;] = True
 
 E = TypeVar(&#34;E&#34;, bound=MonadPlus)
 F = TypeVar(&#34;F&#34;)
@@ -1492,6 +1491,11 @@ class Parser(MonadPlus[A]):
     &#34;&#34;&#34;
     Main class powering the argument parser.
     &#34;&#34;&#34;
+
+    __pdoc__[&#34;Parser.__add__&#34;] = True
+    __pdoc__[&#34;Parser.__or__&#34;] = True
+    __pdoc__[&#34;Parser.__rshift__&#34;] = True
+    __pdoc__[&#34;Parser.__ge__&#34;] = True
 
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]

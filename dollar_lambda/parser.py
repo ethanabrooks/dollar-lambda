@@ -64,6 +64,11 @@ class Parser(MonadPlus[A]):
     Main class powering the argument parser.
     """
 
+    __pdoc__["Parser.__add__"] = True
+    __pdoc__["Parser.__or__"] = True
+    __pdoc__["Parser.__rshift__"] = True
+    __pdoc__["Parser.__ge__"] = True
+
     f: Callable[[Sequence[str]], Result[Parse[A]]]
     usage: Optional[str]
     helps: Dict[str, str]
@@ -366,11 +371,6 @@ class Parser(MonadPlus[A]):
         """
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
-
-__pdoc__["Parser.__add__"] = True
-__pdoc__["Parser.__or__"] = True
-__pdoc__["Parser.__rshift__"] = True
-__pdoc__["Parser.__ge__"] = True
 
 E = TypeVar("E", bound=MonadPlus)
 F = TypeVar("F")
