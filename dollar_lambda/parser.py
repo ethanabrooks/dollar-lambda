@@ -26,8 +26,6 @@ from dollar_lambda.parse import Parse
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
-__pdoc__ = {}
-
 A = TypeVar("A", bound=Monoid, covariant=True)
 B = TypeVar("B", bound=Monoid)
 C = TypeVar("C")
@@ -55,6 +53,9 @@ def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True)
     if len(no_nones) > 1 and add_brackets:
         usage = f"[{usage}]"
     return usage or None
+
+
+__pdoc__ = {}
 
 
 @dataclass
@@ -365,6 +366,11 @@ class Parser(MonadPlus[A]):
         """
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
+
+__pdoc__["Parser.__add__"] = True
+__pdoc__["Parser.__or__"] = True
+__pdoc__["Parser.__rshift__"] = True
+__pdoc__["Parser.__ge__"] = True
 
 E = TypeVar("E", bound=MonadPlus)
 F = TypeVar("F")
@@ -757,9 +763,3 @@ def type_(
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)
-
-
-__pdoc__["Parser.__add__"] = True
-__pdoc__["Parser.__or__"] = True
-__pdoc__["Parser.__rshift__"] = True
-__pdoc__["Parser.__ge__"] = True

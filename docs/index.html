@@ -39,6 +39,80 @@ args = parser.parse_args()
 </code></pre>
 <p>Here is the equivalent in this package:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
+...     (flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)),
+...     option(&quot;x&quot;, type=int),
+...     option(&quot;y&quot;, type=int),
+... ) &gt;&gt; done()
+...
+&gt;&gt;&gt; def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+</code></pre>
+<p>It succeeds for either <code>--verbose</code> or <code>--quiet</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;))
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--quiet&quot;))
+{'x': 1, 'y': 2, 'verbose': False, 'quiet': True}
+</code></pre>
+<p>But fails for both:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--quiet&quot;)
+usage: [--verbose | --quiet] -x X -y Y
+Unrecognized argument: --quiet
+</code></pre>
+<p>And fails for neither:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;)
+usage: [--verbose | --quiet] -x X -y Y
+Expected '--verbose'. Got '-x'
+</code></pre>
+<p>Let's walk through this step by step. First, let's learn what <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code>, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> and <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> do.</p>
+<h3 id="high-level-parsers">High-Level Parsers</h3>
+<p>These are functions that create high-level parsers. <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> binds a boolean value to a variable
+whereas <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> binds an arbitrary value to a variable. <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> does not bind any values to variables,
+but causes the parser to fail in some cases.</p>
+<h4 id="flag"><code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code></h4>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
+{'verbose': True}
+</code></pre>
+<p>By default <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> fails when it does not receive expected input:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args()
+usage: --verbose
+The following arguments are required: --verbose
+</code></pre>
+<p>Alternately, you can set a default value:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, default=False).parse_args()
+{'verbose': False}
+</code></pre>
+<h4 id="option"><code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code></h4>
+<p><code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> is similar but takes an argument:
+By default, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> expects a single <code>-</code> for single-character variable names (as in <code>-x</code>),
+as opposed to <code>--</code> for longer names (as in <code>--xenophon</code>):</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;).parse_args(&quot;-x&quot;, &quot;1&quot;)
+{'x': '1'}
+&gt;&gt;&gt; option(&quot;xenophon&quot;).parse_args(&quot;--xenophon&quot;, &quot;1&quot;)
+{'xenophon': '1'}
+</code></pre>
+<p>Use the <code>type</code> argument to convert the input to a different type:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;, type=int).parse_args(&quot;-x&quot;, &quot;1&quot;)  # converts &quot;1&quot; to an int
+{'x': 1}
+</code></pre>
+<h4 id="done"><code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code></h4>
+<p>Without <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> the parser will not complain about leftover (unparsed) input:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
+{'verbose': True}
+</code></pre>
+<p><code>--quiet</code> is not parsed here but this does not cause the parser to fail.
+If we want to prevent leftover inputs, we can use <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
+usage: --verbose
+Unrecognized argument: --quiet
+</code></pre>
+<p><code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> to behave in the way that you expect,
+but more on that later.</p>
+<h3 id="parser-combinators">Parser Combinators</h3>
+<p>Parser combinators are functions that combine multiple parsers into new, more complex parsers.
+Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <code>|</code> (or <code>Parser.__or__</code>),
+and <code>&gt;&gt;</code> (or <code>Parser.__rshift__</code>).</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
 ...     (
 ...         flag(&quot;verbose&quot;) + defaults(quiet=False)
 ...         | flag(&quot;quiet&quot;) + defaults(verbose=False)
@@ -242,6 +316,88 @@ args = parser.parse_args()
 ```
 
 Here is the equivalent in this package:
+
+&gt;&gt;&gt; p = nonpositional(
+...     (flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)),
+...     option(&#34;x&#34;, type=int),
+...     option(&#34;y&#34;, type=int),
+... ) &gt;&gt; done()
+...
+&gt;&gt;&gt; def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+
+It succeeds for either `--verbose` or `--quiet`:
+&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;))
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
+&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--quiet&#34;))
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: False, &#39;quiet&#39;: True}
+
+But fails for both:
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--quiet&#34;)
+usage: [--verbose | --quiet] -x X -y Y
+Unrecognized argument: --quiet
+
+And fails for neither:
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;)
+usage: [--verbose | --quiet] -x X -y Y
+Expected &#39;--verbose&#39;. Got &#39;-x&#39;
+
+Let&#39;s walk through this step by step. First, let&#39;s learn what `flag`, `option` and `done` do.
+
+### High-Level Parsers
+These are functions that create high-level parsers. `flag` binds a boolean value to a variable
+whereas `option` binds an arbitrary value to a variable. `done` does not bind any values to variables,
+but causes the parser to fail in some cases.
+
+#### `flag`
+&gt;&gt;&gt; p = flag(&#34;verbose&#34;)
+&gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+{&#39;verbose&#39;: True}
+
+By default `flag` fails when it does not receive expected input:
+&gt;&gt;&gt; p.parse_args()
+usage: --verbose
+The following arguments are required: --verbose
+
+Alternately, you can set a default value:
+&gt;&gt;&gt; flag(&#34;verbose&#34;, default=False).parse_args()
+{&#39;verbose&#39;: False}
+
+#### `option`
+`option` is similar but takes an argument:
+By default, `option` expects a single `-` for single-character variable names (as in `-x`),
+as opposed to `--` for longer names (as in `--xenophon`):
+
+&gt;&gt;&gt; option(&#34;x&#34;).parse_args(&#34;-x&#34;, &#34;1&#34;)
+{&#39;x&#39;: &#39;1&#39;}
+&gt;&gt;&gt; option(&#34;xenophon&#34;).parse_args(&#34;--xenophon&#34;, &#34;1&#34;)
+{&#39;xenophon&#39;: &#39;1&#39;}
+
+Use the `type` argument to convert the input to a different type:
+&gt;&gt;&gt; option(&#34;x&#34;, type=int).parse_args(&#34;-x&#34;, &#34;1&#34;)  # converts &#34;1&#34; to an int
+{&#39;x&#39;: 1}
+
+#### `done`
+Without `done` the parser will not complain about leftover (unparsed) input:
+
+&gt;&gt;&gt; flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
+{&#39;verbose&#39;: True}
+
+`--quiet` is not parsed here but this does not cause the parser to fail.
+If we want to prevent leftover inputs, we can use `done`:
+
+&gt;&gt;&gt; (flag(&#34;verbose&#34;) &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
+usage: --verbose
+Unrecognized argument: --quiet
+
+`done` is usually necessary to get `nonpositional` to behave in the way that you expect,
+but more on that later.
+
+### Parser Combinators
+Parser combinators are functions that combine multiple parsers into new, more complex parsers.
+Our example uses three such functions: `nonpositional`, `|` (or `Parser.__or__`),
+and `&gt;&gt;` (or `Parser.__rshift__`).
+
 
 &gt;&gt;&gt; p = nonpositional(
 ...     (
@@ -2044,7 +2200,16 @@ If it is, returns the usage message.</dd>
 <div class="toc">
 <ul>
 <li><a href="#examples">Examples</a><ul>
-<li><a href="#from-argparse">From argparse</a></li>
+<li><a href="#from-argparse">From argparse</a><ul>
+<li><a href="#high-level-parsers">High-Level Parsers</a><ul>
+<li><a href="#flag">flag</a></li>
+<li><a href="#option">option</a></li>
+<li><a href="#done">done</a></li>
+</ul>
+</li>
+<li><a href="#parser-combinators">Parser Combinators</a></li>
+</ul>
+</li>
 <li><a href="#from-click">From click</a></li>
 </ul>
 </li>
