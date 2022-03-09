@@ -289,6 +289,8 @@ usage: [dropdb | initdb]
 The following arguments are required: dropdb
 """
 
+__pdoc__ = {}
+
 from dollar_lambda.args import Args, field
 from dollar_lambda.parser import (
     Parser,
@@ -329,3 +331,9 @@ __all__ = [
     "field",
     "wrap_help",
 ]
+
+
+__pdoc__["Parser.__add__"] = True
+__pdoc__["Parser.__or__"] = True
+__pdoc__["Parser.__rshift__"] = True
+__pdoc__["Parser.__ge__"] = True
