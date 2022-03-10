@@ -33,7 +33,7 @@ Monoid2 = TypeVar("Monoid2", bound=Monoid)
 A = TypeVar("A")
 
 global TESTING
-TESTING = os.environ.get("TESTING", False)
+TESTING = os.environ.get("DOLLAR_LAMBDA_TESTING", False)
 
 
 def empty() -> Parser[Sequence]:
