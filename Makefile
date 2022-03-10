@@ -12,4 +12,6 @@ readme: readme.py
 
 docs: dollar_lambda/
 	rm -rf docs/
-	pdoc -o docs/ --html dollar_lambda
+	pdoc3 --html dollar_lambda
+	mv html/dollar_lambda docs/
+	rm -rf html

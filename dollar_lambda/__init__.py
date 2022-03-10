@@ -2,8 +2,8 @@
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
 
-# Examples
-## From `argparse`
+# Tutorials
+## Based on `argparse` example
 Here is an example developed in the `argparse` tutorial:
 
 ```
@@ -21,11 +21,11 @@ Here is the equivalent in this package:
 
 >>> p = nonpositional(
 ...     (flag("verbose") | flag("quiet")),
-...     option("x", type=int),
-...     option("y", type=int),
+...     option("x", type=int, help="the base"),
+...     option("y", type=int, help="the exponent"),
 ... ) >> done()
 ...
->>> def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+>>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
 It succeeds for either `--verbose` or `--quiet`:
@@ -37,11 +37,15 @@ It succeeds for either `--verbose` or `--quiet`:
 But fails for both:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
 usage: [--verbose | --quiet] -x X -y Y
+x: the base
+y: the exponent
 Unrecognized argument: --quiet
 
 And fails for neither:
 >>> p.parse_args("-x", "1", "-y", "2")
 usage: [--verbose | --quiet] -x X -y Y
+x: the base
+y: the exponent
 Expected '--verbose'. Got '-x'
 
 Let's walk through this step by step. First, let's learn what `flag`, `option` and `done` do.
@@ -97,111 +101,263 @@ but more on that later.
 
 ### Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: `nonpositional`, `|` (or `Parser.__or__`),
-and `>>` (or `Parser.__rshift__`).
+Our example uses three such functions: `nonpositional`, `|` or `Parser.__or__`,
+and `>>` or `Parser.__rshift__`.
 
+#### `Parser.__or__`
+
+The `|` operator is used for alternatives. Specifically, it will try the first parser,
+and if that fails, try the second:
+
+>>> p = flag("verbose") | flag("quiet")
+>>> p.parse_args("--quiet") # flag("verbose") fails
+{'quiet': True}
+>>> p.parse_args("--verbose") # flag("verbose") succeeds
+{'verbose': True}
+
+By default one of the two flags would be required to prevent failure:
+>>> p.parse_args() # neither flag is provided so this fails
+usage: [--verbose | --quiet]
+The following arguments are required: --verbose
+
+To permit the omission of both flags, use `empty` or supply a default value:
+
+>>> (flag("verbose") | flag("quiet") | empty()).parse_args() # flags fail, but empty() succeeds
+{}
+>>> (flag("verbose") | flag("quiet", default=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
+{'quiet': False}
+
+This is just sugar for
+
+>>> (flag("verbose") | flag("quiet") | defaults(quiet=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
+{'quiet': False}
+
+#### `Parser.__rshift__`
+
+The `>>` operator is used for sequential composition. It applies the first parser and then
+hands the output of the first parser to the second parser. If either parser fails, the composition fails:
+
+>>> p = flag("verbose") >> done()
+>>> p.parse_args("--verbose")
+{'verbose': True}
+>>> p.parse_args("--something-else")  # first parser will fail
+usage: --verbose
+Expected '--verbose'. Got '--something-else'
+>>> p.parse_args("--verbose", "--something-else")  # second parser will fail
+usage: --verbose
+Unrecognized argument: --something-else
+
+#### nonpositional
+`nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
+returning the first permutations that is successful:
+
+>>> p = nonpositional(flag("verbose"), flag("quiet"))
+>>> p.parse_args("--verbose", "--quiet")
+{'verbose': True, 'quiet': True}
+>>> p.parse_args("--quiet", "--verbose")  # reverse order also works
+{'quiet': True, 'verbose': True}
+
+For just two parsers you can use `+`, or `Parser.__add__`, instead of `nonpositional`:
+>>> p = flag("verbose") + flag("quiet")
+>>> p.parse_args("--verbose", "--quiet")
+{'verbose': True, 'quiet': True}
+>>> p.parse_args("--quiet", "--verbose")  # reverse order also works
+{'quiet': True, 'verbose': True}
+
+This will not cover all permutations for more than two parsers:
+>>> p = flag("verbose") + flag("quiet") + option("x")
+>>> p.parse_args("--verbose", "-x", "1", "--quiet")
+usage: --verbose --quiet -x X
+Expected '--quiet'. Got '-x'
+
+To see why note the implicit parentheses:
+>>> p = (flag("verbose") + flag("quiet")) + option("x")
+
+In order to cover the case where `-x` comes between `--verbose` and `--quiet`,
+use `nonpositional`:
+>>> p = nonpositional(flag("verbose"), flag("quiet"), option("x"))
+>>> p.parse_args("--verbose", "-x", "1", "--quiet")  # works
+{'verbose': True, 'x': '1', 'quiet': True}
+
+If alternatives or defaults appear among the arguments to `nonpositional`, you will probably want
+to add `>>` followed by `done` (or another parser) after `nonpositional`. Otherwise,
+the parser will not behave as expected:
+
+>>> p = nonpositional(flag("verbose", default=False), flag("quiet"))
+>>> p.parse_args("--quiet", "--verbose")  # you expect this to bind `True` to `verbose`, but it doesn't
+{'verbose': False, 'quiet': True}
+
+Why is happening? Both permutions, `flag("verbose", default=False) >> flag("quiet")` and
+`flag("quiet") >> flag("verbose", default=False)` are succeeding. This first succeeds by falling
+back to the default, and leaving the last word of the input, `--verbose`, unparsed.
+Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
+
+Now let's add `>> done()` to the end:
+>>> p = nonpositional(flag("verbose", default=False), flag("quiet")) >> done()
+
+This ensures that the first permutation will fail because the leftover `--verbose` input will
+cause the `done` parser to fail:
+>>> p.parse_args("--quiet", "--verbose")
+{'quiet': True, 'verbose': True}
+
+### Putting it all together
+Let's recall the original example:
+
+>>> p = nonpositional(
+...     (flag("verbose") | flag("quiet")),
+...     option("x", type=int, help="the base"),
+...     option("y", type=int, help="the exponent"),
+... ) >> done()
+...
+>>> def main(x, y, verbose=False, quiet=False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+
+As we've seen `flag("verbose") | flag("quiet")` succeeds on either `--verbose` or `--quiet`
+(but one or the other is required).
+
+`option("x", type=int)` succeeds on `-x X`, where `X` is
+some integer, binding that integer to the variable `"x"`. Similarly for `option("y", type=int)`.
+
+`nonpositional` takes the three parsers:
+
+- `flag("verbose") | flag("quiet")`
+- `option("x", type=int)`
+- `option("y", type=int)`
+
+and applies them in every order, until some order succeeds.
+Finally `done()` ensures that only one of these parser permutations will succeed, preventing ambiguity.
+
+### Alternative syntax
+
+#### `Args`
+
+There are two alternative ways to express the same functionality. First, if there were many more
+arguments to `nonpositional`, we might want to use `Args`, which is sugar for `nonpositional`
+and slightly less expressive:
+
+>>> from dataclasses import dataclass
+>>> @dataclass  # make sure not to forget this!
+... class MyArgs(Args):
+...    x: int = field(help="the base")
+...    y: int = field(help="the exponent")
+
+Make sure to import `field` from `dollar_lambda`, not from `dataclasses`.
+
+>>> p1 = flag("verbose") | flag("quiet")
+>>> p = MyArgs.parser() + p1 >> done()
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+{'x': 1, 'y': 2, 'verbose': True}
+
+#### `defaults`
+
+In our examples, default values are defined in a separate `main` function. Some users will
+prefer defining defaults in the parser definition, as in most parsing libraries.
+In many cases, one can do this using `Args`:
+
+>>> @dataclass  # make sure not to forget this!
+... class MyArgs(Args):
+...    x: int = field(help="the base", default=1)
+...    y: int = field(help="the exponent", default=2)
+
+>>> MyArgs.parse_args()
+{'x': 1, 'y': 2}
+
+But since the logic of our original example is a bit more complicated, we will need to use the `defaults`
+parser instead. Here is how:
 
 >>> p = nonpositional(
 ...     (
-...         flag("verbose") + defaults(quiet=False)
-...         | flag("quiet") + defaults(verbose=False)
+...         flag("verbose") + defaults(quiet=False)  # either --verbose and default "quiet" to False
+...         | flag("quiet") + defaults(verbose=False)  # or --quiet and default "verbose" to False
 ...     ),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
 ... ) >> done()
 
-Let's see it in action:
+Now we don't need a separate function to provide default values:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
->>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
-usage: [--verbose | --quiet] -x X -y Y
-x: the base
-y: the exponent
-Unrecognized argument: --quiet
 
-For `add_mutually_exclusive_group(required=False)`:
+### Variations on the example
+#### Something `argparse` can't do
 
->>> p = nonpositional(
-...     (
-...         defaults(quiet=False, verbose=False)
-...         | flag("verbose") + defaults(quiet=False)
-...         | flag("quiet") + defaults(verbose=False)
-...     ),
-...     option("x", type=int),
-...     option("y", type=int),
-... ) >> done()
-
-Now you can omit both `--quiet` and `--verbose`:
->>> p.parse_args("-x", "1", "-y", "2")
-{'quiet': False, 'verbose': False, 'x': 1, 'y': 2}
-
-Use of the `defaults` function is usually not required except for more logically
-complex parsers like this one.
-For this situation, an alternative would be to use a `main` function as the
-"source of truth" for defaults:
-
->>> p = nonpositional(
-...     (
-...         empty()  # without this, either --verbose or --quiet is required
-...         | flag("verbose")
-...         | flag("quiet")
-...     ),
-...     option("x", type=int),
-...     option("y", type=int),
-... ) >> done()
-...
->>> def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
-...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
->>> main(**p.parse_args("-x", "1", "-y", "2"))
-{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
->>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
-{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
->>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
-usage: [--verbose | --quiet] -x X -y Y
-Unrecognized argument: --verbose
-
-Here is something you cannot do with argparse: what if there was a special argument, `verbosity`,
+What if there was a special argument, `verbosity`,
 that only makes sense if the user chooses `--verbose`?
 
->>> p = nonpositional(
-...     (
-...         defaults(verbose=False, quiet=False)
-...         | (
-...             flag("verbose")
-...             + option("verbosity", type=int)
-...             + defaults(quiet=False)
-...         )
-...         | flag("quiet") + defaults(verbose=False)
-...     ),
-...     option("x", type=int),
-...     option("y", type=int),
-... ) >> done()
+>>> p = (
+...     nonpositional(
+...         ((flag("verbose") + option("verbosity", type=int)) | flag("quiet")),
+...         option("x", type=int),
+...         option("y", type=int),
+...     )
+...     >> done()
+... )
+
+Remember that `+` or `Parser.__add__` evaluates two parsers in both orders
+and stopping at the first order that succeeds. So this allows us to
+supply `--verbose` and `--verbosity` in any order.
 
 Now:
 >>> p.parse_args("-x", "1", "-y", "2", "--quiet")
-{'x': 1, 'y': 2, 'quiet': True, 'verbose': False}
+{'x': 1, 'y': 2, 'quiet': True}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
-{'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3, 'quiet': False}
+{'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
-Unrecognized argument: --verbose
+Expected '--verbose'. Got '-x'
 
-What if we want to specify verbosity by the number of times that `--verbose` or `-v` appears?
+#### `Parser.many`
 
->>> p = nonpositional(
-...     (
-...         flag("verbose").many1() + defaults(quiet=False)  # note .many1()
-...         | flag("quiet") + defaults(verbose=False)
-...     ),
-...     option("x", type=int),
-...     option("y", type=int),
-... ) >> done()
->>> args = p.parse_args("-x", "1", "-y", "2", "-v", "--verbose", return_dict=False)
+What if we want to specify verbosity by the number of times that `--verbose` appears?
+For this we need `Parser.many`. Before showing how we could use `Parser.many` in this setting,
+let's look at how it works.
+
+`parser.many` takes `parser` and tries to apply it as many times as possible.
+`Parser.many` is a bit like the `*` pattern, if you are familiar with regexes.
+`parser.many` always succeeds:
+
+>>> p = flag("verbose").many()
+>>> p.parse_args()  # succeeds
+{}
+>>> p.parse_args("blah")  # still succeeds
+{}
+>>> p.parse_args("--verbose", "blah")  # still succeeds
+{'verbose': True}
+>>> p.parse_args("--verbose", "--verbose", return_dict=False)
+[('verbose', True), ('verbose', True)]
+
+As you can see, `return_dict=False` returns a list of tuples instead of a dict, so that you
+can have duplicate keys.
+
+Now returning to the original example:
+
+>>> p = (
+...     nonpositional(
+...         flag("verbose").many(),
+...         option("x", type=int),
+...         option("y", type=int),
+...     )
+...     >> done()
+... )
+>>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose", return_dict=False)
 >>> args
-[('x', 1), ('y', 2), ('verbose', True), ('verbose', True), ('quiet', False)]
+[('x', 1), ('y', 2), ('verbose', True), ('verbose', True)]
 >>> verbosity = args.count(('verbose', True))
 >>> verbosity
 2
+
+#### `Parser.many1`
+
+
+
+>>> p = (
+...     nonpositional(
+...         ((flag("verbose").many1()) | flag("quiet")),
+...         option("x", type=int),
+...         option("y", type=int),
+...     )
+...     >> done()
+... )
 
 You can also customize the order of the arguments:
 >>> p = (
@@ -288,6 +444,7 @@ Dropped the database
 usage: [dropdb | initdb]
 The following arguments are required: dropdb
 """
+
 
 __pdoc__ = {}
 
