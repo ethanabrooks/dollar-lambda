@@ -11,7 +11,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, equals, wrap_help
+from dollar_lambda.parser import Parse, Parser, done, empty, equals, wrap_help
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -127,6 +127,7 @@ class Node:
     function: Callable
     flip_bools: bool
     help: Optional[Dict[str, str]]
+    required: bool
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
     tree: Optional["CommandTree"]
@@ -176,16 +177,18 @@ class CommandTree:
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    >>> @f1.subcommand()
+    >>> @f1.subcommand(required=False)
     ... def f2(a: int, b: bool):
     ...     return dict(f2=dict(a=a, b=b))
 
-    >>> @f1.subcommand()
+    >>> @f1.subcommand(required=False)
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(a=a, c=c))
 
     >>> tree.main("-h")
     usage: -a A [f2 -b | f3 -c C]
+    >>> tree.main("-a", "1")
+    {'f1': {'a': 1}}
     >>> tree.main("-a", "1", "f2", "-b")
     {'f2': {'a': 1, 'b': True}}
     >>> tree.main("-a", "1", "f3", "-c", "x")
@@ -193,16 +196,19 @@ class CommandTree:
     """
 
     children: List[Node] = field(default_factory=list)
+    required: bool = False
 
     def command(
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
+        required: bool = False,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         return self.decorator(
             flip_bools=flip_bools,
             help=help,
+            required=required,
             types=types,
             subcommand=False,
         )
@@ -222,6 +228,8 @@ class CommandTree:
             )
 
         def get_alternatives() -> Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
+            if not self.required:
+                yield cast(Parser[FunctionPair[KeyValue[Any]]], empty())
             for child in self.children:
                 parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree.children:
@@ -236,7 +244,7 @@ class CommandTree:
 
     def main(self, *args: str) -> Any:
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
-        p = self.parser()
+        p = self.parser() >> done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             p.handle_error(result)
@@ -245,18 +253,20 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair: FunctionPair = result.head.parsed
+        pair = cast(FunctionPair, result.head.parsed)
         return pair.function(**{kv.key: kv.value for kv in pair.get})
 
     def subcommand(
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
+        required: bool = False,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         return self.decorator(
             flip_bools=flip_bools,
             help=help,
+            required=required,
             types=types,
             subcommand=True,
         )
