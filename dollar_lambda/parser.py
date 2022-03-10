@@ -458,6 +458,19 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
 
 
 def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
+    """
+    >>> p = nonpositional(
+    ...     (
+    ...         flag("verbose") + defaults(quiet=False)  # either --verbose and default "quiet" to False
+    ...         | flag("quiet") + defaults(verbose=False)  # or --quiet and default "verbose" to False
+    ...     ),
+    ...     option("x", type=int, help="the base"),
+    ...     option("y", type=int, help="the exponent"),
+    ... ) >> done()
+
+    >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+    {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+    """
     p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
     return replace(p, usage=None)
 

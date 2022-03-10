@@ -270,20 +270,22 @@ class Parser(MonadPlus[A_co]):
         return cls.return_(Sequence([]))
 
     def handle_error(self, error: ArgumentError) -&gt; None:
-        if self.usage and not isinstance(error, HelpError):
-            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
-            if &#34;\n&#34; in self.usage:
-                usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
-            else:
-                usage = self.usage
+        def print_usage(usage: str):
+            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+            if &#34;\n&#34; in usage:
+                usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
             print(usage)
-        if self.helps:
-            for k, v in self.helps.items():
-                print(f&#34;{k}: {v}&#34;)
-        if error.usage:
-            if isinstance(error, HelpError):
-                print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in error.usage else &#34; &#34;)
-            print(error.usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f&#34;{k}: {v}&#34;)
+
+        if isinstance(error, HelpError):
+            print_usage(error.usage)
+        else:
+            if self.usage:
+                print_usage(self.usage)
+            if error.usage:
+                print(error.usage)
 
     def many(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
         &#34;&#34;&#34;
@@ -485,6 +487,19 @@ def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
 
 
 def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = nonpositional(
+    ...     (
+    ...         flag(&#34;verbose&#34;) + defaults(quiet=False)  # either --verbose and default &#34;quiet&#34; to False
+    ...         | flag(&#34;quiet&#34;) + defaults(verbose=False)  # or --quiet and default &#34;verbose&#34; to False
+    ...     ),
+    ...     option(&#34;x&#34;, type=int, help=&#34;the base&#34;),
+    ...     option(&#34;y&#34;, type=int, help=&#34;the exponent&#34;),
+    ... ) &gt;&gt; done()
+
+    &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)
+    {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
+    &#34;&#34;&#34;
     p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
     return replace(p, usage=None)
 
@@ -943,12 +958,36 @@ The following arguments are required: name
 <span>def <span class="ident">defaults</span></span>(<span>**kwargs: Any) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
+...     (
+...         flag(&quot;verbose&quot;) + defaults(quiet=False)  # either --verbose and default &quot;quiet&quot; to False
+...         | flag(&quot;quiet&quot;) + defaults(verbose=False)  # or --quiet and default &quot;verbose&quot; to False
+...     ),
+...     option(&quot;x&quot;, type=int, help=&quot;the base&quot;),
+...     option(&quot;y&quot;, type=int, help=&quot;the exponent&quot;),
+... ) &gt;&gt; done()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; p = nonpositional(
+    ...     (
+    ...         flag(&#34;verbose&#34;) + defaults(quiet=False)  # either --verbose and default &#34;quiet&#34; to False
+    ...         | flag(&#34;quiet&#34;) + defaults(verbose=False)  # or --quiet and default &#34;verbose&#34; to False
+    ...     ),
+    ...     option(&#34;x&#34;, type=int, help=&#34;the base&#34;),
+    ...     option(&#34;y&#34;, type=int, help=&#34;the exponent&#34;),
+    ... ) &gt;&gt; done()
+
+    &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)
+    {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
+    &#34;&#34;&#34;
     p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
     return replace(p, usage=None)</code></pre>
 </details>
@@ -1750,20 +1789,22 @@ class Parser(MonadPlus[A_co]):
         return cls.return_(Sequence([]))
 
     def handle_error(self, error: ArgumentError) -&gt; None:
-        if self.usage and not isinstance(error, HelpError):
-            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
-            if &#34;\n&#34; in self.usage:
-                usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
-            else:
-                usage = self.usage
+        def print_usage(usage: str):
+            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+            if &#34;\n&#34; in usage:
+                usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
             print(usage)
-        if self.helps:
-            for k, v in self.helps.items():
-                print(f&#34;{k}: {v}&#34;)
-        if error.usage:
-            if isinstance(error, HelpError):
-                print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in error.usage else &#34; &#34;)
-            print(error.usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f&#34;{k}: {v}&#34;)
+
+        if isinstance(error, HelpError):
+            print_usage(error.usage)
+        else:
+            if self.usage:
+                print_usage(self.usage)
+            if error.usage:
+                print(error.usage)
 
     def many(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
         &#34;&#34;&#34;
@@ -2314,20 +2355,22 @@ Expected 'a'. Got 'b'
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
-    if self.usage and not isinstance(error, HelpError):
-        print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
-        if &#34;\n&#34; in self.usage:
-            usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in self.usage.split(&#34;\n&#34;)])
-        else:
-            usage = self.usage
+    def print_usage(usage: str):
+        print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+        if &#34;\n&#34; in usage:
+            usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
         print(usage)
-    if self.helps:
-        for k, v in self.helps.items():
-            print(f&#34;{k}: {v}&#34;)
-    if error.usage:
-        if isinstance(error, HelpError):
-            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in error.usage else &#34; &#34;)
-        print(error.usage)</code></pre>
+        if self.helps:
+            for k, v in self.helps.items():
+                print(f&#34;{k}: {v}&#34;)
+
+    if isinstance(error, HelpError):
+        print_usage(error.usage)
+    else:
+        if self.usage:
+            print_usage(self.usage)
+        if error.usage:
+            print(error.usage)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.many"><code class="name flex">

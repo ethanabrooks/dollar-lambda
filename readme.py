@@ -23,8 +23,7 @@
 #
 # - versatile
 # - type-safe
-# - intuitive (with a little practice)
-# - and (in many cases) concise
+# - and concise
 #
 # argument parser on the market.
 #
@@ -35,12 +34,9 @@
 # `$λ` uses type annotations as much as Python allows. Types are checked
 # using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
 # so that users can also benefit from the type system.
-# ### Intuitive
-# The way that `$λ` parsers are written, they almost look like the "usage" messages
-# that we are all used to.
 # ### Concise
-# `$λ` uses Python's builtin operators and [`dataclasses`](https://docs.python.org/3/library/dataclasses.html)
-# to enable users to write parsers with minimal boilerplate.
+# `$λ` provides a variety of syntactic sugar options that enable users
+# to write parsers with minimal boilerplate.
 #
 #
 # Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life.
