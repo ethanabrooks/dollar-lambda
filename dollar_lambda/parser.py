@@ -316,6 +316,18 @@ class Parser(MonadPlus[A_co]):
         )
 
     def optional(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+        """
+        Allows arguments to be optional:
+        >>> p1 = flag("optional") >> done()
+        >>> p = p1.optional()
+        >>> p.parse_args("--optional")
+        {'optional': True}
+        >>> p.parse_args("--misspelled")  # succeeds with no output
+        {}
+        >>> p1.parse_args("--misspelled")
+        usage: --optional
+        Expected '--optional'. Got '--misspelled'
+        """
         return self | self.empty()
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A_co]]:
@@ -413,7 +425,16 @@ def apply(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -> Parser[Monoid_co]:
     """
-    Take the output of `parser` and apply `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+
+    >>> p1 = flag("hello")
+    >>> p1.parse_args("--hello", return_dict=False)
+    [('hello', True)]
+
+    This will double `p1`'s output:
+    >>> p2 = apply(lambda kv: Result.return_(kv + kv), p1)
+    >>> p2.parse_args("--hello", return_dict=False)
+    [('hello', True), ('hello', True)]
     """
 
     def g(a: Monoid1) -> Parser[Monoid_co]:
@@ -434,6 +455,20 @@ def apply(
 
 
 def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid_co]:
+    """
+    A shortcut for `apply(f, item(description))`
+    and spares `f` the trouble of outputting a result:
+
+    >>> p1 = argument("foo")
+    >>> p1.parse_args("bar", return_dict=False)
+    [('foo', 'bar')]
+
+    This will double `p1`'s output:
+    >>> p2 = apply_item(lambda bar: [KeyValue(bar + "e", bar + "f")], description="baz")
+    >>> p2.parse_args("bar", return_dict=False)
+    [('bare', 'barf')]
+    """
+
     def g(parsed: Sequence[KeyValue[str]]) -> Result[Monoid_co]:
         [kv] = parsed
         try:
@@ -448,6 +483,9 @@ def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid
 
 def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
     """
+    Parses a single word and binds it to `dest`.
+    Useful for positional arguments.
+
     >>> argument("name").parse_args("Alice")
     {'name': 'Alice'}
     >>> argument("name").parse_args()
@@ -459,6 +497,16 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
 
 def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
     """
+    Useful for assigning default values to arguments.
+    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
+    `defaults` never fails.
+
+    >>> defaults(a=1, b=2).parse_args()
+    {'a': 1, 'b': 2}
+    >>> (flag("fails") | defaults(fails="succeeds")).parse_args()
+    {'fails': 'succeeds'}
+
+    Here's a more complex example derived from the tutorial:
     >>> p = nonpositional(
     ...     (
     ...         flag("verbose") + defaults(quiet=False)  # either --verbose and default "quiet" to False
@@ -477,6 +525,7 @@ def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
 
 def done() -> Parser[Sequence[A]]:
     """
+    This parser
     >>> done().parse_args()
     {}
     >>> done().parse_args("arg")
@@ -505,6 +554,36 @@ def done() -> Parser[Sequence[A]]:
 
 
 def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
+    """
+    Checks if the next word is `s`.
+
+    Parameters
+    ----------
+    peak : bool
+        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    >>> equals("hello").parse_args("hello")
+    {'hello': 'hello'}
+    >>> equals("hello").parse_args("goodbye")
+    usage: hello
+    Expected 'hello'. Got 'goodbye'
+    >>> p = equals("hello") >> equals("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    {'hello': 'hello', 'goodbye': 'goodbye'}
+
+    Look what happens when `peak=True`:
+    >>> p = equals("hello", peak=True) >> equals("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    usage: hello goodbye
+    Expected 'goodbye'. Got 'hello'
+
+    The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
+    But this would work:
+    >>> p = equals("hello", peak=True) >> equals("hello") >>equals("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    {'hello': 'hello', 'goodbye': 'goodbye'}
+    """
     if peak:
         return sat_peak(
             predicate=lambda _s: _s == s,
@@ -531,34 +610,38 @@ def flag(
     string: Optional[str] = None,
 ) -> Parser[Sequence[KeyValue[bool]]]:
     """
-    >>> p = flag("verbose", default=False)
+    Binds a boolean value to a variable.
+
+    Parameters
+    ----------
+    dest : str
+        The variable to which the value will be bound.
+    default : Optional[bool]
+        An optional default value.
+    help : Optional[str]
+        An optional help string.
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+
+    >>> p = flag("verbose")
     >>> p.parse_args("--verbose")
     {'verbose': True}
+
+    By default `flag` fails when it does not receive expected input:
     >>> p.parse_args()
+    usage: --verbose
+    The following arguments are required: --verbose
+
+    Alternately, you can set a default value:
+    >>> flag("verbose", default=False).parse_args()
     {'verbose': False}
-    >>> p.parse_args("--verbose", "--verbose", "--verbose")
-    {'verbose': True}
+
     >>> flag("v", string="--value").parse_args("--value")
     {'v': True}
-
-    >>> p1 = flag("verbose", default=False) | flag("quiet", default=False) | flag("yes", default=False)
-    >>> p = p1 >> done()
-    >>> p.parse_args("--verbose", "value")
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    >>> p.parse_args("value")
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    >>> p.parse_args("--verbose")
-    {'verbose': True}
-    >>> p1 = flag("verbose") | flag("quiet") | flag("yes")
-    >>> p = p1 >> argument("a")
-    >>> p.parse_args("--verbose")
-    usage: [[--verbose | --quiet] | --yes] a
-    The following arguments are required: a
-    >>> p.parse_args("a")
-    usage: [[--verbose | --quiet] | --yes] a
-    Expected '--verbose'. Got 'a'
     """
     if string is None:
         _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"

@@ -345,6 +345,18 @@ class Parser(MonadPlus[A_co]):
         )
 
     def optional(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+        &#34;&#34;&#34;
+        Allows arguments to be optional:
+        &gt;&gt;&gt; p1 = flag(&#34;optional&#34;) &gt;&gt; done()
+        &gt;&gt;&gt; p = p1.optional()
+        &gt;&gt;&gt; p.parse_args(&#34;--optional&#34;)
+        {&#39;optional&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--misspelled&#34;)  # succeeds with no output
+        {}
+        &gt;&gt;&gt; p1.parse_args(&#34;--misspelled&#34;)
+        usage: --optional
+        Expected &#39;--optional&#39;. Got &#39;--misspelled&#39;
+        &#34;&#34;&#34;
         return self | self.empty()
 
     def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -442,7 +454,16 @@ def apply(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -&gt; Parser[Monoid_co]:
     &#34;&#34;&#34;
-    Take the output of `parser` and apply `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+
+    &gt;&gt;&gt; p1 = flag(&#34;hello&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;--hello&#34;, return_dict=False)
+    [(&#39;hello&#39;, True)]
+
+    This will double `p1`&#39;s output:
+    &gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
+    &gt;&gt;&gt; p2.parse_args(&#34;--hello&#34;, return_dict=False)
+    [(&#39;hello&#39;, True), (&#39;hello&#39;, True)]
     &#34;&#34;&#34;
 
     def g(a: Monoid1) -&gt; Parser[Monoid_co]:
@@ -463,6 +484,20 @@ def apply(
 
 
 def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Monoid_co]:
+    &#34;&#34;&#34;
+    A shortcut for `apply(f, item(description))`
+    and spares `f` the trouble of outputting a result:
+
+    &gt;&gt;&gt; p1 = argument(&#34;foo&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;bar&#34;, return_dict=False)
+    [(&#39;foo&#39;, &#39;bar&#39;)]
+
+    This will double `p1`&#39;s output:
+    &gt;&gt;&gt; p2 = apply_item(lambda bar: [KeyValue(bar + &#34;e&#34;, bar + &#34;f&#34;)], description=&#34;baz&#34;)
+    &gt;&gt;&gt; p2.parse_args(&#34;bar&#34;, return_dict=False)
+    [(&#39;bare&#39;, &#39;barf&#39;)]
+    &#34;&#34;&#34;
+
     def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[Monoid_co]:
         [kv] = parsed
         try:
@@ -477,6 +512,9 @@ def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Mon
 
 def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
+    Parses a single word and binds it to `dest`.
+    Useful for positional arguments.
+
     &gt;&gt;&gt; argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
     {&#39;name&#39;: &#39;Alice&#39;}
     &gt;&gt;&gt; argument(&#34;name&#34;).parse_args()
@@ -488,6 +526,16 @@ def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
 
 def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
+    Useful for assigning default values to arguments.
+    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
+    `defaults` never fails.
+
+    &gt;&gt;&gt; defaults(a=1, b=2).parse_args()
+    {&#39;a&#39;: 1, &#39;b&#39;: 2}
+    &gt;&gt;&gt; (flag(&#34;fails&#34;) | defaults(fails=&#34;succeeds&#34;)).parse_args()
+    {&#39;fails&#39;: &#39;succeeds&#39;}
+
+    Here&#39;s a more complex example derived from the tutorial:
     &gt;&gt;&gt; p = nonpositional(
     ...     (
     ...         flag(&#34;verbose&#34;) + defaults(quiet=False)  # either --verbose and default &#34;quiet&#34; to False
@@ -506,6 +554,7 @@ def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
 
 def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
+    This parser
     &gt;&gt;&gt; done().parse_args()
     {}
     &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
@@ -534,6 +583,36 @@ def done() -&gt; Parser[Sequence[A]]:
 
 
 def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    Checks if the next word is `s`.
+
+    Parameters
+    ----------
+    peak : bool
+        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;hello&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;}
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
+    usage: hello
+    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
+
+    Look what happens when `peak=True`:
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    usage: hello goodbye
+    Expected &#39;goodbye&#39;. Got &#39;hello&#39;
+
+    The first parser didn&#39;t consume the word and so &#34;hello&#34; got passed on to `equals(&#34;goodbye&#34;)`.
+    But this would work:
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
+    &#34;&#34;&#34;
     if peak:
         return sat_peak(
             predicate=lambda _s: _s == s,
@@ -560,34 +639,38 @@ def flag(
     string: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[bool]]]:
     &#34;&#34;&#34;
-    &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
+    Binds a boolean value to a variable.
+
+    Parameters
+    ----------
+    dest : str
+        The variable to which the value will be bound.
+    default : Optional[bool]
+        An optional default value.
+    help : Optional[str]
+        An optional help string.
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
     {&#39;verbose&#39;: True}
+
+    By default `flag` fails when it does not receive expected input:
     &gt;&gt;&gt; p.parse_args()
+    usage: --verbose
+    The following arguments are required: --verbose
+
+    Alternately, you can set a default value:
+    &gt;&gt;&gt; flag(&#34;verbose&#34;, default=False).parse_args()
     {&#39;verbose&#39;: False}
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
+
     &gt;&gt;&gt; flag(&#34;v&#34;, string=&#34;--value&#34;).parse_args(&#34;--value&#34;)
     {&#39;v&#39;: True}
-
-    &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;, default=False) | flag(&#34;quiet&#34;, default=False) | flag(&#34;yes&#34;, default=False)
-    &gt;&gt;&gt; p = p1 &gt;&gt; done()
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
-    &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;) | flag(&#34;yes&#34;)
-    &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    usage: [[--verbose | --quiet] | --yes] a
-    The following arguments are required: a
-    &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
-    usage: [[--verbose | --quiet] | --yes] a
-    Expected &#39;--verbose&#39;. Got &#39;a&#39;
     &#34;&#34;&#34;
     if string is None:
         _string = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
@@ -858,7 +941,16 @@ def type_(
 <span>def <span class="ident">apply</span></span>(<span>f: Callable[[Monoid1], Result[Monoid_co]], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Monoid1]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+Monoid_co]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Take the output of <code>parser</code> and apply <code>f</code> to it. Convert any errors that arise into <code>ArgumentError</code>.</p></div>
+<div class="desc"><p>Takes the output of <code>parser</code> and applies <code>f</code> to it. Convert any errors that arise into <code>ArgumentError</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;hello&quot;)
+&gt;&gt;&gt; p1.parse_args(&quot;--hello&quot;, return_dict=False)
+[('hello', True)]
+</code></pre>
+<p>This will double <code>p1</code>'s output:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
+&gt;&gt;&gt; p2.parse_args(&quot;--hello&quot;, return_dict=False)
+[('hello', True), ('hello', True)]
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -867,7 +959,16 @@ def type_(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -&gt; Parser[Monoid_co]:
     &#34;&#34;&#34;
-    Take the output of `parser` and apply `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+
+    &gt;&gt;&gt; p1 = flag(&#34;hello&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;--hello&#34;, return_dict=False)
+    [(&#39;hello&#39;, True)]
+
+    This will double `p1`&#39;s output:
+    &gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
+    &gt;&gt;&gt; p2.parse_args(&#34;--hello&#34;, return_dict=False)
+    [(&#39;hello&#39;, True), (&#39;hello&#39;, True)]
     &#34;&#34;&#34;
 
     def g(a: Monoid1) -&gt; Parser[Monoid_co]:
@@ -891,12 +992,36 @@ def type_(
 <span>def <span class="ident">apply_item</span></span>(<span>f: Callable[[str], Monoid_co], description: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+Monoid_co]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>A shortcut for <code><a title="dollar_lambda.parser.apply" href="#dollar_lambda.parser.apply">apply()</a>(f, <a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a>(description))</code>
+and spares <code>f</code> the trouble of outputting a result:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;foo&quot;)
+&gt;&gt;&gt; p1.parse_args(&quot;bar&quot;, return_dict=False)
+[('foo', 'bar')]
+</code></pre>
+<p>This will double <code>p1</code>'s output:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply_item(lambda bar: [KeyValue(bar + &quot;e&quot;, bar + &quot;f&quot;)], description=&quot;baz&quot;)
+&gt;&gt;&gt; p2.parse_args(&quot;bar&quot;, return_dict=False)
+[('bare', 'barf')]
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Monoid_co]:
+    &#34;&#34;&#34;
+    A shortcut for `apply(f, item(description))`
+    and spares `f` the trouble of outputting a result:
+
+    &gt;&gt;&gt; p1 = argument(&#34;foo&#34;)
+    &gt;&gt;&gt; p1.parse_args(&#34;bar&#34;, return_dict=False)
+    [(&#39;foo&#39;, &#39;bar&#39;)]
+
+    This will double `p1`&#39;s output:
+    &gt;&gt;&gt; p2 = apply_item(lambda bar: [KeyValue(bar + &#34;e&#34;, bar + &#34;f&#34;)], description=&#34;baz&#34;)
+    &gt;&gt;&gt; p2.parse_args(&#34;bar&#34;, return_dict=False)
+    [(&#39;bare&#39;, &#39;barf&#39;)]
+    &#34;&#34;&#34;
+
     def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[Monoid_co]:
         [kv] = parsed
         try:
@@ -913,7 +1038,9 @@ def type_(
 <span>def <span class="ident">argument</span></span>(<span>dest: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;name&quot;).parse_args(&quot;Alice&quot;)
+<div class="desc"><p>Parses a single word and binds it to <code>dest</code>.
+Useful for positional arguments.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;name&quot;).parse_args(&quot;Alice&quot;)
 {'name': 'Alice'}
 &gt;&gt;&gt; argument(&quot;name&quot;).parse_args()
 usage: name
@@ -925,6 +1052,9 @@ The following arguments are required: name
 </summary>
 <pre><code class="python">def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
+    Parses a single word and binds it to `dest`.
+    Useful for positional arguments.
+
     &gt;&gt;&gt; argument(&#34;name&#34;).parse_args(&#34;Alice&#34;)
     {&#39;name&#39;: &#39;Alice&#39;}
     &gt;&gt;&gt; argument(&#34;name&#34;).parse_args()
@@ -958,7 +1088,16 @@ The following arguments are required: name
 <span>def <span class="ident">defaults</span></span>(<span>**kwargs: Any) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
+<div class="desc"><p>Useful for assigning default values to arguments.
+It ignore the input and always returns <code>kwargs</code> converted into <code>Sequence[KeyValue]</code>.
+<code><a title="dollar_lambda.parser.defaults" href="#dollar_lambda.parser.defaults">defaults()</a></code> never fails.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; defaults(a=1, b=2).parse_args()
+{'a': 1, 'b': 2}
+&gt;&gt;&gt; (flag(&quot;fails&quot;) | defaults(fails=&quot;succeeds&quot;)).parse_args()
+{'fails': 'succeeds'}
+</code></pre>
+<p>Here's a more complex example derived from the tutorial:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
 ...     (
 ...         flag(&quot;verbose&quot;) + defaults(quiet=False)  # either --verbose and default &quot;quiet&quot; to False
 ...         | flag(&quot;quiet&quot;) + defaults(verbose=False)  # or --quiet and default &quot;verbose&quot; to False
@@ -976,6 +1115,16 @@ The following arguments are required: name
 </summary>
 <pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
+    Useful for assigning default values to arguments.
+    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
+    `defaults` never fails.
+
+    &gt;&gt;&gt; defaults(a=1, b=2).parse_args()
+    {&#39;a&#39;: 1, &#39;b&#39;: 2}
+    &gt;&gt;&gt; (flag(&#34;fails&#34;) | defaults(fails=&#34;succeeds&#34;)).parse_args()
+    {&#39;fails&#39;: &#39;succeeds&#39;}
+
+    Here&#39;s a more complex example derived from the tutorial:
     &gt;&gt;&gt; p = nonpositional(
     ...     (
     ...         flag(&#34;verbose&#34;) + defaults(quiet=False)  # either --verbose and default &#34;quiet&#34; to False
@@ -996,7 +1145,8 @@ The following arguments are required: name
 <span>def <span class="ident">done</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; done().parse_args()
+<div class="desc"><p>This parser</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; done().parse_args()
 {}
 &gt;&gt;&gt; done().parse_args(&quot;arg&quot;)
 Unrecognized argument: arg
@@ -1017,6 +1167,7 @@ Unrecognized argument: x
 </summary>
 <pre><code class="python">def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
+    This parser
     &gt;&gt;&gt; done().parse_args()
     {}
     &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
@@ -1069,12 +1220,75 @@ Unrecognized argument: x
 <span>def <span class="ident">equals</span></span>(<span>s: str, peak=False) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Checks if the next word is <code>s</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
+If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;hello&quot;)
+{'hello': 'hello'}
+&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;goodbye&quot;)
+**```usage```** :&amp;ensp;&lt;code&gt;hello&lt;/code&gt;
+:   &amp;nbsp;
+
+
+Expected 'hello'. Got 'goodbye'
+&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
+&gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
+{'hello': 'hello', 'goodbye': 'goodbye'}
+</code></pre>
+<p>Look what happens when <code>peak=True</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
+&gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
+**```usage```** :&amp;ensp;&lt;code&gt;hello goodbye&lt;/code&gt;
+:   &amp;nbsp;
+
+
+Expected 'goodbye'. Got 'hello'
+</code></pre>
+<p>The first parser didn't consume the word and so "hello" got passed on to <code>equals("goodbye")</code>.
+But this would work:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
+&gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
+{'hello': 'hello', 'goodbye': 'goodbye'}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+    &#34;&#34;&#34;
+    Checks if the next word is `s`.
+
+    Parameters
+    ----------
+    peak : bool
+        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;hello&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;}
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
+    usage: hello
+    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
+
+    Look what happens when `peak=True`:
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    usage: hello goodbye
+    Expected &#39;goodbye&#39;. Got &#39;hello&#39;
+
+    The first parser didn&#39;t consume the word and so &#34;hello&#34; got passed on to `equals(&#34;goodbye&#34;)`.
+    But this would work:
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
+    &#34;&#34;&#34;
     if peak:
         return sat_peak(
             predicate=lambda _s: _s == s,
@@ -1097,34 +1311,39 @@ Unrecognized argument: x
 <span>def <span class="ident">flag</span></span>(<span>dest: str, default: Optional[bool] = None, help: Optional[str] = None, short: bool = True, string: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[bool]]]</span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
+<div class="desc"><p>Binds a boolean value to a variable.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
+<dd>The variable to which the value will be bound.</dd>
+<dt><strong><code>default</code></strong> :&ensp;<code>Optional[bool]</code></dt>
+<dd>An optional default value.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>An optional help string.</dd>
+<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to check for the short form of the flag, which
+uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
+<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
-&gt;&gt;&gt; p.parse_args()
-{'verbose': False}
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;, &quot;--verbose&quot;)
-{'verbose': True}
-&gt;&gt;&gt; flag(&quot;v&quot;, string=&quot;--value&quot;).parse_args(&quot;--value&quot;)
-{'v': True}
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;verbose&quot;, default=False) | flag(&quot;quiet&quot;, default=False) | flag(&quot;yes&quot;, default=False)
-&gt;&gt;&gt; p = p1 &gt;&gt; done()
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;value&quot;)
-usage: [[--verbose | --quiet] | --yes]
-Unrecognized argument: value
-&gt;&gt;&gt; p.parse_args(&quot;value&quot;)
-usage: [[--verbose | --quiet] | --yes]
-Unrecognized argument: value
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
-{'verbose': True}
-&gt;&gt;&gt; p1 = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;) | flag(&quot;yes&quot;)
-&gt;&gt;&gt; p = p1 &gt;&gt; argument(&quot;a&quot;)
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
-usage: [[--verbose | --quiet] | --yes] a
-The following arguments are required: a
-&gt;&gt;&gt; p.parse_args(&quot;a&quot;)
-usage: [[--verbose | --quiet] | --yes] a
-Expected '--verbose'. Got 'a'
+<p>By default <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> fails when it does not receive expected input:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args()
+**```usage```** :&amp;ensp;`--verbose`
+:   &amp;nbsp;
+
+
+The following arguments are required: --verbose
+</code></pre>
+<p>Alternately, you can set a default value:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, default=False).parse_args()
+{'verbose': False}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;v&quot;, string=&quot;--value&quot;).parse_args(&quot;--value&quot;)
+{'v': True}
 </code></pre></div>
 <details class="source">
 <summary>
@@ -1138,34 +1357,38 @@ Expected '--verbose'. Got 'a'
     string: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[bool]]]:
     &#34;&#34;&#34;
-    &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
+    Binds a boolean value to a variable.
+
+    Parameters
+    ----------
+    dest : str
+        The variable to which the value will be bound.
+    default : Optional[bool]
+        An optional default value.
+    help : Optional[str]
+        An optional help string.
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
     {&#39;verbose&#39;: True}
+
+    By default `flag` fails when it does not receive expected input:
     &gt;&gt;&gt; p.parse_args()
+    usage: --verbose
+    The following arguments are required: --verbose
+
+    Alternately, you can set a default value:
+    &gt;&gt;&gt; flag(&#34;verbose&#34;, default=False).parse_args()
     {&#39;verbose&#39;: False}
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, &#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
+
     &gt;&gt;&gt; flag(&#34;v&#34;, string=&#34;--value&#34;).parse_args(&#34;--value&#34;)
     {&#39;v&#39;: True}
-
-    &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;, default=False) | flag(&#34;quiet&#34;, default=False) | flag(&#34;yes&#34;, default=False)
-    &gt;&gt;&gt; p = p1 &gt;&gt; done()
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;value&#34;)
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    &gt;&gt;&gt; p.parse_args(&#34;value&#34;)
-    usage: [[--verbose | --quiet] | --yes]
-    Unrecognized argument: value
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
-    &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;) | flag(&#34;yes&#34;)
-    &gt;&gt;&gt; p = p1 &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    usage: [[--verbose | --quiet] | --yes] a
-    The following arguments are required: a
-    &gt;&gt;&gt; p.parse_args(&#34;a&#34;)
-    usage: [[--verbose | --quiet] | --yes] a
-    Expected &#39;--verbose&#39;. Got &#39;a&#39;
     &#34;&#34;&#34;
     if string is None:
         _string = f&#34;--{dest}&#34; if len(dest) &gt; 1 else f&#34;-{dest}&#34;
@@ -1864,6 +2087,18 @@ class Parser(MonadPlus[A_co]):
         )
 
     def optional(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+        &#34;&#34;&#34;
+        Allows arguments to be optional:
+        &gt;&gt;&gt; p1 = flag(&#34;optional&#34;) &gt;&gt; done()
+        &gt;&gt;&gt; p = p1.optional()
+        &gt;&gt;&gt; p.parse_args(&#34;--optional&#34;)
+        {&#39;optional&#39;: True}
+        &gt;&gt;&gt; p.parse_args(&#34;--misspelled&#34;)  # succeeds with no output
+        {}
+        &gt;&gt;&gt; p1.parse_args(&#34;--misspelled&#34;)
+        usage: --optional
+        Expected &#39;--optional&#39;. Got &#39;--misspelled&#39;
+        &#34;&#34;&#34;
         return self | self.empty()
 
     def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -2482,12 +2717,34 @@ The following arguments are required: 1-or-more
 <span>def <span class="ident">optional</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Allows arguments to be optional:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;optional&quot;) &gt;&gt; done()
+&gt;&gt;&gt; p = p1.optional()
+&gt;&gt;&gt; p.parse_args(&quot;--optional&quot;)
+{'optional': True}
+&gt;&gt;&gt; p.parse_args(&quot;--misspelled&quot;)  # succeeds with no output
+{}
+&gt;&gt;&gt; p1.parse_args(&quot;--misspelled&quot;)
+usage: --optional
+Expected '--optional'. Got '--misspelled'
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def optional(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+    &#34;&#34;&#34;
+    Allows arguments to be optional:
+    &gt;&gt;&gt; p1 = flag(&#34;optional&#34;) &gt;&gt; done()
+    &gt;&gt;&gt; p = p1.optional()
+    &gt;&gt;&gt; p.parse_args(&#34;--optional&#34;)
+    {&#39;optional&#39;: True}
+    &gt;&gt;&gt; p.parse_args(&#34;--misspelled&#34;)  # succeeds with no output
+    {}
+    &gt;&gt;&gt; p1.parse_args(&#34;--misspelled&#34;)
+    usage: --optional
+    Expected &#39;--optional&#39;. Got &#39;--misspelled&#39;
+    &#34;&#34;&#34;
     return self | self.empty()</code></pre>
 </details>
 </dd>

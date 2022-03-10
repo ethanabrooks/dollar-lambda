@@ -2,6 +2,45 @@
 **$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
 
+# Why `$λ`?
+`$λ` was built with minimal dependencies from functional first principles.
+As a result, it is the most
+
+- versatile
+- type-safe
+- and concise
+
+argument parser on the market.
+
+### Versatile
+`$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
+it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see
+in the tutorial, there are many parsing patterns that `$λ` can handle which are not possible with
+other parsing libraries.
+### Type-safe
+`$λ` uses type annotations as much as Python allows. Types are checked
+using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
+so that users can also benefit from the type system. Furthermore, with rare exceptions, `$λ`
+avoids mutations and side-effects and preserves [referential transparency](https://en.wikipedia.org/wiki/Referential_transparency).
+This makes it easier for the type-checker _and for the user_ to reason about the code.
+### Concise
+As we'll demonstrate in the tutorial, `$λ` provides three main syntactic shortcuts for cutting
+down boilerplate:
+
+- operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
+- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
+- the `Args` syntax built on top of python `dataclasses`.
+
+As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
+an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
+person would ever need... but even if it's not the parser that we need, it's the parser we deserve.
+
+# Installation
+You guessed it:
+```
+pip install dollar-lambda
+```
+
 # Tutorial
 Here is an example developed in the `argparse` tutorial:
 
@@ -481,39 +520,6 @@ Expected '--verbose'. Got '-x'
 {'verbose': True, 'x': 1, 'y': 2}
 >>> p.parse_args("--quiet", "-x", "1", "-y", "2") # and this succeeds
 {'quiet': True, 'x': 1, 'y': 2}
-
-# Why `$λ`?
-`$λ` was built with minimal dependencies from functional first principles.
-As a result, it is the most
-
-- versatile
-- type-safe
-- and concise
-
-argument parser on the market.
-
-### Versatile
-`$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we've seen
-in the tutorial, there are many parsing patterns that `$λ` can handle which are not possible with
-other parsing libraries.
-### Type-safe
-`$λ` uses type annotations as much as Python allows. Types are checked
-using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, `$λ`
-avoids mutations and side-effects and preserves [referential transparency](https://en.wikipedia.org/wiki/Referential_transparency).
-This makes it easier for the type-checker _and for the user_ to reason about the code.
-### Concise
-As we've demonstrated in the tutorial, `$λ` provides three main syntactic shortcuts for cutting
-down boilerplate:
-
-- operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
-- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
-- the `Args` syntax built on top of python `dataclasses`.
-
-As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
-person would ever need... but even if it's not the parser that we need, it's the parser we deserve.
 """
 
 
