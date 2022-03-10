@@ -7,8 +7,7 @@ test:
 readme: readme.py
 	rm -rf readme.rst
 	jupytext --sync readme.py
-	TESTING=1 jupyter nbconvert --to rst --execute readme.ipynb
-	mv readme.rst README.rst
+	TESTING=1 jupyter nbconvert --to markdown --execute readme.ipynb
 
 docs: dollar_lambda/
 	rm -rf docs/
