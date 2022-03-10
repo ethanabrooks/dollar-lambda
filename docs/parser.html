@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import operator
 import os
+import sys
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
@@ -172,8 +173,8 @@ class Parser(MonadPlus[A]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
-    ) -&gt; Parser[Sequence[D | B]]:
+        self: Parser[Sequence[C]], p: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[C | B]]:
         &#34;&#34;&#34;
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -331,11 +332,12 @@ class Parser(MonadPlus[A]):
         &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;--help&#34;)
         usage: a
         &#34;&#34;&#34;
+        _args = args if args or TESTING else sys.argv[1:]
         if check_help:
             return wrap_help(self).parse_args(
-                *args, return_dict=return_dict, check_help=False
+                *_args, return_dict=return_dict, check_help=False
             )
-        result = self.parse(Sequence(list(args))).get
+        result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             if self.usage and not isinstance(result, HelpError):
                 print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
@@ -1571,8 +1573,8 @@ class Parser(MonadPlus[A]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
-    ) -&gt; Parser[Sequence[D | B]]:
+        self: Parser[Sequence[C]], p: Parser[Sequence[B]]
+    ) -&gt; Parser[Sequence[C | B]]:
         &#34;&#34;&#34;
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -1730,11 +1732,12 @@ class Parser(MonadPlus[A]):
         &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;--help&#34;)
         usage: a
         &#34;&#34;&#34;
+        _args = args if args or TESTING else sys.argv[1:]
         if check_help:
             return wrap_help(self).parse_args(
-                *args, return_dict=return_dict, check_help=False
+                *_args, return_dict=return_dict, check_help=False
             )
-        result = self.parse(Sequence(list(args))).get
+        result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             if self.usage and not isinstance(result, HelpError):
                 print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)
@@ -2041,7 +2044,7 @@ Unrecognized argument: --option
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.__rshift__"><code class="name flex">
-<span>def <span class="ident">__rshift__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[D]], p: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[typing.Union[~D, ~B]]]</span>
+<span>def <span class="ident">__rshift__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[C]], p: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[typing.Union[~C, ~B]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
@@ -2062,8 +2065,8 @@ The following arguments are required: second
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def __rshift__(
-    self: Parser[Sequence[D]], p: Parser[Sequence[B]]
-) -&gt; Parser[Sequence[D | B]]:
+    self: Parser[Sequence[C]], p: Parser[Sequence[B]]
+) -&gt; Parser[Sequence[C | B]]:
     &#34;&#34;&#34;
     This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
     gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -2349,11 +2352,12 @@ If it is, returns the usage message.</dd>
     &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;--help&#34;)
     usage: a
     &#34;&#34;&#34;
+    _args = args if args or TESTING else sys.argv[1:]
     if check_help:
         return wrap_help(self).parse_args(
-            *args, return_dict=return_dict, check_help=False
+            *_args, return_dict=return_dict, check_help=False
         )
-    result = self.parse(Sequence(list(args))).get
+    result = self.parse(Sequence(list(_args))).get
     if isinstance(result, ArgumentError):
         if self.usage and not isinstance(result, HelpError):
             print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in self.usage else &#34; &#34;)

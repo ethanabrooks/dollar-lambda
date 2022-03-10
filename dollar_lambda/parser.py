@@ -27,22 +27,22 @@ from dollar_lambda.parse import Parse
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
-A = TypeVar("A", bound=Monoid, covariant=True)
-B = TypeVar("B", bound=Monoid)
-C = TypeVar("C")
-D = TypeVar("D", bound=Monoid)
+Monoid_co = TypeVar("Monoid_co", bound=Monoid, covariant=True)
+Monoid1 = TypeVar("Monoid1", bound=Monoid)
+Monoid2 = TypeVar("Monoid2", bound=Monoid)
+A = TypeVar("A")
 
 global TESTING
 TESTING = os.environ.get("TESTING", False)
 
 
-def empty() -> Parser[Sequence[B]]:
+def empty() -> Parser[Sequence]:
     """
     Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
     >>> empty().parse_args("any", "arguments")
     {}
     """
-    return Parser.return_(Sequence([]))
+    return Parser[Sequence[A]].empty()
 
 
 def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
@@ -60,7 +60,7 @@ __pdoc__ = {}
 
 
 @dataclass
-class Parser(MonadPlus[A]):
+class Parser(MonadPlus[Monoid_co]):
     """
     Main class powering the argument parser.
     """
@@ -70,13 +70,13 @@ class Parser(MonadPlus[A]):
     __pdoc__["Parser.__rshift__"] = True
     __pdoc__["Parser.__ge__"] = True
 
-    f: Callable[[Sequence[str]], Result[Parse[A]]]
+    f: Callable[[Sequence[str]], Result[Parse[Monoid_co]]]
     usage: Optional[str]
     helps: Dict[str, str]
 
     def __add__(
-        self: Parser[Sequence[D]], other: Parser[Sequence[B]]
-    ) -> Parser[Sequence[D | B]]:
+        self: Parser[Sequence[Monoid1]], other: Parser[Sequence[Monoid2]]
+    ) -> Parser[Sequence[Monoid1 | Monoid2]]:
         """
         Parse two arguments in either order.
         >>> p = flag("verbose") + flag("debug")
@@ -109,9 +109,9 @@ class Parser(MonadPlus[A]):
         return replace(p, usage=usage)
 
     def __or__(
-        self: Parser[A],
-        other: Parser[B],
-    ) -> Parser[A | B]:
+        self,
+        other: Parser[Monoid1],
+    ) -> Parser[Monoid_co | Monoid1]:
         """
         Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.
 
@@ -134,7 +134,7 @@ class Parser(MonadPlus[A]):
         {'option': 'x'}
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[A | B]]:
+        def f(cs: Sequence[str]) -> Result[Parse[Monoid_co | Monoid1]]:
             return self.parse(cs) | other.parse(cs)
 
         return Parser(
@@ -144,8 +144,8 @@ class Parser(MonadPlus[A]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[C]], p: Parser[Sequence[B]]
-    ) -> Parser[Sequence[C | B]]:
+        self: Parser[Sequence[A]], p: Parser[Sequence[Monoid1]]
+    ) -> Parser[Sequence[A | Monoid1]]:
         """
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -173,7 +173,7 @@ class Parser(MonadPlus[A]):
             parser, usage=binary_usage(self.usage, " ", p.usage, add_brackets=False)
         )
 
-    def bind(self, f: Callable[[A], Parser[B]]) -> Parser[B]:
+    def bind(self, f: Callable[[Monoid_co], Parser[Monoid1]]) -> Parser[Monoid1]:
         """
         Returns a new parser that
 
@@ -203,15 +203,24 @@ class Parser(MonadPlus[A]):
         Expected 'a'. Got 'b'
         """
 
-        def h(parse: Parse[A]) -> Result[Parse[B]]:
+        def h(parse: Parse[Monoid_co]) -> Result[Parse[Monoid1]]:
             return f(parse.parsed).parse(parse.unparsed)
 
-        def g(cs: Sequence[str]) -> Result[Parse[B]]:
+        def g(cs: Sequence[str]) -> Result[Parse[Monoid1]]:
             return self.parse(cs) >= h
 
         return Parser(g, usage=None, helps=self.helps)
 
-    def many(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
+    @classmethod
+    def empty(cls: Type[Parser[Sequence[A]]]) -> Parser[Sequence[A]]:
+        """
+        Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+        >>> empty().parse_args("any", "arguments")
+        {}
+        """
+        return cls.return_(Sequence([]))
+
+    def many(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
         """
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -236,7 +245,7 @@ class Parser(MonadPlus[A]):
         p = self.many1() | empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
-    def many1(self: "Parser[Sequence[B]]") -> "Parser[Sequence[B]]":
+    def many1(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
         """
         Applies `self` one or more times (like `+` in regexes).
 
@@ -251,12 +260,12 @@ class Parser(MonadPlus[A]):
         The following arguments are required: 1-or-more
         """
 
-        def g() -> Generator["Parser[Sequence[B]]", Sequence[B], None]:
+        def g() -> Generator["Parser[Sequence[Monoid1]]", Sequence[Monoid1], None]:
             # noinspection PyTypeChecker
-            r1: Sequence[B] = yield self
+            r1: Sequence[Monoid1] = yield self
             # noinspection PyTypeChecker
-            r2: Sequence[B] = yield self.many()
-            yield Parser[Sequence[B]].return_(r1 + r2)
+            r2: Sequence[Monoid1] = yield self.many()
+            yield Parser[Sequence[Monoid1]].return_(r1 + r2)
 
         @lru_cache()
         def f(cs: tuple):
@@ -268,7 +277,7 @@ class Parser(MonadPlus[A]):
             helps=self.helps,
         )
 
-    def parse(self, cs: Sequence[str]) -> Result[Parse[A]]:
+    def parse(self, cs: Sequence[str]) -> Result[Parse[Monoid_co]]:
         """
         Applies the parser to the input sequence `cs`.
         """
@@ -337,7 +346,7 @@ class Parser(MonadPlus[A]):
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
-    def return_(cls, a: A) -> Parser[A]:  # type: ignore[misc]
+    def return_(cls, a: Monoid_co) -> Parser[Monoid_co]:  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         This method is required to make `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). It consumes none of the input
@@ -349,13 +358,13 @@ class Parser(MonadPlus[A]):
         {'some-key': 'some-value'}
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[A]]:
+        def f(cs: Sequence[str]) -> Result[Parse[Monoid_co]]:
             return Result.return_(Parse(a, cs))
 
         return Parser(f, usage=None, helps={})
 
     @classmethod
-    def zero(cls: Type[Parser[A]], error: Optional[ArgumentError] = None) -> Parser[A]:
+    def zero(cls, error: Optional[ArgumentError] = None) -> Parser[Monoid_co]:
         """
         This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
 
@@ -374,17 +383,14 @@ class Parser(MonadPlus[A]):
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
 
-E = TypeVar("E", bound=MonadPlus)
-F = TypeVar("F")
-G = TypeVar("G", covariant=True, bound=MonadPlus)
-
-
-def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
+def apply(
+    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
+) -> Parser[Monoid_co]:
     """
     Take the output of `parser` and apply `f` to it. Convert any errors that arise into `ArgumentError`.
     """
 
-    def g(a: E) -> Parser[G]:
+    def g(a: Monoid1) -> Parser[Monoid_co]:
         try:
             y = f(a)
         except Exception as e:
@@ -400,8 +406,8 @@ def apply(f: Callable[[E], Result[G]], parser: Parser[E]) -> Parser[G]:
     return parser >= g
 
 
-def apply_item(f: Callable[[str], G], description: str) -> Parser[G]:
-    def g(parsed: Sequence[KeyValue[str]]) -> Result[G]:
+def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid_co]:
+    def g(parsed: Sequence[KeyValue[str]]) -> Result[Monoid_co]:
         [kv] = parsed
         try:
             y = f(kv.value)
@@ -429,7 +435,7 @@ def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
     return replace(p, usage=None)
 
 
-def done() -> Parser[Sequence[F]]:
+def done() -> Parser[Sequence[A]]:
     """
     >>> done().parse_args()
     {}
@@ -447,7 +453,7 @@ def done() -> Parser[Sequence[F]]:
     Unrecognized argument: x
     """
 
-    def f(cs: Sequence[str]) -> Result[Parse[Sequence[F]]]:
+    def f(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
         if cs:
             c, *_ = cs
             return Result(
@@ -539,10 +545,10 @@ def flag(
     return replace(parser, usage=_string, helps=helps)
 
 
-def help_parser(usage: str, parsed: B) -> Parser[B]:
+def help_parser(usage: str, parsed: Monoid1) -> Parser[Monoid1]:
     def f(
         cs: Sequence[str],
-    ) -> Result[Parse[B]]:
+    ) -> Result[Parse[Monoid1]]:
         result = (equals("--help", peak=True) | equals("-h", peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
@@ -551,8 +557,8 @@ def help_parser(usage: str, parsed: B) -> Parser[B]:
     return Parser(f, usage=None, helps={})
 
 
-def wrap_help(parser: Parser[Sequence[C]]) -> Parser[Sequence[C]]:
-    _help_parser: Parser[Sequence[C]] = help_parser(
+def wrap_help(parser: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+    _help_parser: Parser[Sequence[A]] = help_parser(
         parser.usage or "No usage provided.", Sequence([])
     )
 
@@ -587,7 +593,7 @@ def item(
     return Parser(f, usage=name, helps={})
 
 
-def nonpositional(*parsers: "Parser[Sequence[F]]") -> "Parser[Sequence[F]]":
+def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     """
     >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False)) >> done()
     >>> p.parse_args("--verbose", "--debug")
@@ -706,11 +712,11 @@ def peak(
 
 
 def sat(
-    parser: Parser[E],
-    predicate: Callable[[E], bool],
-    on_fail: Callable[[E], ArgumentError],
-) -> Parser[E]:
-    def f(x: E) -> Result[E]:
+    parser: Parser[Monoid1],
+    predicate: Callable[[Monoid1], bool],
+    on_fail: Callable[[Monoid1], ArgumentError],
+) -> Parser[Monoid1]:
+    def f(x: Monoid1) -> Result[Monoid1]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)
