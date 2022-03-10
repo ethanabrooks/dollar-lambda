@@ -1,12 +1,16 @@
+from dataclasses import dataclass
 from inspect import signature
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
+from dollar_lambda import parser
 from dollar_lambda.args import ArgsField
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parser
+from dollar_lambda.parser import Parser, apply, equals
+from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
 A = TypeVar("A")
+A_co = TypeVar("A_co", covariant=True)
 
 
 def func_to_parser(
@@ -29,6 +33,19 @@ def func_to_parser(
         ],
         flip_bools=flip_bools,
     )
+
+
+@dataclass
+class Parse(parser.Parse[A_co]):
+    """
+    A `Parse` is the output of parsing.
+
+    Parameters
+    ----------
+    function :
+    """
+
+    function: Callable
 
 
 def command(
@@ -55,6 +72,21 @@ def command(
         return wrapped
 
     return wrapper
+
+
+# def subcommand(func: Callable):
+#     def f(
+#         kvs: Sequence[KeyValue[str]],
+#     ) -> Parser[Tuple[Callable, Sequence[KeyValue[str]]]]:
+#         return Result.return_(
+#             Parse(
+#                 function=func,
+#                 parsed=parse.parsed,
+#                 unparsed=parse.unparsed,
+#             )
+#         )
+
+#     return equals(func.__name__) >= f
 
 
 # @dataclass

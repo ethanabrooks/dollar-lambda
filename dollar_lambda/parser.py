@@ -10,7 +10,7 @@ import sys
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
-from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generator, Generic, Optional, Type, TypeVar
 
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -23,17 +23,35 @@ from dollar_lambda.error import (
     UnexpectedError,
 )
 from dollar_lambda.key_value import KeyValue, KeyValueTuple
-from dollar_lambda.parse import Parse
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
 Monoid_co = TypeVar("Monoid_co", bound=Monoid, covariant=True)
 Monoid1 = TypeVar("Monoid1", bound=Monoid)
 Monoid2 = TypeVar("Monoid2", bound=Monoid)
+A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
+B = TypeVar("B")
 
 global TESTING
 TESTING = os.environ.get("DOLLAR_LAMBDA_TESTING", False)
+
+
+@dataclass
+class Parse(Generic[A_co]):
+    """
+    A `Parse` is the output of parsing.
+
+    Parameters
+    ----------
+    parsed : A
+        Component parsed by the parsed
+    unparsed : Sequence[str]
+        Component yet to be parsed
+    """
+
+    parsed: A_co
+    unparsed: Sequence[str]
 
 
 def empty() -> Parser[Sequence]:
@@ -60,7 +78,7 @@ __pdoc__ = {}
 
 
 @dataclass
-class Parser(MonadPlus[Monoid_co]):
+class Parser(MonadPlus[A_co]):
     """
     Main class powering the argument parser.
     """
@@ -70,13 +88,13 @@ class Parser(MonadPlus[Monoid_co]):
     __pdoc__["Parser.__rshift__"] = True
     __pdoc__["Parser.__ge__"] = True
 
-    f: Callable[[Sequence[str]], Result[Parse[Monoid_co]]]
+    f: Callable[[Sequence[str]], Result[Parse[A_co]]]
     usage: Optional[str]
     helps: Dict[str, str]
 
     def __add__(
-        self: Parser[Sequence[Monoid1]], other: Parser[Sequence[Monoid2]]
-    ) -> Parser[Sequence[Monoid1 | Monoid2]]:
+        self: Parser[Sequence[A]], other: Parser[Sequence[B]]
+    ) -> Parser[Sequence[A | B]]:
         """
         Parse two arguments in either order.
         >>> p = flag("verbose") + flag("debug")
@@ -109,9 +127,9 @@ class Parser(MonadPlus[Monoid_co]):
         return replace(p, usage=usage)
 
     def __or__(
-        self,
-        other: Parser[Monoid1],
-    ) -> Parser[Monoid_co | Monoid1]:
+        self: Parser[A_co],
+        other: Parser[B],
+    ) -> Parser[A_co | B]:
         """
         Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.
 
@@ -134,7 +152,7 @@ class Parser(MonadPlus[Monoid_co]):
         {'option': 'x'}
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[Monoid_co | Monoid1]]:
+        def f(cs: Sequence[str]) -> Result[Parse[A_co | B]]:
             return self.parse(cs) | other.parse(cs)
 
         return Parser(
@@ -144,8 +162,8 @@ class Parser(MonadPlus[Monoid_co]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[A]], p: Parser[Sequence[Monoid1]]
-    ) -> Parser[Sequence[A | Monoid1]]:
+        self: Parser[Sequence[A]], p: Parser[Sequence[B]]
+    ) -> Parser[Sequence[A | B]]:
         """
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -173,7 +191,7 @@ class Parser(MonadPlus[Monoid_co]):
             parser, usage=binary_usage(self.usage, " ", p.usage, add_brackets=False)
         )
 
-    def bind(self, f: Callable[[Monoid_co], Parser[Monoid1]]) -> Parser[Monoid1]:
+    def bind(self, f: Callable[[A_co], Parser[B]]) -> Parser[B]:
         """
         Returns a new parser that
 
@@ -203,10 +221,10 @@ class Parser(MonadPlus[Monoid_co]):
         Expected 'a'. Got 'b'
         """
 
-        def h(parse: Parse[Monoid_co]) -> Result[Parse[Monoid1]]:
+        def h(parse: Parse[A_co]) -> Result[Parse[B]]:
             return f(parse.parsed).parse(parse.unparsed)
 
-        def g(cs: Sequence[str]) -> Result[Parse[Monoid1]]:
+        def g(cs: Sequence[str]) -> Result[Parse[B]]:
             return self.parse(cs) >= h
 
         return Parser(g, usage=None, helps=self.helps)
@@ -277,7 +295,7 @@ class Parser(MonadPlus[Monoid_co]):
             helps=self.helps,
         )
 
-    def parse(self, cs: Sequence[str]) -> Result[Parse[Monoid_co]]:
+    def parse(self, cs: Sequence[str]) -> Result[Parse[A_co]]:
         """
         Applies the parser to the input sequence `cs`.
         """
@@ -338,15 +356,13 @@ class Parser(MonadPlus[Monoid_co]):
             else:
                 exit()
 
-        nel: NonemptyList[Parse[Sequence[KeyValue]]] = result
-        parse: Parse[Sequence[KeyValue]] = nel.head
-        kvs: Sequence[KeyValue] = parse.parsed
+        kvs = result.head.parsed
         if return_dict:
             return {kv.key: kv.value for kv in kvs}
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
-    def return_(cls, a: Monoid_co) -> Parser[Monoid_co]:  # type: ignore[misc]
+    def return_(cls, a: A_co) -> Parser[A_co]:  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         This method is required to make `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). It consumes none of the input
@@ -358,13 +374,13 @@ class Parser(MonadPlus[Monoid_co]):
         {'some-key': 'some-value'}
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[Monoid_co]]:
+        def f(cs: Sequence[str]) -> Result[Parse[A_co]]:
             return Result.return_(Parse(a, cs))
 
         return Parser(f, usage=None, helps={})
 
     @classmethod
-    def zero(cls, error: Optional[ArgumentError] = None) -> Parser[Monoid_co]:
+    def zero(cls, error: Optional[ArgumentError] = None) -> Parser[A_co]:
         """
         This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
 
