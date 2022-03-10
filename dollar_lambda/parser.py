@@ -278,7 +278,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("--verbose", "--quiet", return_dict=False) # mix --verbose and --quiet
         [('verbose', True), ('quiet', True)]
         """
-        p = self.many1() | empty()
+        p = self.many1() | self.empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
     def many1(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
@@ -312,6 +312,9 @@ class Parser(MonadPlus[A_co]):
             usage=f"{self.usage} [{self.usage} ...]",
             helps=self.helps,
         )
+
+    def optional(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+        return self | self.empty()
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A_co]]:
         """
@@ -424,7 +427,8 @@ def apply(
             helps=parser.helps,
         )
 
-    return parser >= g
+    p = parser >= g
+    return replace(p, usage=parser.usage, helps=parser.helps)
 
 
 def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid_co]:
@@ -578,7 +582,7 @@ def help_parser(usage: str, parsed: Monoid1) -> Parser[Monoid1]:
     return Parser(f, usage=None, helps={})
 
 
-def wrap_help(parser: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+def wrap_help(parser: Parser[A]) -> Parser[A]:
     _help_parser: Parser[Sequence[A]] = help_parser(
         parser.usage or "No usage provided.", Sequence([])
     )
@@ -639,6 +643,11 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p = nonpositional(flag("verbose", default=False), flag("debug", default=False), argument("a")) >> done()
     >>> p.parse_args("--debug", "hello", "--verbose")
     {'debug': True, 'a': 'hello', 'verbose': True}
+    >>> p = nonpositional(flag("verbose"))
+    >>> p.parse_args("-h")
+    usage: --verbose
+    >>> p.parse_args("--verbose")
+    {'verbose': True}
     """
     if not parsers:
         return empty()
