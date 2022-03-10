@@ -188,7 +188,9 @@ class Parser(MonadPlus[A_co]):
         # return self >= f
         parser = self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
         return replace(
-            parser, usage=binary_usage(self.usage, " ", p.usage, add_brackets=False)
+            parser,
+            usage=binary_usage(self.usage, " ", p.usage, add_brackets=False),
+            helps={**self.helps, **p.helps},
         )
 
     def bind(self, f: Callable[[A_co], Parser[B]]) -> Parser[B]:
@@ -237,6 +239,22 @@ class Parser(MonadPlus[A_co]):
         {}
         """
         return cls.return_(Sequence([]))
+
+    def handle_error(self, error: ArgumentError) -> None:
+        if self.usage and not isinstance(error, HelpError):
+            print("usage:", end="\n" if "\n" in self.usage else " ")
+            if "\n" in self.usage:
+                usage = "\n".join(["    " + u for u in self.usage.split("\n")])
+            else:
+                usage = self.usage
+            print(usage)
+        if self.helps:
+            for k, v in self.helps.items():
+                print(f"{k}: {v}")
+        if error.usage:
+            if isinstance(error, HelpError):
+                print("usage:", end="\n" if "\n" in error.usage else " ")
+            print(error.usage)
 
     def many(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
         """
@@ -337,20 +355,7 @@ class Parser(MonadPlus[A_co]):
             )
         result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
-            if self.usage and not isinstance(result, HelpError):
-                print("usage:", end="\n" if "\n" in self.usage else " ")
-                if "\n" in self.usage:
-                    usage = "\n".join(["    " + u for u in self.usage.split("\n")])
-                else:
-                    usage = self.usage
-                print(usage)
-            if self.helps:
-                for k, v in self.helps.items():
-                    print(f"{k}: {v}")
-            if result.usage:
-                if isinstance(result, HelpError):
-                    print("usage:", end="\n" if "\n" in result.usage else " ")
-                print(result.usage)
+            self.handle_error(result)
             if TESTING:
                 return  # type: ignore[return-value]
             else:
