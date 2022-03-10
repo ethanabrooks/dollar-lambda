@@ -4,7 +4,7 @@ from defining parsers with many arguments.
 """
 import dataclasses
 from dataclasses import Field, dataclass, fields
-from typing import Any, Callable, Generator, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.key_value import KeyValue
 from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
@@ -68,6 +68,33 @@ class ArgsField:
 
         return ArgsField(name=field.name, default=default, help=help_, type=type_)
 
+    @staticmethod
+    def nonpositional(
+        *fields: "ArgsField", flip_bools: bool = True
+    ) -> Parser[Sequence[KeyValue[Any]]]:
+        def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
+            for field in fields:
+                if field.type == bool:
+                    if field.default is True and flip_bools:
+                        string = f"--no-{field.name}"
+                    else:
+                        string = None
+                    yield flag(
+                        dest=field.name,
+                        string=string,
+                        default=field.default,
+                        help=field.help,
+                    )
+                else:
+                    opt = option(
+                        dest=field.name,
+                        default=field.default,
+                        help=field.help,
+                    )
+                    yield type_(field.type, opt)
+
+        return nonpositional(*get_parsers())
+
 
 @dataclass
 class Args:
@@ -115,30 +142,9 @@ class Args:
 
     @classmethod
     def parser(cls, flip_bools: bool = True) -> Parser[Sequence[KeyValue[Any]]]:
-        def get_parsers() -> Generator[Parser, None, None]:
-            field: Field
-            for field in fields(cls):
-                args_field = ArgsField.parse(field)
-                if args_field.type == bool:
-                    if args_field.default is True and flip_bools:
-                        string = f"--no-{field.name}"
-                    else:
-                        string = None
-                    yield flag(
-                        dest=args_field.name,
-                        string=string,
-                        default=args_field.default,
-                        help=args_field.help,
-                    )
-                else:
-                    opt = option(
-                        dest=args_field.name,
-                        default=args_field.default,
-                        help=args_field.help,
-                    )
-                    yield type_(args_field.type, opt)
-
-        return nonpositional(*get_parsers())
+        return ArgsField.nonpositional(
+            *[ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+        )
 
     @classmethod
     def parse_args(cls, *args):

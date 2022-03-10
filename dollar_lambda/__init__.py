@@ -449,6 +449,7 @@ The following arguments are required: dropdb
 __pdoc__ = {}
 
 from dollar_lambda.args import Args, field
+from dollar_lambda.decorators import command
 from dollar_lambda.parser import (
     Parser,
     apply,
@@ -487,6 +488,7 @@ __all__ = [
     "defaults",
     "field",
     "wrap_help",
+    "command",
 ]
 
 

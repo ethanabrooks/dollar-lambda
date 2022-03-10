@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import operator
 import os
+import sys
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
@@ -143,8 +144,8 @@ class Parser(MonadPlus[A]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[D]], p: Parser[Sequence[B]]
-    ) -> Parser[Sequence[D | B]]:
+        self: Parser[Sequence[C]], p: Parser[Sequence[B]]
+    ) -> Parser[Sequence[C | B]]:
         """
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -302,11 +303,12 @@ class Parser(MonadPlus[A]):
         >>> argument("a").parse_args("--help")
         usage: a
         """
+        _args = args if args or TESTING else sys.argv[1:]
         if check_help:
             return wrap_help(self).parse_args(
-                *args, return_dict=return_dict, check_help=False
+                *_args, return_dict=return_dict, check_help=False
             )
-        result = self.parse(Sequence(list(args))).get
+        result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             if self.usage and not isinstance(result, HelpError):
                 print("usage:", end="\n" if "\n" in self.usage else " ")
