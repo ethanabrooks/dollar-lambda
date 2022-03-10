@@ -2,8 +2,7 @@
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
 This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
 
-# Tutorials
-## Based on `argparse` example
+# Tutorial
 Here is an example developed in the `argparse` tutorial:
 
 ```
@@ -50,12 +49,12 @@ Expected '--verbose'. Got '-x'
 
 Let's walk through this step by step. First, let's learn what `flag`, `option` and `done` do.
 
-### High-Level Parsers
-These are functions that create high-level parsers. `flag` binds a boolean value to a variable
+## High-Level Parsers
+These three functions create high-level parsers. `flag` binds a boolean value to a variable
 whereas `option` binds an arbitrary value to a variable. `done` does not bind any values to variables,
 but causes the parser to fail in some cases.
 
-#### `flag`
+### `flag`
 >>> p = flag("verbose")
 >>> p.parse_args("--verbose")
 {'verbose': True}
@@ -69,7 +68,7 @@ Alternately, you can set a default value:
 >>> flag("verbose", default=False).parse_args()
 {'verbose': False}
 
-#### `option`
+### `option`
 `option` is similar but takes an argument:
 By default, `option` expects a single `-` for single-character variable names (as in `-x`),
 as opposed to `--` for longer names (as in `--xenophon`):
@@ -83,7 +82,7 @@ Use the `type` argument to convert the input to a different type:
 >>> option("x", type=int).parse_args("-x", "1")  # converts "1" to an int
 {'x': 1}
 
-#### `done`
+### `done`
 Without `done` the parser will not complain about leftover (unparsed) input:
 
 >>> flag("verbose").parse_args("--verbose", "--quiet")
@@ -99,12 +98,12 @@ Unrecognized argument: --quiet
 `done` is usually necessary to get `nonpositional` to behave in the way that you expect,
 but more on that later.
 
-### Parser Combinators
+## Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
 Our example uses three such functions: `nonpositional`, `|` or `Parser.__or__`,
 and `>>` or `Parser.__rshift__`.
 
-#### `Parser.__or__`
+### `Parser.__or__`
 
 The `|` operator is used for alternatives. Specifically, it will try the first parser,
 and if that fails, try the second:
@@ -132,7 +131,7 @@ This is just sugar for
 >>> (flag("verbose") | flag("quiet") | defaults(quiet=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
 {'quiet': False}
 
-#### `Parser.__rshift__`
+### `Parser.__rshift__`
 
 The `>>` operator is used for sequential composition. It applies the first parser and then
 hands the output of the first parser to the second parser. If either parser fails, the composition fails:
@@ -147,8 +146,8 @@ Expected '--verbose'. Got '--something-else'
 usage: --verbose
 Unrecognized argument: --something-else
 
-#### nonpositional
-`nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
+### `nonpositional`
+This function takes a sequence of parsers as arguments and attempts all permutations of them,
 returning the first permutations that is successful:
 
 >>> p = nonpositional(flag("verbose"), flag("quiet"))
@@ -187,8 +186,12 @@ the parser will not behave as expected:
 >>> p.parse_args("--quiet", "--verbose")  # you expect this to bind `True` to `verbose`, but it doesn't
 {'verbose': False, 'quiet': True}
 
-Why is happening? Both permutions, `flag("verbose", default=False) >> flag("quiet")` and
-`flag("quiet") >> flag("verbose", default=False)` are succeeding. This first succeeds by falling
+Why is happening? There are two permutions:
+
+- `flag("verbose", default=False) >> flag("quiet")` and
+- `flag("quiet") >> flag("verbose", default=False)`
+
+In our example, both permutations are actually succeeding. This first succeeds by falling
 back to the default, and leaving the last word of the input, `--verbose`, unparsed.
 Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
 
@@ -200,7 +203,7 @@ cause the `done` parser to fail:
 >>> p.parse_args("--quiet", "--verbose")
 {'quiet': True, 'verbose': True}
 
-### Putting it all together
+## Putting it all together
 Let's recall the original example:
 
 >>> p = nonpositional(
@@ -227,9 +230,28 @@ some integer, binding that integer to the variable `"x"`. Similarly for `option(
 and applies them in every order, until some order succeeds.
 Finally `done()` ensures that only one of these parser permutations will succeed, preventing ambiguity.
 
-### Alternative syntax
+## Alternative syntax
+There are a few alternative ways to express the functionality that we've seen so far.
+We will consider them from most succinct (and least flexible) to least succinct (and most flexible).
 
-#### `Args`
+### `command`
+`command` is a decorator that uses creates a parser based on the function's signature:
+
+>>> @command(help=dict(x="the base", y="the exponent"))
+... def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+>>> main("-x", "1", "-y", "2", "--verbose")
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+>>> main("-h")
+usage:
+    -x X
+    -y Y
+    --verbose
+    --quiet
+x: the base
+y: the exponent
+
+### `Args`
 
 There are two alternative ways to express the same functionality. First, if there were many more
 arguments to `nonpositional`, we might want to use `Args`, which is sugar for `nonpositional`
@@ -248,7 +270,8 @@ Make sure to import `field` from `dollar_lambda`, not from `dataclasses`.
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True}
 
-#### `defaults`
+
+### `defaults`
 
 In our examples, default values are defined in a separate `main` function. Some users will
 prefer defining defaults in the parser definition, as in most parsing libraries.
@@ -278,8 +301,8 @@ Now we don't need a separate function to provide default values:
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
 
-### Variations on the example
-#### Something `argparse` can't do
+## Variations on the example
+### Something `argparse` can't do
 
 What if there was a special argument, `verbosity`,
 that only makes sense if the user chooses `--verbose`?
@@ -306,7 +329,7 @@ Now:
 usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Expected '--verbose'. Got '-x'
 
-#### `Parser.many`
+### `Parser.many`
 
 What if we want to specify verbosity by the number of times that `--verbose` appears?
 For this we need `Parser.many`. Before showing how we could use `Parser.many` in this setting,
@@ -346,7 +369,7 @@ Now returning to the original example:
 >>> verbosity
 2
 
-#### `Parser.many1`
+### `Parser.many1`
 
 
 
@@ -379,77 +402,13 @@ Expected '--verbose'. Got '-x'
 >>> p.parse_args("--verbose", "-y", "2", "-x", "1")
 usage: [--verbose | --quiet] -x X -y Y
 Expected '-x'. Got '-y'
-
-## From `click`
-Another popular argument parsing library is [`click`](https://click.palletsprojects.com/en/7.x/).
-Let's look at an example from that library:
-
-```python
-import click
-
-
-@click.group()
-def cli():
-    pass
-
-
-@click.command()
-def initdb():
-    click.echo("Initialized the database")
-
-
-@click.command()
-def dropdb():
-    click.echo("Dropped the database")
-
-
-cli.add_command(initdb)
-cli.add_command(dropdb)
-```
-
-Here is how you would write this in this package:
->>> p = flag("dropdb", string="dropdb") | flag("initdb", string="initdb")
->>> p = p >> done()
-
->>> def main(dropdb: bool = False, initdb: bool = False):
-...    if dropdb:
-...        print("Dropped the database")
-...    if initdb:
-...        print("Initialized the database")
-
->>> main(**p.parse_args("initdb"))
-Initialized the database
->>> main(**p.parse_args("dropdb"))
-Dropped the database
->>> p.parse_args()
-usage: [dropdb | initdb]
-The following arguments are required: dropdb
-
-Alternarely, if you want to define defaults in the argument parser itself:
->>> p1 = flag("dropdb", string="dropdb") + defaults(initdb=False)
->>> p2 = flag("initdb", string="initdb") + defaults(dropdb=False)
->>> p = (p1 | p2) >> done()
-
->>> def main(dropdb: bool, initdb: bool):
-...    if dropdb:
-...        print("Dropped the database")
-...    if initdb:
-...        print("Initialized the database")
-
->>> main(**p.parse_args("initdb"))
-Initialized the database
->>> main(**p.parse_args("dropdb"))
-Dropped the database
->>> p.parse_args()
-usage: [dropdb | initdb]
-The following arguments are required: dropdb
 """
 
 
 __pdoc__ = {}
 
 from dollar_lambda.args import Args, field
-from dollar_lambda.decorators import command
+from dollar_lambda.decorators import CommandTree, command
 from dollar_lambda.parser import (
     Parser,
     apply,
@@ -489,6 +448,7 @@ __all__ = [
     "field",
     "wrap_help",
     "command",
+    "CommandTree",
 ]
 
 

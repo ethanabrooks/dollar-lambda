@@ -241,20 +241,22 @@ class Parser(MonadPlus[A_co]):
         return cls.return_(Sequence([]))
 
     def handle_error(self, error: ArgumentError) -> None:
-        if self.usage and not isinstance(error, HelpError):
-            print("usage:", end="\n" if "\n" in self.usage else " ")
-            if "\n" in self.usage:
-                usage = "\n".join(["    " + u for u in self.usage.split("\n")])
-            else:
-                usage = self.usage
+        def print_usage(usage: str):
+            print("usage:", end="\n" if "\n" in usage else " ")
+            if "\n" in usage:
+                usage = "\n".join(["    " + u for u in usage.split("\n")])
             print(usage)
-        if self.helps:
-            for k, v in self.helps.items():
-                print(f"{k}: {v}")
-        if error.usage:
-            if isinstance(error, HelpError):
-                print("usage:", end="\n" if "\n" in error.usage else " ")
-            print(error.usage)
+            if self.helps:
+                for k, v in self.helps.items():
+                    print(f"{k}: {v}")
+
+        if isinstance(error, HelpError):
+            print_usage(error.usage)
+        else:
+            if self.usage:
+                print_usage(self.usage)
+            if error.usage:
+                print(error.usage)
 
     def many(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
         """

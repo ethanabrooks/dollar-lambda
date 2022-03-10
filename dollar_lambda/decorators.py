@@ -61,9 +61,12 @@ def command(
 
     def wrapper(func: Callable) -> Callable:
         p = func_to_parser(func, flip_bools=flip_bools, help=help, types=types)
+        p = wrap_help(p)
 
         def wrapped(*args) -> Any:
             parsed = p.parse_args(*args)
+            if parsed is None:
+                return
             assert isinstance(parsed, Dict), parsed
             return func(**parsed)
 

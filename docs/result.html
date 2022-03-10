@@ -42,17 +42,18 @@ from pytypeclass.nonempty_list import NonemptyList
 from dollar_lambda.error import ArgumentError, ZeroError
 from dollar_lambda.sequence import Sequence
 
-A = TypeVar(&#34;A&#34;, covariant=True, bound=Monoid)
-B = TypeVar(&#34;B&#34;, bound=Monoid)
-C = TypeVar(&#34;C&#34;)
-D = TypeVar(&#34;D&#34;)
+Monoid_co = TypeVar(&#34;Monoid_co&#34;, covariant=True, bound=Monoid)
+Monoid1 = TypeVar(&#34;Monoid1&#34;, bound=Monoid)
+A_co = TypeVar(&#34;A_co&#34;, covariant=True)
+A = TypeVar(&#34;A&#34;)
+B = TypeVar(&#34;B&#34;)
 
 
 @dataclass
-class Result(MonadPlus[A]):
-    get: NonemptyList[A] | ArgumentError
+class Result(MonadPlus[A_co]):
+    get: NonemptyList[A_co] | ArgumentError
 
-    def __or__(self, other: Result[B]) -&gt; Result[A | B]:
+    def __or__(self, other: Result[B]) -&gt; Result[A_co | B]:
         a = self.get
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
@@ -64,21 +65,21 @@ class Result(MonadPlus[A]):
         raise RuntimeError(&#34;unreachable&#34;)
 
     def __rshift__(
-        self: Result[Sequence[C]], other: Result[Sequence[D]]
-    ) -&gt; Result[Result[Sequence[C | D]]]:
+        self: Result[Sequence[A]], other: Result[Sequence[B]]
+    ) -&gt; Result[Result[Sequence[A | B]]]:
         &#34;&#34;&#34;
         Sequence cs &gt;&gt; ds for each (cs, ds) in self.get * other.get.
         Short circuit at Exceptions.
         &#34;&#34;&#34;
         return self &gt;= (lambda cs: other &gt;= (lambda ds: Result(NonemptyList(cs + ds))))
 
-    def bind(self, f: Callable[[A], Result[B]]) -&gt; Result[B]:
+    def bind(self, f: Callable[[A_co], Result[B]]) -&gt; Result[B]:
         x = self.get
         if isinstance(x, ArgumentError):
             return Result(x)
         else:
 
-            def g(acc: Result[B], new: A) -&gt; Result[B]:  # type: ignore[misc]
+            def g(acc: Result[B], new: A_co) -&gt; Result[B]:  # type: ignore[misc]
                 y = f(new)
                 a = acc.get
                 b = y.get
@@ -95,13 +96,13 @@ class Result(MonadPlus[A]):
             return reduce(g, tail, f(x.head))
 
     @classmethod
-    def return_(cls: &#34;Type[Result[A]]&#34;, a: B) -&gt; &#34;Result[B]&#34;:
+    def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
         return Result(NonemptyList(a))
 
     @classmethod
     def zero(
-        cls: &#34;Type[Result[A]]&#34;, error: Optional[ArgumentError] = None
-    ) -&gt; &#34;Result[A]&#34;:
+        cls: &#34;Type[Result[Monoid_co]]&#34;, error: Optional[ArgumentError] = None
+    ) -&gt; &#34;Result[Monoid_co]&#34;:
         return Result(ZeroError(&#34;zero&#34;) if error is None else error)</code></pre>
 </details>
 </section>
@@ -116,19 +117,19 @@ class Result(MonadPlus[A]):
 <dl>
 <dt id="dollar_lambda.result.Result"><code class="flex name class">
 <span>class <span class="ident">Result</span></span>
-<span>(</span><span>get: NonemptyList[A] | ArgumentError)</span>
+<span>(</span><span>get: NonemptyList[A_co] | ArgumentError)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Result(get: 'NonemptyList[A] | ArgumentError')</p></div>
+<div class="desc"><p>Result(get: 'NonemptyList[A_co] | ArgumentError')</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
-class Result(MonadPlus[A]):
-    get: NonemptyList[A] | ArgumentError
+class Result(MonadPlus[A_co]):
+    get: NonemptyList[A_co] | ArgumentError
 
-    def __or__(self, other: Result[B]) -&gt; Result[A | B]:
+    def __or__(self, other: Result[B]) -&gt; Result[A_co | B]:
         a = self.get
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
@@ -140,21 +141,21 @@ class Result(MonadPlus[A]):
         raise RuntimeError(&#34;unreachable&#34;)
 
     def __rshift__(
-        self: Result[Sequence[C]], other: Result[Sequence[D]]
-    ) -&gt; Result[Result[Sequence[C | D]]]:
+        self: Result[Sequence[A]], other: Result[Sequence[B]]
+    ) -&gt; Result[Result[Sequence[A | B]]]:
         &#34;&#34;&#34;
         Sequence cs &gt;&gt; ds for each (cs, ds) in self.get * other.get.
         Short circuit at Exceptions.
         &#34;&#34;&#34;
         return self &gt;= (lambda cs: other &gt;= (lambda ds: Result(NonemptyList(cs + ds))))
 
-    def bind(self, f: Callable[[A], Result[B]]) -&gt; Result[B]:
+    def bind(self, f: Callable[[A_co], Result[B]]) -&gt; Result[B]:
         x = self.get
         if isinstance(x, ArgumentError):
             return Result(x)
         else:
 
-            def g(acc: Result[B], new: A) -&gt; Result[B]:  # type: ignore[misc]
+            def g(acc: Result[B], new: A_co) -&gt; Result[B]:  # type: ignore[misc]
                 y = f(new)
                 a = acc.get
                 b = y.get
@@ -171,13 +172,13 @@ class Result(MonadPlus[A]):
             return reduce(g, tail, f(x.head))
 
     @classmethod
-    def return_(cls: &#34;Type[Result[A]]&#34;, a: B) -&gt; &#34;Result[B]&#34;:
+    def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
         return Result(NonemptyList(a))
 
     @classmethod
     def zero(
-        cls: &#34;Type[Result[A]]&#34;, error: Optional[ArgumentError] = None
-    ) -&gt; &#34;Result[A]&#34;:
+        cls: &#34;Type[Result[Monoid_co]]&#34;, error: Optional[ArgumentError] = None
+    ) -&gt; &#34;Result[Monoid_co]&#34;:
         return Result(ZeroError(&#34;zero&#34;) if error is None else error)</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -190,7 +191,7 @@ class Result(MonadPlus[A]):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.result.Result.get"><code class="name">var <span class="ident">get</span> : Union[pytypeclass.nonempty_list.NonemptyList[+A], <a title="dollar_lambda.error.ArgumentError" href="error.html#dollar_lambda.error.ArgumentError">ArgumentError</a>]</code></dt>
+<dt id="dollar_lambda.result.Result.get"><code class="name">var <span class="ident">get</span> : Union[pytypeclass.nonempty_list.NonemptyList[+A_co], <a title="dollar_lambda.error.ArgumentError" href="error.html#dollar_lambda.error.ArgumentError">ArgumentError</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -198,7 +199,7 @@ class Result(MonadPlus[A]):
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.result.Result.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: B) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~B]</span>
+<span>def <span class="ident">return_</span></span>(<span>a: A) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-haskell">return :: a -&gt; m a
@@ -208,12 +209,12 @@ class Result(MonadPlus[A]):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def return_(cls: &#34;Type[Result[A]]&#34;, a: B) -&gt; &#34;Result[B]&#34;:
+def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
     return Result(NonemptyList(a))</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.result.Result.zero"><code class="name flex">
-<span>def <span class="ident">zero</span></span>(<span>error: Optional[ArgumentError] = None) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[+A]</span>
+<span>def <span class="ident">zero</span></span>(<span>error: Optional[ArgumentError] = None) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[+Monoid_co]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -223,8 +224,8 @@ def return_(cls: &#34;Type[Result[A]]&#34;, a: B) -&gt; &#34;Result[B]&#34;:
 </summary>
 <pre><code class="python">@classmethod
 def zero(
-    cls: &#34;Type[Result[A]]&#34;, error: Optional[ArgumentError] = None
-) -&gt; &#34;Result[A]&#34;:
+    cls: &#34;Type[Result[Monoid_co]]&#34;, error: Optional[ArgumentError] = None
+) -&gt; &#34;Result[Monoid_co]&#34;:
     return Result(ZeroError(&#34;zero&#34;) if error is None else error)</code></pre>
 </details>
 </dd>
@@ -232,7 +233,7 @@ def zero(
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.result.Result.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A], <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[B]]) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~B]</span>
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[B]]) ‑> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -240,13 +241,13 @@ def zero(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def bind(self, f: Callable[[A], Result[B]]) -&gt; Result[B]:
+<pre><code class="python">def bind(self, f: Callable[[A_co], Result[B]]) -&gt; Result[B]:
     x = self.get
     if isinstance(x, ArgumentError):
         return Result(x)
     else:
 
-        def g(acc: Result[B], new: A) -&gt; Result[B]:  # type: ignore[misc]
+        def g(acc: Result[B], new: A_co) -&gt; Result[B]:  # type: ignore[misc]
             y = f(new)
             a = acc.get
             b = y.get
