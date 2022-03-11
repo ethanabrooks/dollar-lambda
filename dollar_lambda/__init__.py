@@ -335,14 +335,34 @@ whose corresponding parser succeeds first:
 usage: -x X -y Y [--verbose | --quiet]
 x: the base
 y: the exponent
-Unrecognized argument: -x
+Unrecognized argument: --verbose
+
+To make one or the other flag required, the `command` method takes a `required` argument.
+>>> tree = CommandTree()
+...
+>>> @tree.command(help=dict(x="the base", y="the exponent"))
+... def base_function(x: int, y: int):
+...     raise RuntimeError("Does not execute because children are required.")
+...
+>>> @base_function.command(required=True)
+... def verbose_function(x: int, y: int, verbose: bool):
+...     print(dict(x=x, y=y, verbose=verbose))
+...
+>>> @base_function.command(required=True)
+... def quiet_function(x: int, y: int, quiet: bool):
+...     print(dict(x=x, y=y, quiet=quiet))
+>>> tree.main("-x", "1", "-y", "2", "--verbose")  # succeeds
+{'x': 1, 'y': 2, 'verbose': True}
+>>> tree.main("-x", "1", "-y", "2")  # fails
+usage: -x X -y Y [--verbose | --quiet]
+x: the base
+y: the exponent
+The following arguments are required: --verbose
+
+Note that all children must be required or else `base_function` will execute in the
+absence of any flags.
 
 `CommandTree` is especially useful when you want different parse-results to invoke different functions.
-
-When you have a "tree-shaped" command-line interface ---
-edges defined by sequencing (`Parser.__rshift__`) and branches defined by alternatives (`Parser.__or__`)
---- `CommandTree` is probably the way to go.
-
 One drawback of `CommandTree` is that it cannot be freely combined with other parsers.
 Parsers produced by `CommandTree` are specialized for use with decorated functions
 and don't play well with more general-purpose parsers.

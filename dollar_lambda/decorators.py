@@ -11,7 +11,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, empty, equals, wrap_help
+from dollar_lambda.parser import Parse, Parser, done, equals, wrap_help
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -148,7 +148,8 @@ class Node:
             help=self.help,
             types=self.types,
         )
-        return p1 >> p2  # type: ignore[return-value]
+        p = p1 >> p2
+        return p if self.required else p.optional()  # type: ignore[return-value]
 
     def variable_names(self) -> Iterator[str]:
         yield from signature(self.function).parameters.keys()
@@ -180,11 +181,11 @@ class CommandTree:
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    >>> @f1.subcommand(required=False)
+    >>> @f1.subcommand()
     ... def f2(a: int, b: bool):
     ...     return dict(f2=dict(a=a, b=b))
 
-    >>> @f1.subcommand(required=False)
+    >>> @f1.subcommand()
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(a=a, c=c))
 
@@ -231,8 +232,6 @@ class CommandTree:
             )
 
         def get_alternatives() -> Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
-            if not self.required:
-                yield cast(Parser[FunctionPair[KeyValue[Any]]], empty())
             for child in self.children:
                 parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree.children:
