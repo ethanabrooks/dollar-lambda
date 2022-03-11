@@ -791,7 +791,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p.parse_args("--quiet", "--verbose")  # you expect this to set verbose to True, but it doesn't
     {'verbose': False, 'quiet': True}
 
-    Why is happening? There are two permutions:
+    Why is happening? There are two permutations:
 
     - `flag("verbose", default=False) >> flag("quiet")` and
     - `flag("quiet") >> flag("verbose", default=False)`
