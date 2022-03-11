@@ -1,5 +1,5 @@
 """
-A `Sequence` is a strongly-typed immutable list that implements `MonadPlus`.
+Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 """
 from __future__ import annotations
 

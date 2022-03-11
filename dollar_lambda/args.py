@@ -1,6 +1,5 @@
 """
-`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
-from defining parsers with many arguments.
+Defines the `Args` dataclass and associated functions.
 """
 import dataclasses
 from dataclasses import Field, dataclass, fields
@@ -12,9 +11,9 @@ from dollar_lambda.sequence import Sequence
 
 
 def field(
+    help: Optional[str] = None,
     metadata: Optional[dict] = None,
     type: Optional[Union[type, Callable[[str], Any]]] = None,
-    help: Optional[str] = None,
     **kwargs,
 ) -> Field:
     """
@@ -22,13 +21,13 @@ def field(
 
     Parameters
     ----------
+    help : str
+        An optional help string for the argument.
     metadata : str
         Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
     type : Optional[Union[type, Callable[[str], Any]]]
         A function that takes a string and returns a value just like the `type` argument for
         [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
-    help : str
-        An optional help string for the argument.
 
     Returns
     -------
@@ -50,23 +49,30 @@ class ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
+    string: Optional[str] = None
     type: Callable[[str], Any] = str
 
     @staticmethod
     def parse(field: Field) -> "ArgsField":
-        if "type" in field.metadata:
-            type_ = field.metadata["type"]
-        else:
-            type_ = field.type
         if "help" in field.metadata:
             help_ = field.metadata["help"]
         else:
             help_ = None
+        if "string" in field.metadata:
+            string = field.metadata["string"]
+        else:
+            string = None
+        if "type" in field.metadata:
+            type_ = field.metadata["type"]
+        else:
+            type_ = field.type
         default = field.default
         if field.default is dataclasses.MISSING:
             default = None
 
-        return ArgsField(name=field.name, default=default, help=help_, type=type_)
+        return ArgsField(
+            name=field.name, default=default, help=help_, string=string, type=type_
+        )
 
     @staticmethod
     def nonpositional(
@@ -75,10 +81,10 @@ class ArgsField:
         def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
                 if field.type == bool:
-                    if field.default is True and flip_bools:
-                        string = f"--no-{field.name}"
+                    if field.string is None and field.default is True and flip_bools:
+                        string: Optional[str] = f"--no-{field.name}"
                     else:
-                        string = None
+                        string = field.string
                     yield flag(
                         dest=field.name,
                         string=string,
@@ -89,6 +95,7 @@ class ArgsField:
                     opt = option(
                         dest=field.name,
                         default=field.default,
+                        flag=field.string,
                         help=field.help,
                     )
                     yield type_(field.type, opt)

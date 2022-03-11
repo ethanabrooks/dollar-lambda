@@ -1,5 +1,5 @@
 """
-Argument parsers generate a sequence of `KeyValue` pairs that store mappings from variable names to values.
+Defines `KeyValue` which stores pairs of variable names (keys) and values.
 """
 from dataclasses import dataclass
 from typing import Any, Generic, NamedTuple, TypeVar

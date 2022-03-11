@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda.args API documentation</title>
-<meta name="description" content="`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
-from defining parsers with many arguments." />
+<meta name="description" content="Defines the `Args` dataclass and associated functions." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -23,15 +22,13 @@ from defining parsers with many arguments." />
 <h1 class="title">Module <code>dollar_lambda.args</code></h1>
 </header>
 <section id="section-intro">
-<p><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> is sugar for the <code>nonpositional</code> function and removes much of the boilerplate
-from defining parsers with many arguments.</p>
+<p>Defines the <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> dataclass and associated functions.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-`Args` is sugar for the `nonpositional` function and removes much of the boilerplate
-from defining parsers with many arguments.
+Defines the `Args` dataclass and associated functions.
 &#34;&#34;&#34;
 import dataclasses
 from dataclasses import Field, dataclass, fields
@@ -43,9 +40,9 @@ from dollar_lambda.sequence import Sequence
 
 
 def field(
+    help: Optional[str] = None,
     metadata: Optional[dict] = None,
     type: Optional[Union[type, Callable[[str], Any]]] = None,
-    help: Optional[str] = None,
     **kwargs,
 ) -&gt; Field:
     &#34;&#34;&#34;
@@ -53,13 +50,13 @@ def field(
 
     Parameters
     ----------
+    help : str
+        An optional help string for the argument.
     metadata : str
         Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
     type : Optional[Union[type, Callable[[str], Any]]]
         A function that takes a string and returns a value just like the `type` argument for
         [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
-    help : str
-        An optional help string for the argument.
 
     Returns
     -------
@@ -81,23 +78,30 @@ class ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
+    string: Optional[str] = None
     type: Callable[[str], Any] = str
 
     @staticmethod
     def parse(field: Field) -&gt; &#34;ArgsField&#34;:
-        if &#34;type&#34; in field.metadata:
-            type_ = field.metadata[&#34;type&#34;]
-        else:
-            type_ = field.type
         if &#34;help&#34; in field.metadata:
             help_ = field.metadata[&#34;help&#34;]
         else:
             help_ = None
+        if &#34;string&#34; in field.metadata:
+            string = field.metadata[&#34;string&#34;]
+        else:
+            string = None
+        if &#34;type&#34; in field.metadata:
+            type_ = field.metadata[&#34;type&#34;]
+        else:
+            type_ = field.type
         default = field.default
         if field.default is dataclasses.MISSING:
             default = None
 
-        return ArgsField(name=field.name, default=default, help=help_, type=type_)
+        return ArgsField(
+            name=field.name, default=default, help=help_, string=string, type=type_
+        )
 
     @staticmethod
     def nonpositional(
@@ -106,10 +110,10 @@ class ArgsField:
         def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
                 if field.type == bool:
-                    if field.default is True and flip_bools:
-                        string = f&#34;--no-{field.name}&#34;
+                    if field.string is None and field.default is True and flip_bools:
+                        string: Optional[str] = f&#34;--no-{field.name}&#34;
                     else:
-                        string = None
+                        string = field.string
                     yield flag(
                         dest=field.name,
                         string=string,
@@ -120,6 +124,7 @@ class ArgsField:
                     opt = option(
                         dest=field.name,
                         default=field.default,
+                        flag=field.string,
                         help=field.help,
                     )
                     yield type_(field.type, opt)
@@ -190,19 +195,19 @@ class Args:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.args.field"><code class="name flex">
-<span>def <span class="ident">field</span></span>(<span>metadata: Optional[dict] = None, type: Union[type, Callable[[str], Any], ForwardRef(None)] = None, help: Optional[str] = None, **kwargs) ‑> dataclasses.Field</span>
+<span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, type: Union[type, Callable[[str], Any], ForwardRef(None)] = None, **kwargs) ‑> dataclasses.Field</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This is a thin wrapper around <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>help</code></strong> :&ensp;<code>str</code></dt>
+<dd>An optional help string for the argument.</dd>
 <dt><strong><code>metadata</code></strong> :&ensp;<code>str</code></dt>
 <dd>Identical to the <code>metadata</code> argument for <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</dd>
 <dt><strong><code>type</code></strong> :&ensp;<code>Optional[Union[type, Callable[[str], Any]]]</code></dt>
 <dd>A function that takes a string and returns a value just like the <code>type</code> argument for
 <a href="https://docs.python.org/3/library/argparse.html#type"><code>ArgumentParser.add_argument</code></a>.</dd>
-<dt><strong><code>help</code></strong> :&ensp;<code>str</code></dt>
-<dd>An optional help string for the argument.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>A <code>dataclasses.Field</code> object that can be used in place of a default argument as
@@ -212,9 +217,9 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def field(
+    help: Optional[str] = None,
     metadata: Optional[dict] = None,
     type: Optional[Union[type, Callable[[str], Any]]] = None,
-    help: Optional[str] = None,
     **kwargs,
 ) -&gt; Field:
     &#34;&#34;&#34;
@@ -222,13 +227,13 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 
     Parameters
     ----------
+    help : str
+        An optional help string for the argument.
     metadata : str
         Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
     type : Optional[Union[type, Callable[[str], Any]]]
         A function that takes a string and returns a value just like the `type` argument for
         [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
-    help : str
-        An optional help string for the argument.
 
     Returns
     -------
@@ -386,10 +391,10 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
 </dd>
 <dt id="dollar_lambda.args.ArgsField"><code class="flex name class">
 <span>class <span class="ident">ArgsField</span></span>
-<span>(</span><span>name: str, default: Any = None, help: Optional[str] = None, type: Callable[[str], Any] = builtins.str)</span>
+<span>(</span><span>name: str, default: Any = None, help: Optional[str] = None, string: Optional[str] = None, type: Callable[[str], Any] = builtins.str)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>ArgsField(name: str, default: Any = None, help: Optional[str] = None, type: Callable[[str], Any] = <class 'str'>)</p></div>
+<div class="desc"><p>ArgsField(name: str, default: Any = None, help: Optional[str] = None, string: Optional[str] = None, type: Callable[[str], Any] = <class 'str'>)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -399,23 +404,30 @@ class ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
+    string: Optional[str] = None
     type: Callable[[str], Any] = str
 
     @staticmethod
     def parse(field: Field) -&gt; &#34;ArgsField&#34;:
-        if &#34;type&#34; in field.metadata:
-            type_ = field.metadata[&#34;type&#34;]
-        else:
-            type_ = field.type
         if &#34;help&#34; in field.metadata:
             help_ = field.metadata[&#34;help&#34;]
         else:
             help_ = None
+        if &#34;string&#34; in field.metadata:
+            string = field.metadata[&#34;string&#34;]
+        else:
+            string = None
+        if &#34;type&#34; in field.metadata:
+            type_ = field.metadata[&#34;type&#34;]
+        else:
+            type_ = field.type
         default = field.default
         if field.default is dataclasses.MISSING:
             default = None
 
-        return ArgsField(name=field.name, default=default, help=help_, type=type_)
+        return ArgsField(
+            name=field.name, default=default, help=help_, string=string, type=type_
+        )
 
     @staticmethod
     def nonpositional(
@@ -424,10 +436,10 @@ class ArgsField:
         def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
                 if field.type == bool:
-                    if field.default is True and flip_bools:
-                        string = f&#34;--no-{field.name}&#34;
+                    if field.string is None and field.default is True and flip_bools:
+                        string: Optional[str] = f&#34;--no-{field.name}&#34;
                     else:
-                        string = None
+                        string = field.string
                     yield flag(
                         dest=field.name,
                         string=string,
@@ -438,6 +450,7 @@ class ArgsField:
                     opt = option(
                         dest=field.name,
                         default=field.default,
+                        flag=field.string,
                         help=field.help,
                     )
                     yield type_(field.type, opt)
@@ -455,6 +468,10 @@ class ArgsField:
 <div class="desc"></div>
 </dd>
 <dt id="dollar_lambda.args.ArgsField.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.args.ArgsField.string"><code class="name">var <span class="ident">string</span> : Optional[str]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -489,10 +506,10 @@ def nonpositional(
     def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
         for field in fields:
             if field.type == bool:
-                if field.default is True and flip_bools:
-                    string = f&#34;--no-{field.name}&#34;
+                if field.string is None and field.default is True and flip_bools:
+                    string: Optional[str] = f&#34;--no-{field.name}&#34;
                 else:
-                    string = None
+                    string = field.string
                 yield flag(
                     dest=field.name,
                     string=string,
@@ -503,6 +520,7 @@ def nonpositional(
                 opt = option(
                     dest=field.name,
                     default=field.default,
+                    flag=field.string,
                     help=field.help,
                 )
                 yield type_(field.type, opt)
@@ -521,19 +539,25 @@ def nonpositional(
 </summary>
 <pre><code class="python">@staticmethod
 def parse(field: Field) -&gt; &#34;ArgsField&#34;:
-    if &#34;type&#34; in field.metadata:
-        type_ = field.metadata[&#34;type&#34;]
-    else:
-        type_ = field.type
     if &#34;help&#34; in field.metadata:
         help_ = field.metadata[&#34;help&#34;]
     else:
         help_ = None
+    if &#34;string&#34; in field.metadata:
+        string = field.metadata[&#34;string&#34;]
+    else:
+        string = None
+    if &#34;type&#34; in field.metadata:
+        type_ = field.metadata[&#34;type&#34;]
+    else:
+        type_ = field.type
     default = field.default
     if field.default is dataclasses.MISSING:
         default = None
 
-    return ArgsField(name=field.name, default=default, help=help_, type=type_)</code></pre>
+    return ArgsField(
+        name=field.name, default=default, help=help_, string=string, type=type_
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -574,6 +598,7 @@ def parse(field: Field) -&gt; &#34;ArgsField&#34;:
 <li><code><a title="dollar_lambda.args.ArgsField.name" href="#dollar_lambda.args.ArgsField.name">name</a></code></li>
 <li><code><a title="dollar_lambda.args.ArgsField.nonpositional" href="#dollar_lambda.args.ArgsField.nonpositional">nonpositional</a></code></li>
 <li><code><a title="dollar_lambda.args.ArgsField.parse" href="#dollar_lambda.args.ArgsField.parse">parse</a></code></li>
+<li><code><a title="dollar_lambda.args.ArgsField.string" href="#dollar_lambda.args.ArgsField.string">string</a></code></li>
 <li><code><a title="dollar_lambda.args.ArgsField.type" href="#dollar_lambda.args.ArgsField.type">type</a></code></li>
 </ul>
 </li>

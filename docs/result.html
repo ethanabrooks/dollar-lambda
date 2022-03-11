@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda.result API documentation</title>
-<meta name="description" content="Results represent either success or failure (an exception). This is how errors get bubbled up during the parsing process." />
+<meta name="description" content="Defines the `Result` dataclass, representing success or failure, output by parsers." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,13 +22,13 @@
 <h1 class="title">Module <code>dollar_lambda.result</code></h1>
 </header>
 <section id="section-intro">
-<p>Results represent either success or failure (an exception). This is how errors get bubbled up during the parsing process.</p>
+<p>Defines the <code><a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a></code> dataclass, representing success or failure, output by parsers.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-Results represent either success or failure (an exception). This is how errors get bubbled up during the parsing process.
+Defines the `Result` dataclass, representing success or failure, output by parsers.
 &#34;&#34;&#34;
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import ArgumentError, ZeroError
+from dollar_lambda.error import ArgumentError, HelpError, ZeroError
 from dollar_lambda.sequence import Sequence
 
 Monoid_co = TypeVar(&#34;Monoid_co&#34;, covariant=True, bound=Monoid)
@@ -58,11 +58,18 @@ class Result(MonadPlus[A_co]):
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
-        if isinstance(b, ArgumentError):
-            return self
-        if isinstance(a, ArgumentError):
-            return other
-        raise RuntimeError(&#34;unreachable&#34;)
+
+        def priority(x: NonemptyList[A_co] | ArgumentError) -&gt; int:
+            if isinstance(x, NonemptyList):
+                return 0
+            if isinstance(x, HelpError):
+                return 1
+            if isinstance(x, ArgumentError):
+                return 2
+            raise RuntimeError(&#34;Unreachable&#34;)
+
+        get, *_ = sorted((a, b), key=priority)
+        return Result(get)
 
     def __rshift__(
         self: Result[Sequence[A]], other: Result[Sequence[B]]
@@ -134,11 +141,18 @@ class Result(MonadPlus[A_co]):
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
-        if isinstance(b, ArgumentError):
-            return self
-        if isinstance(a, ArgumentError):
-            return other
-        raise RuntimeError(&#34;unreachable&#34;)
+
+        def priority(x: NonemptyList[A_co] | ArgumentError) -&gt; int:
+            if isinstance(x, NonemptyList):
+                return 0
+            if isinstance(x, HelpError):
+                return 1
+            if isinstance(x, ArgumentError):
+                return 2
+            raise RuntimeError(&#34;Unreachable&#34;)
+
+        get, *_ = sorted((a, b), key=priority)
+        return Result(get)
 
     def __rshift__(
         self: Result[Sequence[A]], other: Result[Sequence[B]]

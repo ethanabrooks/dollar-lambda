@@ -1,3 +1,6 @@
+"""
+Defines the `command` decorator and the `CommandTree` class.
+"""
 import operator
 import sys
 from dataclasses import dataclass, field, replace
@@ -25,11 +28,13 @@ def func_to_parser(
     exclude: Optional[List[str]] = None,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -> Parser[Sequence[KeyValue[Any]]]:
-    _help = {} if help is None else help
-    _types = {} if types is None else types
     _exclude = [] if exclude is None else exclude
+    _help = {} if help is None else help
+    _strings = {} if strings is None else strings
+    _types = {} if types is None else types
 
     return ArgsField.nonpositional(
         *[
@@ -37,6 +42,7 @@ def func_to_parser(
                 name=k,
                 default=None if v.default == Parameter.empty else v.default,
                 help=_help.get(k),
+                string=_strings.get(k),
                 type=_types.get(k, v.annotation),
             )
             for k, v in signature(func).parameters.items()
@@ -49,18 +55,83 @@ def func_to_parser(
 def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -> Callable[[Callable], Callable]:
     """
+    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
+    component parsers from the function's signature and automatically executes the function with
+    the parsed arguments, if parsing succeeds:
+
     >>> @command(help=dict(a="something about a"), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):
-    ...     print(dict(a=a, b=b))
+    ...     return dict(a=a, b=b)
     >>> f("-a", "2", "-b")
     {'a': 3, 'b': True}
+
+    If the wrapped function receives no arguments (as in `f()`), the parser will take
+    `sys.argv[1:]` as the input.
+
+    Note that `@command` does not handle mutually exclusive arguments or alternative
+    arguments.
+
+    Parameters
+    ----------
+    flip_bools : bool
+        For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
+
+    >>> @command(flip_bools=True)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    >>> f()
+    {'cuda': True}
+    >>> f("--no-cuda")
+    {'cuda': False}
+
+    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+
+    >>> @command(flip_bools=False)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    >>> f("--cuda")
+    {'cuda': False}
+
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    >>> @command(help=dict(quiet="Be quiet"))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    >>> f("--help")
+    usage: --quiet
+    quiet: Be quiet
+
+    strings : dict[str, str]
+        This dictionary maps variable names to the strings that the parser will look for in the input. For example:
+
+    >>> @command(strings=dict(quiet="--quiet-mode"))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    >>> f("--quiet-mode")
+    {'quiet': True}
+    >>> f("--quiet")
+    usage: --quiet-mode
+    Expected '--quiet-mode'. Got '--quiet'
+
+    types: dict[str, Callable[[str], Any]]
+        This dictionary maps variable names to custom type converters. For example:
+
+    >>> @command(types=dict(x=lambda x: int(x) + 1))
+    ... def f(x: int):
+    ...     return dict(x=x)
+    >>> f("-x", "0")
+    {'x': 1}
     """
 
     def wrapper(func: Callable) -> Callable:
-        p = func_to_parser(func, flip_bools=flip_bools, help=help, types=types)
+        p = func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
+        )
         p = wrap_help(p)
 
         def wrapped(*args) -> Any:
@@ -131,6 +202,7 @@ class Node:
     flip_bools: bool
     help: Optional[Dict[str, str]]
     required: bool
+    strings: Optional[Dict[str, str]]
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
     tree: Optional["CommandTree"]
@@ -146,6 +218,7 @@ class Node:
             exclude=list(exclude),
             flip_bools=self.flip_bools,
             help=self.help,
+            strings=self.strings,
             types=self.types,
         )
         p = p1 >> p2
@@ -207,14 +280,16 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         return self.decorator(
             flip_bools=flip_bools,
             help=help,
             required=required,
-            types=types,
+            strings=strings,
             subcommand=False,
+            types=types,
         )
 
     def decorator(self, **kwargs) -> Callable:
@@ -263,6 +338,7 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         return self.decorator(
@@ -270,5 +346,6 @@ class CommandTree:
             help=help,
             required=required,
             types=types,
+            strings=strings,
             subcommand=True,
         )

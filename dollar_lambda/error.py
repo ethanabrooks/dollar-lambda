@@ -1,5 +1,5 @@
 """
-Contains definitions for errors which can be raised by parsers.
+Defines errors which can be raised by parsers.
 """
 from dataclasses import dataclass
 from typing import Generic, TypeVar

@@ -1,5 +1,5 @@
 """
-Results represent either success or failure (an exception). This is how errors get bubbled up during the parsing process.
+Defines the `Result` dataclass, representing success or failure, output by parsers.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import ArgumentError, ZeroError
+from dollar_lambda.error import ArgumentError, HelpError, ZeroError
 from dollar_lambda.sequence import Sequence
 
 Monoid_co = TypeVar("Monoid_co", covariant=True, bound=Monoid)
@@ -29,11 +29,17 @@ class Result(MonadPlus[A_co]):
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
-        if isinstance(b, ArgumentError):
-            return self
-        if isinstance(a, ArgumentError):
-            return other
-        raise RuntimeError("unreachable")
+
+        for get in [a, b]:
+            if isinstance(get, NonemptyList):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, HelpError):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, ArgumentError):
+                return Result(get)
+        raise RuntimeError("Unreachable")
 
     def __rshift__(
         self: Result[Sequence[A]], other: Result[Sequence[B]]

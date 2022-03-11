@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda.decorators API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Defines the `command` decorator and the `CommandTree` class." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -22,11 +22,15 @@
 <h1 class="title">Module <code>dollar_lambda.decorators</code></h1>
 </header>
 <section id="section-intro">
+<p>Defines the <code><a title="dollar_lambda.decorators.command" href="#dollar_lambda.decorators.command">command()</a></code> decorator and the <code><a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a></code> class.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import operator
+<pre><code class="python">&#34;&#34;&#34;
+Defines the `command` decorator and the `CommandTree` class.
+&#34;&#34;&#34;
+import operator
 import sys
 from dataclasses import dataclass, field, replace
 from functools import reduce
@@ -39,7 +43,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, empty, equals, wrap_help
+from dollar_lambda.parser import Parse, Parser, done, equals, wrap_help
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -53,11 +57,13 @@ def func_to_parser(
     exclude: Optional[List[str]] = None,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Parser[Sequence[KeyValue[Any]]]:
-    _help = {} if help is None else help
-    _types = {} if types is None else types
     _exclude = [] if exclude is None else exclude
+    _help = {} if help is None else help
+    _strings = {} if strings is None else strings
+    _types = {} if types is None else types
 
     return ArgsField.nonpositional(
         *[
@@ -65,6 +71,7 @@ def func_to_parser(
                 name=k,
                 default=None if v.default == Parameter.empty else v.default,
                 help=_help.get(k),
+                string=_strings.get(k),
                 type=_types.get(k, v.annotation),
             )
             for k, v in signature(func).parameters.items()
@@ -77,18 +84,83 @@ def func_to_parser(
 def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
+    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
+    component parsers from the function&#39;s signature and automatically executes the function with
+    the parsed arguments, if parsing succeeds:
+
     &gt;&gt;&gt; @command(help=dict(a=&#34;something about a&#34;), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):
-    ...     print(dict(a=a, b=b))
+    ...     return dict(a=a, b=b)
     &gt;&gt;&gt; f(&#34;-a&#34;, &#34;2&#34;, &#34;-b&#34;)
     {&#39;a&#39;: 3, &#39;b&#39;: True}
+
+    If the wrapped function receives no arguments (as in `f()`), the parser will take
+    `sys.argv[1:]` as the input.
+
+    Note that `@command` does not handle mutually exclusive arguments or alternative
+    arguments.
+
+    Parameters
+    ----------
+    flip_bools : bool
+        For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
+
+    &gt;&gt;&gt; @command(flip_bools=True)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    &gt;&gt;&gt; f()
+    {&#39;cuda&#39;: True}
+    &gt;&gt;&gt; f(&#34;--no-cuda&#34;)
+    {&#39;cuda&#39;: False}
+
+    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+
+    &gt;&gt;&gt; @command(flip_bools=False)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    &gt;&gt;&gt; f(&#34;--cuda&#34;)
+    {&#39;cuda&#39;: False}
+
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    &gt;&gt;&gt; @command(help=dict(quiet=&#34;Be quiet&#34;))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    &gt;&gt;&gt; f(&#34;--help&#34;)
+    usage: --quiet
+    quiet: Be quiet
+
+    strings : dict[str, str]
+        This dictionary maps variable names to the strings that the parser will look for in the input. For example:
+
+    &gt;&gt;&gt; @command(strings=dict(quiet=&#34;--quiet-mode&#34;))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    &gt;&gt;&gt; f(&#34;--quiet-mode&#34;)
+    {&#39;quiet&#39;: True}
+    &gt;&gt;&gt; f(&#34;--quiet&#34;)
+    usage: --quiet-mode
+    Expected &#39;--quiet-mode&#39;. Got &#39;--quiet&#39;
+
+    types: dict[str, Callable[[str], Any]]
+        This dictionary maps variable names to custom type converters. For example:
+
+    &gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
+    ... def f(x: int):
+    ...     return dict(x=x)
+    &gt;&gt;&gt; f(&#34;-x&#34;, &#34;0&#34;)
+    {&#39;x&#39;: 1}
     &#34;&#34;&#34;
 
     def wrapper(func: Callable) -&gt; Callable:
-        p = func_to_parser(func, flip_bools=flip_bools, help=help, types=types)
+        p = func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
+        )
         p = wrap_help(p)
 
         def wrapped(*args) -&gt; Any:
@@ -159,6 +231,7 @@ class Node:
     flip_bools: bool
     help: Optional[Dict[str, str]]
     required: bool
+    strings: Optional[Dict[str, str]]
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
     tree: Optional[&#34;CommandTree&#34;]
@@ -174,9 +247,11 @@ class Node:
             exclude=list(exclude),
             flip_bools=self.flip_bools,
             help=self.help,
+            strings=self.strings,
             types=self.types,
         )
-        return p1 &gt;&gt; p2  # type: ignore[return-value]
+        p = p1 &gt;&gt; p2
+        return p if self.required else p.optional()  # type: ignore[return-value]
 
     def variable_names(self) -&gt; Iterator[str]:
         yield from signature(self.function).parameters.keys()
@@ -208,11 +283,11 @@ class CommandTree:
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    &gt;&gt;&gt; @f1.subcommand(required=False)
+    &gt;&gt;&gt; @f1.subcommand()
     ... def f2(a: int, b: bool):
     ...     return dict(f2=dict(a=a, b=b))
 
-    &gt;&gt;&gt; @f1.subcommand(required=False)
+    &gt;&gt;&gt; @f1.subcommand()
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(a=a, c=c))
 
@@ -234,14 +309,16 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
         return self.decorator(
             flip_bools=flip_bools,
             help=help,
             required=required,
-            types=types,
+            strings=strings,
             subcommand=False,
+            types=types,
         )
 
     def decorator(self, **kwargs) -&gt; Callable:
@@ -259,8 +336,6 @@ class CommandTree:
             )
 
         def get_alternatives() -&gt; Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
-            if not self.required:
-                yield cast(Parser[FunctionPair[KeyValue[Any]]], empty())
             for child in self.children:
                 parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree.children:
@@ -292,6 +367,7 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
         return self.decorator(
@@ -299,6 +375,7 @@ class CommandTree:
             help=help,
             required=required,
             types=types,
+            strings=strings,
             subcommand=True,
         )</code></pre>
 </details>
@@ -311,14 +388,84 @@ class CommandTree:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.decorators.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable[[Callable], Callable]</span>
+<span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable[[Callable], Callable]</span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
+<div class="desc"><p>A succinct way to generate a simple <code>nonpositional</code> parser. <code>@command</code> derives the
+component parsers from the function's signature and automatically executes the function with
+the parsed arguments, if parsing succeeds:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
 ... def f(a: int = 1, b: bool = False):
-...     print(dict(a=a, b=b))
+...     return dict(a=a, b=b)
 &gt;&gt;&gt; f(&quot;-a&quot;, &quot;2&quot;, &quot;-b&quot;)
 {'a': 3, 'b': True}
+</code></pre>
+<p>If the wrapped function receives no arguments (as in <code>f()</code>), the parser will take
+<code>sys.argv[1:]</code> as the input.</p>
+<p>Note that <code>@command</code> does not handle mutually exclusive arguments or alternative
+arguments.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+<dd>For boolean arguments that default to true, this changes the flag from <code>--{dest}</code> to <code>--no-{dest}</code>:</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=True)
+... def f(cuda: bool = True):
+...     return dict(cuda=cuda)
+&gt;&gt;&gt; f()
+{'cuda': True}
+&gt;&gt;&gt; f(&quot;--no-cuda&quot;)
+{'cuda': False}
+</code></pre>
+<p>As the following example demonstrates, when <code>flip_bools=False</code> output can be somewhat confusing:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=False)
+... def f(cuda: bool = True):
+...     return dict(cuda=cuda)
+&gt;&gt;&gt; f(&quot;--cuda&quot;)
+{'cuda': False}
+</code></pre>
+<dl>
+<dt><strong><code>help</code></strong> :&ensp;<code>dict[str, str]</code></dt>
+<dd>A dictionary of help strings for the arguments.</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(quiet=&quot;Be quiet&quot;))
+... def f(quiet: bool):
+...     return dict(quiet=quiet)
+&gt;&gt;&gt; f(&quot;--help&quot;)
+**```usage```** :&amp;ensp;`--quiet`
+:   &amp;nbsp;
+
+
+**```quiet```** :&amp;ensp;&lt;code&gt;Be quiet&lt;/code&gt;
+:   &amp;nbsp;
+
+
+</code></pre>
+<dl>
+<dt><strong><code>strings</code></strong> :&ensp;<code>dict[str, str]</code></dt>
+<dd>This dictionary maps variable names to the strings that the parser will look for in the input. For example:</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(strings=dict(quiet=&quot;--quiet-mode&quot;))
+... def f(quiet: bool):
+...     return dict(quiet=quiet)
+&gt;&gt;&gt; f(&quot;--quiet-mode&quot;)
+{'quiet': True}
+&gt;&gt;&gt; f(&quot;--quiet&quot;)
+**```usage```** :&amp;ensp;`--quiet-mode`
+:   &amp;nbsp;
+
+
+Expected '--quiet-mode'. Got '--quiet'
+</code></pre>
+<dl>
+<dt><strong><code>types</code></strong> :&ensp;<code>dict[str, Callable[[str], Any]]</code></dt>
+<dd>This dictionary maps variable names to custom type converters. For example:</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
+... def f(x: int):
+...     return dict(x=x)
+&gt;&gt;&gt; f(&quot;-x&quot;, &quot;0&quot;)
+{'x': 1}
 </code></pre></div>
 <details class="source">
 <summary>
@@ -327,18 +474,83 @@ class CommandTree:
 <pre><code class="python">def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
+    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
+    component parsers from the function&#39;s signature and automatically executes the function with
+    the parsed arguments, if parsing succeeds:
+
     &gt;&gt;&gt; @command(help=dict(a=&#34;something about a&#34;), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):
-    ...     print(dict(a=a, b=b))
+    ...     return dict(a=a, b=b)
     &gt;&gt;&gt; f(&#34;-a&#34;, &#34;2&#34;, &#34;-b&#34;)
     {&#39;a&#39;: 3, &#39;b&#39;: True}
+
+    If the wrapped function receives no arguments (as in `f()`), the parser will take
+    `sys.argv[1:]` as the input.
+
+    Note that `@command` does not handle mutually exclusive arguments or alternative
+    arguments.
+
+    Parameters
+    ----------
+    flip_bools : bool
+        For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
+
+    &gt;&gt;&gt; @command(flip_bools=True)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    &gt;&gt;&gt; f()
+    {&#39;cuda&#39;: True}
+    &gt;&gt;&gt; f(&#34;--no-cuda&#34;)
+    {&#39;cuda&#39;: False}
+
+    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+
+    &gt;&gt;&gt; @command(flip_bools=False)
+    ... def f(cuda: bool = True):
+    ...     return dict(cuda=cuda)
+    &gt;&gt;&gt; f(&#34;--cuda&#34;)
+    {&#39;cuda&#39;: False}
+
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    &gt;&gt;&gt; @command(help=dict(quiet=&#34;Be quiet&#34;))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    &gt;&gt;&gt; f(&#34;--help&#34;)
+    usage: --quiet
+    quiet: Be quiet
+
+    strings : dict[str, str]
+        This dictionary maps variable names to the strings that the parser will look for in the input. For example:
+
+    &gt;&gt;&gt; @command(strings=dict(quiet=&#34;--quiet-mode&#34;))
+    ... def f(quiet: bool):
+    ...     return dict(quiet=quiet)
+    &gt;&gt;&gt; f(&#34;--quiet-mode&#34;)
+    {&#39;quiet&#39;: True}
+    &gt;&gt;&gt; f(&#34;--quiet&#34;)
+    usage: --quiet-mode
+    Expected &#39;--quiet-mode&#39;. Got &#39;--quiet&#39;
+
+    types: dict[str, Callable[[str], Any]]
+        This dictionary maps variable names to custom type converters. For example:
+
+    &gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
+    ... def f(x: int):
+    ...     return dict(x=x)
+    &gt;&gt;&gt; f(&#34;-x&#34;, &#34;0&#34;)
+    {&#39;x&#39;: 1}
     &#34;&#34;&#34;
 
     def wrapper(func: Callable) -&gt; Callable:
-        p = func_to_parser(func, flip_bools=flip_bools, help=help, types=types)
+        p = func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
+        )
         p = wrap_help(p)
 
         def wrapped(*args) -&gt; Any:
@@ -378,7 +590,7 @@ class CommandTree:
 </details>
 </dd>
 <dt id="dollar_lambda.decorators.func_to_parser"><code class="name flex">
-<span>def <span class="ident">func_to_parser</span></span>(<span>func: Callable, exclude: Optional[List[str]] = None, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+<span>def <span class="ident">func_to_parser</span></span>(<span>func: Callable, exclude: Optional[List[str]] = None, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -391,11 +603,13 @@ class CommandTree:
     exclude: Optional[List[str]] = None,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Parser[Sequence[KeyValue[Any]]]:
-    _help = {} if help is None else help
-    _types = {} if types is None else types
     _exclude = [] if exclude is None else exclude
+    _help = {} if help is None else help
+    _strings = {} if strings is None else strings
+    _types = {} if types is None else types
 
     return ArgsField.nonpositional(
         *[
@@ -403,6 +617,7 @@ class CommandTree:
                 name=k,
                 default=None if v.default == Parameter.empty else v.default,
                 help=_help.get(k),
+                string=_strings.get(k),
                 type=_types.get(k, v.annotation),
             )
             for k, v in signature(func).parameters.items()
@@ -480,11 +695,11 @@ usage: [-a A | f2 -b]
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand(required=False)
+<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand()
 ... def f2(a: int, b: bool):
 ...     return dict(f2=dict(a=a, b=b))
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand(required=False)
+<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand()
 ... def f3(a: int, c: str):
 ...     return dict(f3=dict(a=a, c=c))
 </code></pre>
@@ -527,11 +742,11 @@ class CommandTree:
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    &gt;&gt;&gt; @f1.subcommand(required=False)
+    &gt;&gt;&gt; @f1.subcommand()
     ... def f2(a: int, b: bool):
     ...     return dict(f2=dict(a=a, b=b))
 
-    &gt;&gt;&gt; @f1.subcommand(required=False)
+    &gt;&gt;&gt; @f1.subcommand()
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(a=a, c=c))
 
@@ -553,14 +768,16 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
         return self.decorator(
             flip_bools=flip_bools,
             help=help,
             required=required,
-            types=types,
+            strings=strings,
             subcommand=False,
+            types=types,
         )
 
     def decorator(self, **kwargs) -&gt; Callable:
@@ -578,8 +795,6 @@ class CommandTree:
             )
 
         def get_alternatives() -&gt; Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
-            if not self.required:
-                yield cast(Parser[FunctionPair[KeyValue[Any]]], empty())
             for child in self.children:
                 parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree.children:
@@ -611,6 +826,7 @@ class CommandTree:
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
         required: bool = False,
+        strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
         return self.decorator(
@@ -618,6 +834,7 @@ class CommandTree:
             help=help,
             required=required,
             types=types,
+            strings=strings,
             subcommand=True,
         )</code></pre>
 </details>
@@ -635,7 +852,7 @@ class CommandTree:
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.decorators.CommandTree.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
+<span>def <span class="ident">command</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -648,14 +865,16 @@ class CommandTree:
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
     required: bool = False,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable:
     return self.decorator(
         flip_bools=flip_bools,
         help=help,
         required=required,
-        types=types,
+        strings=strings,
         subcommand=False,
+        types=types,
     )</code></pre>
 </details>
 </dd>
@@ -717,8 +936,6 @@ class CommandTree:
         )
 
     def get_alternatives() -&gt; Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
-        if not self.required:
-            yield cast(Parser[FunctionPair[KeyValue[Any]]], empty())
         for child in self.children:
             parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
             if child.tree is not None and child.tree.children:
@@ -733,7 +950,7 @@ class CommandTree:
 </details>
 </dd>
 <dt id="dollar_lambda.decorators.CommandTree.subcommand"><code class="name flex">
-<span>def <span class="ident">subcommand</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
+<span>def <span class="ident">subcommand</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -746,6 +963,7 @@ class CommandTree:
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
     required: bool = False,
+    strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable:
     return self.decorator(
@@ -753,6 +971,7 @@ class CommandTree:
         help=help,
         required=required,
         types=types,
+        strings=strings,
         subcommand=True,
     )</code></pre>
 </details>
@@ -811,10 +1030,10 @@ class FunctionPair(Sequence[A]):
 </dd>
 <dt id="dollar_lambda.decorators.Node"><code class="flex name class">
 <span>class <span class="ident">Node</span></span>
-<span>(</span><span>function: Callable, flip_bools: bool, help: Optional[Dict[str, str]], required: bool, types: Optional[Dict[str, Callable[[str], Any]]], subcommand: bool, tree: Optional[ForwardRef('<a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a>')])</span>
+<span>(</span><span>function: Callable, flip_bools: bool, help: Optional[Dict[str, str]], required: bool, strings: Optional[Dict[str, str]], types: Optional[Dict[str, Callable[[str], Any]]], subcommand: bool, tree: Optional[ForwardRef('<a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a>')])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Node(function: Callable, flip_bools: bool, help: Optional[Dict[str, str]], required: bool, types: Optional[Dict[str, Callable[[str], Any]]], subcommand: bool, tree: Optional[ForwardRef('CommandTree')])</p></div>
+<div class="desc"><p>Node(function: Callable, flip_bools: bool, help: Optional[Dict[str, str]], required: bool, strings: Optional[Dict[str, str]], types: Optional[Dict[str, Callable[[str], Any]]], subcommand: bool, tree: Optional[ForwardRef('CommandTree')])</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -825,6 +1044,7 @@ class Node:
     flip_bools: bool
     help: Optional[Dict[str, str]]
     required: bool
+    strings: Optional[Dict[str, str]]
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
     tree: Optional[&#34;CommandTree&#34;]
@@ -840,9 +1060,11 @@ class Node:
             exclude=list(exclude),
             flip_bools=self.flip_bools,
             help=self.help,
+            strings=self.strings,
             types=self.types,
         )
-        return p1 &gt;&gt; p2  # type: ignore[return-value]
+        p = p1 &gt;&gt; p2
+        return p if self.required else p.optional()  # type: ignore[return-value]
 
     def variable_names(self) -&gt; Iterator[str]:
         yield from signature(self.function).parameters.keys()</code></pre>
@@ -862,6 +1084,10 @@ class Node:
 <div class="desc"></div>
 </dd>
 <dt id="dollar_lambda.decorators.Node.required"><code class="name">var <span class="ident">required</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.decorators.Node.strings"><code class="name">var <span class="ident">strings</span> : Optional[Dict[str, str]]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -900,9 +1126,11 @@ class Node:
         exclude=list(exclude),
         flip_bools=self.flip_bools,
         help=self.help,
+        strings=self.strings,
         types=self.types,
     )
-    return p1 &gt;&gt; p2  # type: ignore[return-value]</code></pre>
+    p = p1 &gt;&gt; p2
+    return p if self.required else p.optional()  # type: ignore[return-value]</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.decorators.Node.variable_names"><code class="name flex">
@@ -970,6 +1198,7 @@ class Node:
 <li><code><a title="dollar_lambda.decorators.Node.help" href="#dollar_lambda.decorators.Node.help">help</a></code></li>
 <li><code><a title="dollar_lambda.decorators.Node.parser" href="#dollar_lambda.decorators.Node.parser">parser</a></code></li>
 <li><code><a title="dollar_lambda.decorators.Node.required" href="#dollar_lambda.decorators.Node.required">required</a></code></li>
+<li><code><a title="dollar_lambda.decorators.Node.strings" href="#dollar_lambda.decorators.Node.strings">strings</a></code></li>
 <li><code><a title="dollar_lambda.decorators.Node.subcommand" href="#dollar_lambda.decorators.Node.subcommand">subcommand</a></code></li>
 <li><code><a title="dollar_lambda.decorators.Node.tree" href="#dollar_lambda.decorators.Node.tree">tree</a></code></li>
 <li><code><a title="dollar_lambda.decorators.Node.types" href="#dollar_lambda.decorators.Node.types">types</a></code></li>
