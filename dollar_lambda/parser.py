@@ -356,9 +356,8 @@ class Parser(MonadPlus[A_co]):
             Before running the parser, checks if the input string is `--help` or `-h`.
             If it is, returns the usage message.
 
-        >>> p = argument("as-many-as-you-like").many()
-        >>> p.parse_args("a", "b", return_dict=False)
-        [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
+        Examples
+        --------
 
         >>> argument("a").parse_args("-h")
         usage: a
@@ -570,9 +569,14 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
 
     Parameters
     ----------
+    s: str
+        The word to that input will be checked against for equality.
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    Examples
+    --------
 
     >>> p = equals("hello") >> equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
@@ -618,17 +622,33 @@ def flag(
     """
     Binds a boolean value to a variable.
 
+    >>> p = flag("verbose")
+    >>> p.parse_args("--verbose")
+    {'verbose': True}
+
+
     Parameters
     ----------
     dest : str
         The variable to which the value will be bound.
 
-    >>> p = flag("verbose")
-    >>> p.parse_args("--verbose")
-    {'verbose': True}
-
     default : Optional[bool]
         An optional default value.
+
+    help : Optional[str]
+        An optional help string.
+
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+    Examples
+    --------
+
+    Here is an example using the `default` parameter:
 
     >>> p = flag("verbose", default=False)
     >>> p.parse_args()
@@ -640,17 +660,14 @@ def flag(
     usage: --verbose
     The following arguments are required: --verbose
 
-    help : Optional[str]
-        An optional help string.
+    Here is an example using the `help` parameter:
 
     >>> p = flag("verbose", help="Turn on verbose output.")
     >>> p.parse_args("-h")
     usage: --verbose
     verbose: Turn on verbose output.
 
-    short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    Here is an example using the `short` parameter:
 
     >>> flag("verbose", short=True).parse_args("-v")  # this is the default
     {'verbose': True}
@@ -658,8 +675,7 @@ def flag(
     usage: --verbose
     Expected '--verbose'. Got '-v'
 
-    string : Optional[str]
-        A custom string to use for the flag. Defaults to `--{dest}`.
+    Here is an example using the `string` parameter:
 
     >>> flag("value", string="v").parse_args("v")  # note that string does not have to start with -
     {'value': True}
@@ -740,6 +756,9 @@ def item(
     ----------
     help_name : Optional[str]
         Used for generating help text
+
+    Examples
+    --------
 
     >>> p = item("name", help_name="Your first name")
     >>> p.parse_args("Alice")
@@ -837,29 +856,46 @@ def option(
     dest : str
         The name of variable to bind to:
 
-    >>> option("count").parse_args("--count", "1")
-    {'count': '1'}
-
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    >>> option("count", flag="ct").parse_args("ct", "1")  # note that flag need not begin with -
-    {'count': '1'}
-
     default : Optional[Any]
         The default value to bind on failure:
-    >>> option("count", default=2).parse_args()  # note that default can be any type
-    {'count': 2}
 
     help : Optional[str]
         The help message to display for the option:
-    >>> option("count", help="The number we should count to").parse_args("-h")
-    usage: --count COUNT
-    count: The number we should count to
 
     short : bool
         Whether to check for the short form of the flag, which
         uses a single dash and the first character of `dest`, e.g. `-c` for `count`.
+
+    type : Callable[[str], Any]
+        Use the `type` argument to convert the input to a different type:
+
+    Examples
+    --------
+
+    >>> option("count").parse_args("--count", "1")
+    {'count': '1'}
+
+    In this example, you can see that the `flag` parameter allows the user to
+    specify an arbitrary lead string, including one that doesn't start with a dash.
+
+    >>> option("count", flag="ct").parse_args("ct", "1")
+    {'count': '1'}
+
+    This example demonstrates the use of the `default` parameter:
+
+    >>> option("count", default=2).parse_args()
+    {'count': 2}
+
+    Here we specify a help-string using the `help` parameter:
+
+    >>> option("count", help="The number we should count to").parse_args("-h")
+    usage: --count COUNT
+    count: The number we should count to
+
+    This example demonstrates the difference between `short=True` and `short=False`:
 
     >>> option("count", short=True).parse_args("-c", "1")
     {'count': '1'}
@@ -867,8 +903,9 @@ def option(
     usage: --count COUNT
     Expected '--count'. Got '-c'
 
-    type : Callable[[str], Any]
-        Use the `type` argument to convert the input to a different type:
+    As with [argparse](https://docs.python.org/3/library/argparse.html#argument-parsing),
+    the `type` argument allows you to convert the input to a different type using a
+    function that takes a single string argument:
 
     >>> option("x", type=int).parse_args("-x", "1")  # converts "1" to an int
     {'x': 1}

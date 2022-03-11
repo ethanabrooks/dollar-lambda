@@ -1,35 +1,30 @@
 """
-**$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
-This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
-
 # Why `$λ`?
-`$λ` was built with minimal dependencies from functional first principles.
-As a result, it is the most
 
-- versatile
-- type-safe
-- and concise
-
-argument parser on the market.
+This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
+based on functional first principles. This means that this package can handle many kinds of argument-parsing patterns
+that are either very awkward, difficult, or impossible with `argparse`.
 
 ### Versatile
 `$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see
-in the tutorial, there are many parsing patterns that `$λ` can handle which are not possible with
-other parsing libraries.
+it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see in the tutorial,
+there are many parsing patterns that `$λ` can handle which are not possible with other parsing libraries.
+
 ### Type-safe
-`$λ` uses type annotations as much as Python allows. Types are checked
-using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, `$λ`
-avoids mutations and side-effects and preserves [referential transparency](https://en.wikipedia.org/wiki/Referential_transparency).
-This makes it easier for the type-checker _and for the user_ to reason about the code.
+`$λ` uses type annotations as much as Python allows. Types are checked using [`MyPy`](
+https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package so that users can also benefit from
+the type system. Furthermore, with rare exceptions, `$λ` avoids mutations and side-effects and preserves [referential
+transparency](https://en.wikipedia.org/wiki/Referential_transparency). This makes it easier for the type-checker _and
+for the user_ to reason about the code.
+
 ### Concise
-As we'll demonstrate in the tutorial, `$λ` provides three main syntactic shortcuts for cutting
-down boilerplate:
+As we'll demonstrate in the tutorial, `$λ` provides three main
+syntactic shortcuts for cutting down boilerplate:
 
 - operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
 - the `command` decorator and the `CommandTree` object for building tree-shaped parsers
 - the `Args` syntax built on top of python `dataclasses`.
+
 
 As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
 an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
@@ -311,13 +306,13 @@ First, we make `base_function` the root of our tree:
 ...     print(dict(x=x, y=y))
 
 Next, we make `verbose_function` a branch off of `base_function`:
->>> @base_function.command()
+>>> @base_function.command(required=False)
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 
 Note that `verbose_function` must include all the arguments from `base_function`.
 And we make `quiet_function` a second branch:
->>> @base_function.command()
+>>> @base_function.command(required=False)
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 
@@ -337,18 +332,20 @@ x: the base
 y: the exponent
 Unrecognized argument: --verbose
 
-To make one or the other flag required, the `command` method takes a `required` argument.
+If we omit `required=False` for both flags, then omitting the arguments for the
+decorated functions will fail:
+
 >>> tree = CommandTree()
 ...
 >>> @tree.command(help=dict(x="the base", y="the exponent"))
 ... def base_function(x: int, y: int):
 ...     raise RuntimeError("Does not execute because children are required.")
 ...
->>> @base_function.command(required=True)
+>>> @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 ...
->>> @base_function.command(required=True)
+>>> @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 >>> tree.main("-x", "1", "-y", "2", "--verbose")  # succeeds
@@ -444,19 +441,19 @@ Expected '--verbose'. Got '-x'
 This is also a case where you might want to use `CommandTree`:
 
 >>> tree = CommandTree()
-
+...
 >>> @tree.command(help=dict(x="the base", y="the exponent"))
 ... def base_function(x: int, y: int):
 ...     print(dict(x=x, y=y))
-
+...
 >>> @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
 ...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
-
+...
 >>> @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
-
+...
 >>> tree.main("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 

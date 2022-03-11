@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda API documentation</title>
-<meta name="description" content="**$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
-…" />
+<meta name="description" content="Why `$λ`? …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -23,31 +22,22 @@
 <h1 class="title">Package <code>dollar_lambda</code></h1>
 </header>
 <section id="section-intro">
-<p><strong>$λ</strong> This package provides an alternative to <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a> based on functional first principles.
-This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with <code>argparse</code>.</p>
 <h1 id="why">Why <code>$λ</code>?</h1>
-<p><code>$λ</code> was built with minimal dependencies from functional first principles.
-As a result, it is the most</p>
-<ul>
-<li>versatile</li>
-<li>type-safe</li>
-<li>and concise</li>
-</ul>
-<p>argument parser on the market.</p>
+<p>This package provides an alternative to <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a>
+based on functional first principles. This means that this package can handle many kinds of argument-parsing patterns
+that are either very awkward, difficult, or impossible with <code>argparse</code>.</p>
 <h3 id="versatile">Versatile</h3>
 <p><code>$λ</code> provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see
-in the tutorial, there are many parsing patterns that <code>$λ</code> can handle which are not possible with
-other parsing libraries.</p>
+it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see in the tutorial,
+there are many parsing patterns that <code>$λ</code> can handle which are not possible with other parsing libraries.</p>
 <h3 id="type-safe">Type-safe</h3>
-<p><code>$λ</code> uses type annotations as much as Python allows. Types are checked
-using <a href="https://mypy.readthedocs.io/en/stable/index.html#"><code>MyPy</code></a> and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, <code>$λ</code>
-avoids mutations and side-effects and preserves <a href="https://en.wikipedia.org/wiki/Referential_transparency">referential transparency</a>.
-This makes it easier for the type-checker <em>and for the user</em> to reason about the code.</p>
+<p><code>$λ</code> uses type annotations as much as Python allows. Types are checked using <a href="https://mypy.readthedocs.io/en/stable/index.html#"><code>MyPy</code></a> and exported with the package so that users can also benefit from
+the type system. Furthermore, with rare exceptions, <code>$λ</code> avoids mutations and side-effects and preserves <a href="https://en.wikipedia.org/wiki/Referential_transparency">referential
+transparency</a>. This makes it easier for the type-checker <em>and
+for the user</em> to reason about the code.</p>
 <h3 id="concise">Concise</h3>
-<p>As we'll demonstrate in the tutorial, <code>$λ</code> provides three main syntactic shortcuts for cutting
-down boilerplate:</p>
+<p>As we'll demonstrate in the tutorial, <code>$λ</code> provides three main
+syntactic shortcuts for cutting down boilerplate:</p>
 <ul>
 <li>operators like <code>&gt;&gt;</code>, <code>|</code>, and <code>+</code> (and <code>&gt;=</code> if you want to get fancy)</li>
 <li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for building tree-shaped parsers</li>
@@ -304,13 +294,13 @@ y: the exponent
 ...     print(dict(x=x, y=y))
 </code></pre>
 <p>Next, we make <code>verbose_function</code> a branch off of <code>base_function</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command()
+<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command(required=False)
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 </code></pre>
 <p>Note that <code>verbose_function</code> must include all the arguments from <code>base_function</code>.
 And we make <code>quiet_function</code> a second branch:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command()
+<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command(required=False)
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 </code></pre>
@@ -329,18 +319,19 @@ x: the base
 y: the exponent
 Unrecognized argument: --verbose
 </code></pre>
-<p>To make one or the other flag required, the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> method takes a <code>required</code> argument.</p>
+<p>If we omit <code>required=False</code> for both flags, then omitting the arguments for the
+decorated functions will fail:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
 ... def base_function(x: int, y: int):
 ...     raise RuntimeError(&quot;Does not execute because children are required.&quot;)
 ...
-&gt;&gt;&gt; @base_function.command(required=True)
+&gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 ...
-&gt;&gt;&gt; @base_function.command(required=True)
+&gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 &gt;&gt;&gt; tree.main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)  # succeeds
@@ -426,20 +417,20 @@ Expected '--verbose'. Got '-x'
 </code></pre>
 <p>This is also a case where you might want to use <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
+...
+&gt;&gt;&gt; @tree.command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
 ... def base_function(x: int, y: int):
 ...     print(dict(x=x, y=y))
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command()
+...
+&gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
 ...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command()
+...
+&gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--verbosity&quot;, &quot;3&quot;)
+...
+&gt;&gt;&gt; tree.main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--verbosity&quot;, &quot;3&quot;)
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 </code></pre>
 <h3 id="parsermany"><code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code></h3>
@@ -520,37 +511,32 @@ Expected '--verbose'. Got '-x'
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-**$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
-This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
-
 # Why `$λ`?
-`$λ` was built with minimal dependencies from functional first principles.
-As a result, it is the most
 
-- versatile
-- type-safe
-- and concise
-
-argument parser on the market.
+This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
+based on functional first principles. This means that this package can handle many kinds of argument-parsing patterns
+that are either very awkward, difficult, or impossible with `argparse`.
 
 ### Versatile
 `$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we&#39;ll see
-in the tutorial, there are many parsing patterns that `$λ` can handle which are not possible with
-other parsing libraries.
+it permits low-level customization to handle arbitrarily complex parsing patterns. As we&#39;ll see in the tutorial,
+there are many parsing patterns that `$λ` can handle which are not possible with other parsing libraries.
+
 ### Type-safe
-`$λ` uses type annotations as much as Python allows. Types are checked
-using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, `$λ`
-avoids mutations and side-effects and preserves [referential transparency](https://en.wikipedia.org/wiki/Referential_transparency).
-This makes it easier for the type-checker _and for the user_ to reason about the code.
+`$λ` uses type annotations as much as Python allows. Types are checked using [`MyPy`](
+https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package so that users can also benefit from
+the type system. Furthermore, with rare exceptions, `$λ` avoids mutations and side-effects and preserves [referential
+transparency](https://en.wikipedia.org/wiki/Referential_transparency). This makes it easier for the type-checker _and
+for the user_ to reason about the code.
+
 ### Concise
-As we&#39;ll demonstrate in the tutorial, `$λ` provides three main syntactic shortcuts for cutting
-down boilerplate:
+As we&#39;ll demonstrate in the tutorial, `$λ` provides three main
+syntactic shortcuts for cutting down boilerplate:
 
 - operators like `&gt;&gt;`, `|`, and `+` (and `&gt;=` if you want to get fancy)
 - the `command` decorator and the `CommandTree` object for building tree-shaped parsers
 - the `Args` syntax built on top of python `dataclasses`.
+
 
 As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
 an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
@@ -832,13 +818,13 @@ First, we make `base_function` the root of our tree:
 ...     print(dict(x=x, y=y))
 
 Next, we make `verbose_function` a branch off of `base_function`:
-&gt;&gt;&gt; @base_function.command()
+&gt;&gt;&gt; @base_function.command(required=False)
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 
 Note that `verbose_function` must include all the arguments from `base_function`.
 And we make `quiet_function` a second branch:
-&gt;&gt;&gt; @base_function.command()
+&gt;&gt;&gt; @base_function.command(required=False)
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 
@@ -858,18 +844,20 @@ x: the base
 y: the exponent
 Unrecognized argument: --verbose
 
-To make one or the other flag required, the `command` method takes a `required` argument.
+If we omit `required=False` for both flags, then omitting the arguments for the
+decorated functions will fail:
+
 &gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
 ... def base_function(x: int, y: int):
 ...     raise RuntimeError(&#34;Does not execute because children are required.&#34;)
 ...
-&gt;&gt;&gt; @base_function.command(required=True)
+&gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 ...
-&gt;&gt;&gt; @base_function.command(required=True)
+&gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 &gt;&gt;&gt; tree.main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)  # succeeds
@@ -965,19 +953,19 @@ Expected &#39;--verbose&#39;. Got &#39;-x&#39;
 This is also a case where you might want to use `CommandTree`:
 
 &gt;&gt;&gt; tree = CommandTree()
-
+...
 &gt;&gt;&gt; @tree.command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
 ... def base_function(x: int, y: int):
 ...     print(dict(x=x, y=y))
-
+...
 &gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
 ...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
-
+...
 &gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
-
+...
 &gt;&gt;&gt; tree.main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--verbosity&#34;, &#34;3&#34;)
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;verbosity&#39;: 3}
 
@@ -1303,13 +1291,20 @@ arguments.</p>
 <dl>
 <dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
 <dd>For boolean arguments that default to true, this changes the flag from <code>--{dest}</code> to <code>--no-{dest}</code>:</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>dict[str, str]</code></dt>
+<dd>A dictionary of help strings for the arguments.</dd>
+<dt><strong><code>strings</code></strong> :&ensp;<code>dict[str, str]</code></dt>
+<dd>This dictionary maps variable names to the strings that the parser will look for in the input.</dd>
+<dt><strong><code>types</code></strong> :&ensp;<code>dict[str, Callable[[str], Any]]</code></dt>
+<dd>This dictionary maps variable names to custom type converters.</dd>
 </dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=True)
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command()
 ... def f(cuda: bool = True):
 ...     return dict(cuda=cuda)
 &gt;&gt;&gt; f()
 {'cuda': True}
-&gt;&gt;&gt; f(&quot;--no-cuda&quot;)
+&gt;&gt;&gt; f(&quot;--no-cuda&quot;)  # flip_bools adds --no- to the flag
 {'cuda': False}
 </code></pre>
 <p>As the following example demonstrates, when <code>flip_bools=False</code> output can be somewhat confusing:</p>
@@ -1319,43 +1314,25 @@ arguments.</p>
 &gt;&gt;&gt; f(&quot;--cuda&quot;)
 {'cuda': False}
 </code></pre>
-<dl>
-<dt><strong><code>help</code></strong> :&ensp;<code>dict[str, str]</code></dt>
-<dd>A dictionary of help strings for the arguments.</dd>
-</dl>
+<p>Here is an example using the <code>help</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(quiet=&quot;Be quiet&quot;))
 ... def f(quiet: bool):
 ...     return dict(quiet=quiet)
 &gt;&gt;&gt; f(&quot;--help&quot;)
-**```usage```** :&amp;ensp;`--quiet`
-:   &amp;nbsp;
-
-
-**```quiet```** :&amp;ensp;&lt;code&gt;Be quiet&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: --quiet
+quiet: Be quiet
 </code></pre>
-<dl>
-<dt><strong><code>strings</code></strong> :&ensp;<code>dict[str, str]</code></dt>
-<dd>This dictionary maps variable names to the strings that the parser will look for in the input. For example:</dd>
-</dl>
+<p>Here is an example using the <code>strings</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(strings=dict(quiet=&quot;--quiet-mode&quot;))
 ... def f(quiet: bool):
 ...     return dict(quiet=quiet)
 &gt;&gt;&gt; f(&quot;--quiet-mode&quot;)
 {'quiet': True}
 &gt;&gt;&gt; f(&quot;--quiet&quot;)
-**```usage```** :&amp;ensp;`--quiet-mode`
-:   &amp;nbsp;
-
-
+usage: --quiet-mode
 Expected '--quiet-mode'. Got '--quiet'
 </code></pre>
-<dl>
-<dt><strong><code>types</code></strong> :&ensp;<code>dict[str, Callable[[str], Any]]</code></dt>
-<dd>This dictionary maps variable names to custom type converters. For example:</dd>
-</dl>
+<p>Here is an example using the <code>type</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
 ... def f(x: int):
 ...     return dict(x=x)
@@ -1394,12 +1371,24 @@ Expected '--quiet-mode'. Got '--quiet'
     flip_bools : bool
         For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
 
-    &gt;&gt;&gt; @command(flip_bools=True)
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    strings : dict[str, str]
+        This dictionary maps variable names to the strings that the parser will look for in the input.
+
+    types: dict[str, Callable[[str], Any]]
+        This dictionary maps variable names to custom type converters.
+
+    Examples
+    --------
+
+    &gt;&gt;&gt; @command()
     ... def f(cuda: bool = True):
     ...     return dict(cuda=cuda)
     &gt;&gt;&gt; f()
     {&#39;cuda&#39;: True}
-    &gt;&gt;&gt; f(&#34;--no-cuda&#34;)
+    &gt;&gt;&gt; f(&#34;--no-cuda&#34;)  # flip_bools adds --no- to the flag
     {&#39;cuda&#39;: False}
 
     As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
@@ -1410,8 +1399,7 @@ Expected '--quiet-mode'. Got '--quiet'
     &gt;&gt;&gt; f(&#34;--cuda&#34;)
     {&#39;cuda&#39;: False}
 
-    help : dict[str, str]
-        A dictionary of help strings for the arguments.
+    Here is an example using the `help` parameter:
 
     &gt;&gt;&gt; @command(help=dict(quiet=&#34;Be quiet&#34;))
     ... def f(quiet: bool):
@@ -1420,8 +1408,7 @@ Expected '--quiet-mode'. Got '--quiet'
     usage: --quiet
     quiet: Be quiet
 
-    strings : dict[str, str]
-        This dictionary maps variable names to the strings that the parser will look for in the input. For example:
+    Here is an example using the `strings` parameter:
 
     &gt;&gt;&gt; @command(strings=dict(quiet=&#34;--quiet-mode&#34;))
     ... def f(quiet: bool):
@@ -1432,8 +1419,7 @@ Expected '--quiet-mode'. Got '--quiet'
     usage: --quiet-mode
     Expected &#39;--quiet-mode&#39;. Got &#39;--quiet&#39;
 
-    types: dict[str, Callable[[str], Any]]
-        This dictionary maps variable names to custom type converters. For example:
+    Here is an example using the `type` parameter:
 
     &gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
     ... def f(x: int):
@@ -1615,10 +1601,13 @@ Expected 'hello'. Got 'goodbye'
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>s</code></strong> :&ensp;<code>str</code></dt>
+<dd>The word to that input will be checked against for equality.</dd>
 <dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
 If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
 </dl>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
@@ -1626,10 +1615,7 @@ If <code>True</code>, then the parser leaves the <code>unparsed</code> component
 <p>Look what happens when <code>peak=True</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;hello goodbye&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: hello goodbye
 Expected 'goodbye'. Got 'hello'
 </code></pre>
 <p>The first parser didn't consume the word and so "hello" got passed on to <code>equals("goodbye")</code>.
@@ -1654,9 +1640,14 @@ But this would work:</p>
 
     Parameters
     ----------
+    s: str
+        The word to that input will be checked against for equality.
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
@@ -1753,19 +1744,26 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 </code></dt>
 <dd>
 <div class="desc"><p>Binds a boolean value to a variable.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
-<dd>The variable to which the value will be bound.</dd>
-</dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
 </code></pre>
+<h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
+<dd>The variable to which the value will be bound.</dd>
 <dt><strong><code>default</code></strong> :&ensp;<code>Optional[bool]</code></dt>
 <dd>An optional default value.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>An optional help string.</dd>
+<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to check for the short form of the flag, which
+uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
+<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
 </dl>
+<h2 id="examples">Examples</h2>
+<p>Here is an example using the <code>default</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
 &gt;&gt;&gt; p.parse_args()
 {'verbose': False}
@@ -1773,42 +1771,23 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <p>By default <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> fails when it does not receive expected input:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args()
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 The following arguments are required: --verbose
 </code></pre>
-<dl>
-<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>An optional help string.</dd>
-</dl>
+<p>Here is an example using the <code>help</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, help=&quot;Turn on verbose output.&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 verbose: Turn on verbose output.
 </code></pre>
-<dl>
-<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to check for the short form of the flag, which
-uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
-</dl>
+<p>Here is an example using the <code>short</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, short=True).parse_args(&quot;-v&quot;)  # this is the default
 {'verbose': True}
 &gt;&gt;&gt; flag(&quot;verbose&quot;, short=False).parse_args(&quot;-v&quot;)  # fails
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 Expected '--verbose'. Got '-v'
 </code></pre>
-<dl>
-<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
-</dl>
+<p>Here is an example using the <code>string</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;value&quot;, string=&quot;v&quot;).parse_args(&quot;v&quot;)  # note that string does not have to start with -
 {'value': True}
 </code></pre></div>
@@ -1826,17 +1805,33 @@ Expected '--verbose'. Got '-v'
     &#34;&#34;&#34;
     Binds a boolean value to a variable.
 
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+
+
     Parameters
     ----------
     dest : str
         The variable to which the value will be bound.
 
-    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
-
     default : Optional[bool]
         An optional default value.
+
+    help : Optional[str]
+        An optional help string.
+
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+    Examples
+    --------
+
+    Here is an example using the `default` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
     &gt;&gt;&gt; p.parse_args()
@@ -1848,17 +1843,14 @@ Expected '--verbose'. Got '-v'
     usage: --verbose
     The following arguments are required: --verbose
 
-    help : Optional[str]
-        An optional help string.
+    Here is an example using the `help` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, help=&#34;Turn on verbose output.&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
     usage: --verbose
     verbose: Turn on verbose output.
 
-    short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    Here is an example using the `short` parameter:
 
     &gt;&gt;&gt; flag(&#34;verbose&#34;, short=True).parse_args(&#34;-v&#34;)  # this is the default
     {&#39;verbose&#39;: True}
@@ -1866,8 +1858,7 @@ Expected '--verbose'. Got '-v'
     usage: --verbose
     Expected &#39;--verbose&#39;. Got &#39;-v&#39;
 
-    string : Optional[str]
-        A custom string to use for the flag. Defaults to `--{dest}`.
+    Here is an example using the `string` parameter:
 
     &gt;&gt;&gt; flag(&#34;value&#34;, string=&#34;v&#34;).parse_args(&#34;v&#34;)  # note that string does not have to start with -
     {&#39;value&#39;: True}
@@ -1907,14 +1898,12 @@ One of the lowest level building blocks for parsers.</p>
 <dt><strong><code>help_name</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>Used for generating help text</dd>
 </dl>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = item(&quot;name&quot;, help_name=&quot;Your first name&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;Alice&quot;)
 {'name': 'Alice'}
 &gt;&gt;&gt; p.parse_args()
-**```usage```** :&amp;ensp;&lt;code&gt;name&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: name
 The following arguments are required: Your first name
 </code></pre></div>
 <details class="source">
@@ -1933,6 +1922,9 @@ The following arguments are required: Your first name
     ----------
     help_name : Optional[str]
         Used for generating help text
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = item(&#34;name&#34;, help_name=&#34;Your first name&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;Alice&#34;)
@@ -2062,56 +2054,46 @@ cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()<
 <dl>
 <dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
 <dd>The name of variable to bind to:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
-{'count': '1'}
-</code></pre>
-<dl>
 <dt><strong><code>flag</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>The flag to use for the option. If not provided, defaults to <code>--{dest}</code>.</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)  # note that flag need not begin with -
-{'count': '1'}
-</code></pre>
-<dl>
 <dt><strong><code>default</code></strong> :&ensp;<code>Optional[Any]</code></dt>
 <dd>The default value to bind on failure:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()  # note that default can be any type
-{'count': 2}
-</code></pre>
-<dl>
 <dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>The help message to display for the option:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;`--count COUNT`
-:   &amp;nbsp;
-
-
-**```count```** :&amp;ensp;&lt;code&gt;The number we should count to&lt;/code&gt;
-:   &amp;nbsp;
-
-
-</code></pre>
-<dl>
 <dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Whether to check for the short form of the flag, which
 uses a single dash and the first character of <code>dest</code>, e.g. <code>-c</code> for <code>count</code>.</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
-{'count': '1'}
-&gt;&gt;&gt; option(&quot;count&quot;, short=False).parse_args(&quot;-c&quot;, &quot;1&quot;)
-**```usage```** :&amp;ensp;`--count COUNT`
-:   &amp;nbsp;
-
-
-Expected '--count'. Got '-c'
-</code></pre>
-<dl>
 <dt><strong><code>type</code></strong> :&ensp;<code>Callable[[str], Any]</code></dt>
 <dd>Use the <code>type</code> argument to convert the input to a different type:</dd>
 </dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
+{'count': '1'}
+</code></pre>
+<p>In this example, you can see that the <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> parameter allows the user to
+specify an arbitrary lead string, including one that doesn't start with a dash.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)
+{'count': '1'}
+</code></pre>
+<p>This example demonstrates the use of the <code>default</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()
+{'count': 2}
+</code></pre>
+<p>Here we specify a help-string using the <code>help</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
+usage: --count COUNT
+count: The number we should count to
+</code></pre>
+<p>This example demonstrates the difference between <code>short=True</code> and <code>short=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
+{'count': '1'}
+&gt;&gt;&gt; option(&quot;count&quot;, short=False).parse_args(&quot;-c&quot;, &quot;1&quot;)
+usage: --count COUNT
+Expected '--count'. Got '-c'
+</code></pre>
+<p>As with <a href="https://docs.python.org/3/library/argparse.html#argument-parsing">argparse</a>,
+the <code>type</code> argument allows you to convert the input to a different type using a
+function that takes a single string argument:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;, type=int).parse_args(&quot;-x&quot;, &quot;1&quot;)  # converts &quot;1&quot; to an int
 {'x': 1}
 &gt;&gt;&gt; option(&quot;x&quot;, type=lambda x: int(x) + 1).parse_args(&quot;-x&quot;, &quot;1&quot;)
@@ -2137,29 +2119,46 @@ Expected '--count'. Got '-c'
     dest : str
         The name of variable to bind to:
 
-    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
-    {&#39;count&#39;: &#39;1&#39;}
-
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)  # note that flag need not begin with -
-    {&#39;count&#39;: &#39;1&#39;}
-
     default : Optional[Any]
         The default value to bind on failure:
-    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()  # note that default can be any type
-    {&#39;count&#39;: 2}
 
     help : Optional[str]
         The help message to display for the option:
-    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
-    usage: --count COUNT
-    count: The number we should count to
 
     short : bool
         Whether to check for the short form of the flag, which
         uses a single dash and the first character of `dest`, e.g. `-c` for `count`.
+
+    type : Callable[[str], Any]
+        Use the `type` argument to convert the input to a different type:
+
+    Examples
+    --------
+
+    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    In this example, you can see that the `flag` parameter allows the user to
+    specify an arbitrary lead string, including one that doesn&#39;t start with a dash.
+
+    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    This example demonstrates the use of the `default` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()
+    {&#39;count&#39;: 2}
+
+    Here we specify a help-string using the `help` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
+    usage: --count COUNT
+    count: The number we should count to
+
+    This example demonstrates the difference between `short=True` and `short=False`:
 
     &gt;&gt;&gt; option(&#34;count&#34;, short=True).parse_args(&#34;-c&#34;, &#34;1&#34;)
     {&#39;count&#39;: &#39;1&#39;}
@@ -2167,8 +2166,9 @@ Expected '--count'. Got '-c'
     usage: --count COUNT
     Expected &#39;--count&#39;. Got &#39;-c&#39;
 
-    type : Callable[[str], Any]
-        Use the `type` argument to convert the input to a different type:
+    As with [argparse](https://docs.python.org/3/library/argparse.html#argument-parsing),
+    the `type` argument allows you to convert the input to a different type using a
+    function that takes a single string argument:
 
     &gt;&gt;&gt; option(&#34;x&#34;, type=int).parse_args(&#34;-x&#34;, &#34;1&#34;)  # converts &#34;1&#34; to an int
     {&#39;x&#39;: 1}
@@ -2538,6 +2538,27 @@ class Args:
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
         Combines these parsers using `nonpositional`.
+
+        Parameters
+        ----------
+        flip_bools: bool
+             Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+        Examples
+        --------
+        &gt;&gt;&gt; @dataclass
+        ... class MyArgs(Args):
+        ...     tests: bool = True
+
+        Note the leading `--no-`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+        {&#39;tests&#39;: False}
+        &gt;&gt;&gt; MyArgs.parse_args()
+        {&#39;tests&#39;: True}
+
+        To suppress this behavior, set `flip_bools=False`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+        {&#39;tests&#39;: False}
         &#34;&#34;&#34;
         return _ArgsField.nonpositional(
             *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
@@ -2579,7 +2600,27 @@ def parse_args(
 <dd>
 <div class="desc"><p>Returns a parser for the dataclass.
 Converts each field to a parser (<code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> or <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> depending on its type).
-Combines these parsers using <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>.</p></div>
+Combines these parsers using <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+... class MyArgs(Args):
+...     tests: bool = True
+</code></pre>
+<p>Note the leading <code>--no-</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
+{'tests': False}
+&gt;&gt;&gt; MyArgs.parse_args()
+{'tests': True}
+</code></pre>
+<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
+{'tests': False}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2590,6 +2631,27 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
     Returns a parser for the dataclass.
     Converts each field to a parser (`option` or `flag` depending on its type).
     Combines these parsers using `nonpositional`.
+
+    Parameters
+    ----------
+    flip_bools: bool
+         Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+    Examples
+    --------
+    &gt;&gt;&gt; @dataclass
+    ... class MyArgs(Args):
+    ...     tests: bool = True
+
+    Note the leading `--no-`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+    {&#39;tests&#39;: False}
+    &gt;&gt;&gt; MyArgs.parse_args()
+    {&#39;tests&#39;: True}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+    {&#39;tests&#39;: False}
     &#34;&#34;&#34;
     return _ArgsField.nonpositional(
         *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
@@ -2602,45 +2664,104 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
 <span>class <span class="ident">CommandTree</span></span>
 </code></dt>
 <dd>
-<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
-... def f1(a: int):
-...     return dict(f1=dict(a=a))
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.subcommand()
-... def f2(b: bool):
-...     return dict(f2=dict(b=b))
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
-usage: [-a A | f2 -b]
-&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
-{'f1': {'a': 1}}
-&gt;&gt;&gt; tree.main(&quot;f2&quot;, &quot;-b&quot;)
-{'f2': {'b': True}}
-</code></pre>
+<div class="desc"><p>Allows parsers to dynamically dispatch their results based on the input.
+First we must define a <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 </code></pre>
+<p>Now we define at least one child function:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand()
-... def f2(a: int, b: bool):
-...     return dict(f2=dict(a=a, b=b))
+<p>At this point tree is just a parser that takes a single option <code>-a</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: -a A
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.subcommand()
+<p>Now let's add a second child function:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
+... def f2(b: bool):
+...     return dict(f2=dict(b=b))
+...
+&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: [-a A | -b]
+</code></pre>
+<p><code>tree.main</code> will execute either <code>f1</code> or <code>f2</code> based on which of the parsers succeeds:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)  # this will execute f1
+{'f1': {'a': 1}}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-b&quot;)  # this will execute f2
+{'f2': {'b': True}}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main()  # fails
+usage: [-a A | -b]
+The following arguments are required: -a
+</code></pre>
+<p>Often in cases where there are alternative sets of argument like this,
+there is also a set of shared arguments. It would be cumbersome to have to
+repeat these for both child functions. Instead we can define a parent function
+as follows:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command()
+... def f1(a: int):
+...     raise RuntimeError(&quot;This function should not be called&quot;)
+</code></pre>
+<p>Note that the arguments of <code>f2</code> must include all the arguments of <code>f1</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
+... def f2(a:int, b: bool):
+...     return dict(f2=dict(b=b))
+</code></pre>
+<p>Now this sequences the arguments of f1 and f2:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: -a A -b
+</code></pre>
+<p>As before we can define an additional child function to induce alternative
+argument sets:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
 ... def f3(a: int, c: str):
-...     return dict(f3=dict(a=a, c=c))
+...     return dict(f3=dict(c=c))
 </code></pre>
+<p>Note that our usage message shows <code>-a A</code> preceding the brackets:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: -a A [-b | -c C]
+</code></pre>
+<p>To execute f2, we give the <code>-b</code> flag:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;-b&quot;)
+{'f2': {'b': True}}
+</code></pre>
+<p>To execute f3, we give the <code>-c</code> flag:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;-c&quot;, &quot;foo&quot;)
+{'f3': {'c': 'foo'}}
+</code></pre>
+<p>Often we want to explicity specify which function to execute by naming it on the command line.
+This would implement functionality similar to
+<a href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers"><code>ArgumentParser.add_subparsers</code></a></p>
+<p>For this we would use the <code>subcommand</code> decorator:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command()
+... def f1(a: int):
+...     raise RuntimeError(&quot;This function should not be called&quot;)
+...
+&gt;&gt;&gt; @f1.subcommand()  # note subcommand, not command
+... def f2(a:int, b: bool):
+...     return dict(f2=dict(b=b))
+...
+&gt;&gt;&gt; @f1.subcommand()  # again, subcommand, not command
+... def f3(a: int, c: str):
+...     return dict(f3=dict(c=c))
+</code></pre>
+<p>Now the usage message indicates the <code>f2</code> and <code>f3</code> are required arguments:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
 usage: -a A [f2 -b | f3 -c C]
-&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
-{'f1': {'a': 1}}
-&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f2&quot;, &quot;-b&quot;)
-{'f2': {'a': 1, 'b': True}}
-&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f3&quot;, &quot;-c&quot;, &quot;x&quot;)
-{'f3': {'a': 1, 'c': 'x'}}
+</code></pre>
+<p>Now we would select f2 as follows:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f2&quot;, &quot;-b&quot;)
+{'f2': {'b': True}}
+</code></pre>
+<p>And f3 as follows:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f3&quot;, &quot;-c&quot;, &quot;foo&quot;)
+{'f3': {'c': 'foo'}}
 </code></pre></div>
 <details class="source">
 <summary>
@@ -2649,45 +2770,114 @@ usage: -a A [f2 -b | f3 -c C]
 <pre><code class="python">@dataclass
 class CommandTree:
     &#34;&#34;&#34;
+    Allows parsers to dynamically dispatch their results based on the input.
+    First we must define a `CommandTree` object:
+
     &gt;&gt;&gt; tree = CommandTree()
+
+    Now we define at least one child function:
 
     &gt;&gt;&gt; @tree.command()
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    &gt;&gt;&gt; @tree.subcommand()
+    At this point tree is just a parser that takes a single option `-a`:
+
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: -a A
+
+    Now let&#39;s add a second child function:
+
+    &gt;&gt;&gt; @tree.command()
     ... def f2(b: bool):
     ...     return dict(f2=dict(b=b))
-
+    ...
     &gt;&gt;&gt; tree.main(&#34;-h&#34;)
-    usage: [-a A | f2 -b]
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+    usage: [-a A | -b]
+
+    `tree.main` will execute either `f1` or `f2` based on which of the parsers succeeds:
+
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)  # this will execute f1
     {&#39;f1&#39;: {&#39;a&#39;: 1}}
-    &gt;&gt;&gt; tree.main(&#34;f2&#34;, &#34;-b&#34;)
+
+    &gt;&gt;&gt; tree.main(&#34;-b&#34;)  # this will execute f2
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
-    &gt;&gt;&gt; tree = CommandTree()
+    &gt;&gt;&gt; tree.main()  # fails
+    usage: [-a A | -b]
+    The following arguments are required: -a
 
+    Often in cases where there are alternative sets of argument like this,
+    there is also a set of shared arguments. It would be cumbersome to have to
+    repeat these for both child functions. Instead we can define a parent function
+    as follows:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
     &gt;&gt;&gt; @tree.command()
     ... def f1(a: int):
-    ...     return dict(f1=dict(a=a))
+    ...     raise RuntimeError(&#34;This function should not be called&#34;)
 
-    &gt;&gt;&gt; @f1.subcommand()
-    ... def f2(a: int, b: bool):
-    ...     return dict(f2=dict(a=a, b=b))
+    Note that the arguments of `f2` must include all the arguments of `f1`:
+    &gt;&gt;&gt; @f1.command()  # note f1, not tree
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
 
-    &gt;&gt;&gt; @f1.subcommand()
-    ... def f3(a: int, c: str):
-    ...     return dict(f3=dict(a=a, c=c))
+    Now this sequences the arguments of f1 and f2:
 
     &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: -a A -b
+
+    As before we can define an additional child function to induce alternative
+    argument sets:
+
+    &gt;&gt;&gt; @f1.command()  # note f1, not tree
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Note that our usage message shows `-a A` preceding the brackets:
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: -a A [-b | -c C]
+
+    To execute f2, we give the `-b` flag:
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-b&#34;)
+    {&#39;f2&#39;: {&#39;b&#39;: True}}
+
+    To execute f3, we give the `-c` flag:
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
+
+    Often we want to explicity specify which function to execute by naming it on the command line.
+    This would implement functionality similar to
+    [`ArgumentParser.add_subparsers`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers)
+
+    For this we would use the `subcommand` decorator:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.command()
+    ... def f1(a: int):
+    ...     raise RuntimeError(&#34;This function should not be called&#34;)
+    ...
+    &gt;&gt;&gt; @f1.subcommand()  # note subcommand, not command
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
+    ...
+    &gt;&gt;&gt; @f1.subcommand()  # again, subcommand, not command
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Now the usage message indicates the `f2` and `f3` are required arguments:
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
     usage: -a A [f2 -b | f3 -c C]
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
-    {&#39;f1&#39;: {&#39;a&#39;: 1}}
+
+    Now we would select f2 as follows:
     &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f2&#34;, &#34;-b&#34;)
-    {&#39;f2&#39;: {&#39;a&#39;: 1, &#39;b&#39;: True}}
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;x&#34;)
-    {&#39;f3&#39;: {&#39;a&#39;: 1, &#39;c&#39;: &#39;x&#39;}}
+    {&#39;f2&#39;: {&#39;b&#39;: True}}
+
+    And f3 as follows:
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
     &#34;&#34;&#34;
 
     _children: List[_Node] = field(default_factory=list)
@@ -2697,10 +2887,79 @@ class CommandTree:
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        required: bool = False,
+        required: bool = True,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
+        &#34;&#34;&#34;
+        A decorator for adding a function as a child of this tree.
+
+        Parameters
+        ----------
+
+        flip_bools: bool
+            Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+        help: dict
+            A dictionary of help strings for the arguments.
+
+        required: bool
+            If any sibling child functions are not required, then the user will be
+            able to invoke the parent function by not selecting any of the child functions.
+
+        strings: dict
+            A dictionary of strings to use for the arguments.
+
+        types: dict
+            A dictionary of types to use for the arguments.
+
+        Examples
+        --------
+        With `flip_bools` set to `True`:
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.command(flip_bools=True)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        usage: --no-b
+        b: (default: True)
+
+        With `flip_bools` set to `False`:
+
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.command(flip_bools=False)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        usage: -b
+        b: (default: True)
+
+
+        Here is an example of how the `required` argument works:
+
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.command()
+        ... def f1(a: int):
+        ...     # this function can be called because one of the children (f2) is not required
+        ...     return dict(f1=dict(a=a))
+        ...
+        &gt;&gt;&gt; @f1.command(required=False)
+        ... def f2(a:int, b: bool):
+        ...     return dict(f2=dict(b=b))
+        ...
+        &gt;&gt;&gt; @f1.command()
+        ... def f3(a: int, c: str):
+        ...     return dict(f3=dict(c=c))
+
+        Now we invoke `tree.main` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        {&#39;f1&#39;: {&#39;a&#39;: 1}}
+        &#34;&#34;&#34;
         return self._decorator(
             flip_bools=flip_bools,
             help=help,
@@ -2738,6 +2997,12 @@ class CommandTree:
         return wrap_help(reduce(operator.or_, get_alternatives()))
 
     def main(self, *args: str) -&gt; Any:
+        &#34;&#34;&#34;
+        Run the parser associated with this tree and execute the
+        function associated with a succeeding parser.
+
+        If `args` is empty, uses `sys.argv[1:]`.
+        &#34;&#34;&#34;
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
         p = self._parser() &gt;&gt; done()
         result = p.parse(Sequence(list(_args))).get
@@ -2759,6 +3024,77 @@ class CommandTree:
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -&gt; Callable:
+        &#34;&#34;&#34;
+        A decorator for adding a function as a child of this tree.
+        As a subcommand, the function&#39;s name must be invoked on the command
+        line for the function to be called.
+
+        Parameters
+        ----------
+
+        flip_bools: bool
+            Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+        help: dict
+            A dictionary of help strings for the arguments.
+
+        required: bool
+            If any sibling child functions are not required, then the user will be
+            able to invoke the parent function by not selecting any of the child functions.
+
+        strings: dict
+            A dictionary of strings to use for the arguments.
+
+        types: dict
+            A dictionary of types to use for the arguments.
+
+        Examples
+        --------
+        With `flip_bools` set to `True`:
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.subcommand(flip_bools=True)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        usage: f1 --no-b
+        b: (default: True)
+
+        With `flip_bools` set to `False`:
+
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.subcommand(flip_bools=False)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        usage: f1 -b
+        b: (default: True)
+
+
+        Here is an example of how the `required` argument works:
+
+        &gt;&gt;&gt; tree = CommandTree()
+        ...
+        &gt;&gt;&gt; @tree.command()
+        ... def f1(a: int):
+        ...     # this function can be called because one of the children (f2) is not required
+        ...     return dict(f1=dict(a=a))
+        ...
+        &gt;&gt;&gt; @f1.subcommand(required=False)
+        ... def f2(a:int, b: bool):
+        ...     return dict(f2=dict(b=b))
+        ...
+        &gt;&gt;&gt; @f1.subcommand()
+        ... def f3(a: int, c: str):
+        ...     return dict(f3=dict(c=c))
+
+        Now we invoke `tree.main` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        {&#39;f1&#39;: {&#39;a&#39;: 1}}
+        &#34;&#34;&#34;
         return self._decorator(
             flip_bools=flip_bools,
             help=help,
@@ -2771,10 +3107,67 @@ class CommandTree:
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.CommandTree.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
+<span>def <span class="ident">command</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = True, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>A decorator for adding a function as a child of this tree.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of help strings for the arguments.</dd>
+<dt><strong><code>required</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If any sibling child functions are not required, then the user will be
+able to invoke the parent function by not selecting any of the child functions.</dd>
+<dt><strong><code>strings</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of strings to use for the arguments.</dd>
+<dt><strong><code>types</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of types to use for the arguments.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>With <code>flip_bools</code> set to <code>True</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command(flip_bools=True)
+... def f1(b: bool = True):
+...     return dict(f1=dict(b=b))
+...
+&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: --no-b
+b: (default: True)
+</code></pre>
+<p>With <code>flip_bools</code> set to <code>False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command(flip_bools=False)
+... def f1(b: bool = True):
+...     return dict(f1=dict(b=b))
+...
+&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: -b
+b: (default: True)
+</code></pre>
+<p>Here is an example of how the <code>required</code> argument works:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command()
+... def f1(a: int):
+...     # this function can be called because one of the children (f2) is not required
+...     return dict(f1=dict(a=a))
+...
+&gt;&gt;&gt; @f1.command(required=False)
+... def f2(a:int, b: bool):
+...     return dict(f2=dict(b=b))
+...
+&gt;&gt;&gt; @f1.command()
+... def f3(a: int, c: str):
+...     return dict(f3=dict(c=c))
+</code></pre>
+<p>Now we invoke <code>tree.main</code> without calling <code>f2</code> or <code>f3</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
+{'f1': {'a': 1}}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2783,10 +3176,79 @@ class CommandTree:
     self,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
-    required: bool = False,
+    required: bool = True,
     strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable:
+    &#34;&#34;&#34;
+    A decorator for adding a function as a child of this tree.
+
+    Parameters
+    ----------
+
+    flip_bools: bool
+        Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+    help: dict
+        A dictionary of help strings for the arguments.
+
+    required: bool
+        If any sibling child functions are not required, then the user will be
+        able to invoke the parent function by not selecting any of the child functions.
+
+    strings: dict
+        A dictionary of strings to use for the arguments.
+
+    types: dict
+        A dictionary of types to use for the arguments.
+
+    Examples
+    --------
+    With `flip_bools` set to `True`:
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.command(flip_bools=True)
+    ... def f1(b: bool = True):
+    ...     return dict(f1=dict(b=b))
+    ...
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: --no-b
+    b: (default: True)
+
+    With `flip_bools` set to `False`:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.command(flip_bools=False)
+    ... def f1(b: bool = True):
+    ...     return dict(f1=dict(b=b))
+    ...
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: -b
+    b: (default: True)
+
+
+    Here is an example of how the `required` argument works:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.command()
+    ... def f1(a: int):
+    ...     # this function can be called because one of the children (f2) is not required
+    ...     return dict(f1=dict(a=a))
+    ...
+    &gt;&gt;&gt; @f1.command(required=False)
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
+    ...
+    &gt;&gt;&gt; @f1.command()
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Now we invoke `tree.main` without calling `f2` or `f3`:
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+    {&#39;f1&#39;: {&#39;a&#39;: 1}}
+    &#34;&#34;&#34;
     return self._decorator(
         flip_bools=flip_bools,
         help=help,
@@ -2801,12 +3263,20 @@ class CommandTree:
 <span>def <span class="ident">main</span></span>(<span>self, *args: str) ‑> Any</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Run the parser associated with this tree and execute the
+function associated with a succeeding parser.</p>
+<p>If <code><a title="dollar_lambda.args" href="args.html">dollar_lambda.args</a></code> is empty, uses <code>sys.argv[1:]</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def main(self, *args: str) -&gt; Any:
+    &#34;&#34;&#34;
+    Run the parser associated with this tree and execute the
+    function associated with a succeeding parser.
+
+    If `args` is empty, uses `sys.argv[1:]`.
+    &#34;&#34;&#34;
     _args = args if args or parser_mod.TESTING else sys.argv[1:]
     p = self._parser() &gt;&gt; done()
     result = p.parse(Sequence(list(_args))).get
@@ -2825,7 +3295,66 @@ class CommandTree:
 <span>def <span class="ident">subcommand</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>A decorator for adding a function as a child of this tree.
+As a subcommand, the function's name must be invoked on the command
+line for the function to be called.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of help strings for the arguments.</dd>
+<dt><strong><code>required</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If any sibling child functions are not required, then the user will be
+able to invoke the parent function by not selecting any of the child functions.</dd>
+<dt><strong><code>strings</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of strings to use for the arguments.</dd>
+<dt><strong><code>types</code></strong> :&ensp;<code>dict</code></dt>
+<dd>A dictionary of types to use for the arguments.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>With <code>flip_bools</code> set to <code>True</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.subcommand(flip_bools=True)
+... def f1(b: bool = True):
+...     return dict(f1=dict(b=b))
+...
+&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: f1 --no-b
+b: (default: True)
+</code></pre>
+<p>With <code>flip_bools</code> set to <code>False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.subcommand(flip_bools=False)
+... def f1(b: bool = True):
+...     return dict(f1=dict(b=b))
+...
+&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+usage: f1 -b
+b: (default: True)
+</code></pre>
+<p>Here is an example of how the <code>required</code> argument works:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+...
+&gt;&gt;&gt; @tree.command()
+... def f1(a: int):
+...     # this function can be called because one of the children (f2) is not required
+...     return dict(f1=dict(a=a))
+...
+&gt;&gt;&gt; @f1.subcommand(required=False)
+... def f2(a:int, b: bool):
+...     return dict(f2=dict(b=b))
+...
+&gt;&gt;&gt; @f1.subcommand()
+... def f3(a: int, c: str):
+...     return dict(f3=dict(c=c))
+</code></pre>
+<p>Now we invoke <code>tree.main</code> without calling <code>f2</code> or <code>f3</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
+{'f1': {'a': 1}}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2838,6 +3367,77 @@ class CommandTree:
     strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable:
+    &#34;&#34;&#34;
+    A decorator for adding a function as a child of this tree.
+    As a subcommand, the function&#39;s name must be invoked on the command
+    line for the function to be called.
+
+    Parameters
+    ----------
+
+    flip_bools: bool
+        Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+    help: dict
+        A dictionary of help strings for the arguments.
+
+    required: bool
+        If any sibling child functions are not required, then the user will be
+        able to invoke the parent function by not selecting any of the child functions.
+
+    strings: dict
+        A dictionary of strings to use for the arguments.
+
+    types: dict
+        A dictionary of types to use for the arguments.
+
+    Examples
+    --------
+    With `flip_bools` set to `True`:
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.subcommand(flip_bools=True)
+    ... def f1(b: bool = True):
+    ...     return dict(f1=dict(b=b))
+    ...
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: f1 --no-b
+    b: (default: True)
+
+    With `flip_bools` set to `False`:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.subcommand(flip_bools=False)
+    ... def f1(b: bool = True):
+    ...     return dict(f1=dict(b=b))
+    ...
+    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    usage: f1 -b
+    b: (default: True)
+
+
+    Here is an example of how the `required` argument works:
+
+    &gt;&gt;&gt; tree = CommandTree()
+    ...
+    &gt;&gt;&gt; @tree.command()
+    ... def f1(a: int):
+    ...     # this function can be called because one of the children (f2) is not required
+    ...     return dict(f1=dict(a=a))
+    ...
+    &gt;&gt;&gt; @f1.subcommand(required=False)
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
+    ...
+    &gt;&gt;&gt; @f1.subcommand()
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Now we invoke `tree.main` without calling `f2` or `f3`:
+    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+    {&#39;f1&#39;: {&#39;a&#39;: 1}}
+    &#34;&#34;&#34;
     return self._decorator(
         flip_bools=flip_bools,
         help=help,
@@ -3139,9 +3739,8 @@ class Parser(MonadPlus[A_co]):
             Before running the parser, checks if the input string is `--help` or `-h`.
             If it is, returns the usage message.
 
-        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
-        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
-        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+        Examples
+        --------
 
         &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;-h&#34;)
         usage: a
@@ -3792,20 +4391,11 @@ The tuples are <code>KeyValueTuple</code> namedtuples, with fields <code>key</co
 <dd>Before running the parser, checks if the input string is <code>--help</code> or <code>-h</code>.
 If it is, returns the usage message.</dd>
 </dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
-&gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;, return_dict=False)
-[('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-</code></pre>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;a&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: a
 &gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;--help&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;a&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: a
 </code></pre></div>
 <details class="source">
 <summary>
@@ -3831,9 +4421,8 @@ If it is, returns the usage message.</dd>
         Before running the parser, checks if the input string is `--help` or `-h`.
         If it is, returns the usage message.
 
-    &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
-    &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
-    [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+    Examples
+    --------
 
     &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;-h&#34;)
     usage: a

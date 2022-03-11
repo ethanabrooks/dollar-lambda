@@ -81,12 +81,24 @@ def command(
     flip_bools : bool
         For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
 
-    >>> @command(flip_bools=True)
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    strings : dict[str, str]
+        This dictionary maps variable names to the strings that the parser will look for in the input.
+
+    types: dict[str, Callable[[str], Any]]
+        This dictionary maps variable names to custom type converters.
+
+    Examples
+    --------
+
+    >>> @command()
     ... def f(cuda: bool = True):
     ...     return dict(cuda=cuda)
     >>> f()
     {'cuda': True}
-    >>> f("--no-cuda")
+    >>> f("--no-cuda")  # flip_bools adds --no- to the flag
     {'cuda': False}
 
     As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
@@ -97,8 +109,7 @@ def command(
     >>> f("--cuda")
     {'cuda': False}
 
-    help : dict[str, str]
-        A dictionary of help strings for the arguments.
+    Here is an example using the `help` parameter:
 
     >>> @command(help=dict(quiet="Be quiet"))
     ... def f(quiet: bool):
@@ -107,8 +118,7 @@ def command(
     usage: --quiet
     quiet: Be quiet
 
-    strings : dict[str, str]
-        This dictionary maps variable names to the strings that the parser will look for in the input. For example:
+    Here is an example using the `strings` parameter:
 
     >>> @command(strings=dict(quiet="--quiet-mode"))
     ... def f(quiet: bool):
@@ -119,8 +129,7 @@ def command(
     usage: --quiet-mode
     Expected '--quiet-mode'. Got '--quiet'
 
-    types: dict[str, Callable[[str], Any]]
-        This dictionary maps variable names to custom type converters. For example:
+    Here is an example using the `type` parameter:
 
     >>> @command(types=dict(x=lambda x: int(x) + 1))
     ... def f(x: int):
@@ -235,45 +244,114 @@ class _Node:
 @dataclass
 class CommandTree:
     """
+    Allows parsers to dynamically dispatch their results based on the input.
+    First we must define a `CommandTree` object:
+
     >>> tree = CommandTree()
+
+    Now we define at least one child function:
 
     >>> @tree.command()
     ... def f1(a: int):
     ...     return dict(f1=dict(a=a))
 
-    >>> @tree.subcommand()
+    At this point tree is just a parser that takes a single option `-a`:
+
+    >>> tree.main("-h")
+    usage: -a A
+
+    Now let's add a second child function:
+
+    >>> @tree.command()
     ... def f2(b: bool):
     ...     return dict(f2=dict(b=b))
-
+    ...
     >>> tree.main("-h")
-    usage: [-a A | f2 -b]
-    >>> tree.main("-a", "1")
+    usage: [-a A | -b]
+
+    `tree.main` will execute either `f1` or `f2` based on which of the parsers succeeds:
+
+    >>> tree.main("-a", "1")  # this will execute f1
     {'f1': {'a': 1}}
-    >>> tree.main("f2", "-b")
+
+    >>> tree.main("-b")  # this will execute f2
     {'f2': {'b': True}}
 
-    >>> tree = CommandTree()
+    >>> tree.main()  # fails
+    usage: [-a A | -b]
+    The following arguments are required: -a
 
+    Often in cases where there are alternative sets of argument like this,
+    there is also a set of shared arguments. It would be cumbersome to have to
+    repeat these for both child functions. Instead we can define a parent function
+    as follows:
+
+    >>> tree = CommandTree()
+    ...
     >>> @tree.command()
     ... def f1(a: int):
-    ...     return dict(f1=dict(a=a))
+    ...     raise RuntimeError("This function should not be called")
 
-    >>> @f1.subcommand()
-    ... def f2(a: int, b: bool):
-    ...     return dict(f2=dict(a=a, b=b))
+    Note that the arguments of `f2` must include all the arguments of `f1`:
+    >>> @f1.command()  # note f1, not tree
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
 
-    >>> @f1.subcommand()
-    ... def f3(a: int, c: str):
-    ...     return dict(f3=dict(a=a, c=c))
+    Now this sequences the arguments of f1 and f2:
 
     >>> tree.main("-h")
+    usage: -a A -b
+
+    As before we can define an additional child function to induce alternative
+    argument sets:
+
+    >>> @f1.command()  # note f1, not tree
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Note that our usage message shows `-a A` preceding the brackets:
+    >>> tree.main("-h")
+    usage: -a A [-b | -c C]
+
+    To execute f2, we give the `-b` flag:
+    >>> tree.main("-a", "1", "-b")
+    {'f2': {'b': True}}
+
+    To execute f3, we give the `-c` flag:
+    >>> tree.main("-a", "1", "-c", "foo")
+    {'f3': {'c': 'foo'}}
+
+    Often we want to explicity specify which function to execute by naming it on the command line.
+    This would implement functionality similar to
+    [`ArgumentParser.add_subparsers`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers)
+
+    For this we would use the `subcommand` decorator:
+
+    >>> tree = CommandTree()
+    ...
+    >>> @tree.command()
+    ... def f1(a: int):
+    ...     raise RuntimeError("This function should not be called")
+    ...
+    >>> @f1.subcommand()  # note subcommand, not command
+    ... def f2(a:int, b: bool):
+    ...     return dict(f2=dict(b=b))
+    ...
+    >>> @f1.subcommand()  # again, subcommand, not command
+    ... def f3(a: int, c: str):
+    ...     return dict(f3=dict(c=c))
+
+    Now the usage message indicates the `f2` and `f3` are required arguments:
+    >>> tree.main("-h")
     usage: -a A [f2 -b | f3 -c C]
-    >>> tree.main("-a", "1")
-    {'f1': {'a': 1}}
+
+    Now we would select f2 as follows:
     >>> tree.main("-a", "1", "f2", "-b")
-    {'f2': {'a': 1, 'b': True}}
-    >>> tree.main("-a", "1", "f3", "-c", "x")
-    {'f3': {'a': 1, 'c': 'x'}}
+    {'f2': {'b': True}}
+
+    And f3 as follows:
+    >>> tree.main("-a", "1", "f3", "-c", "foo")
+    {'f3': {'c': 'foo'}}
     """
 
     _children: List[_Node] = field(default_factory=list)
@@ -283,10 +361,79 @@ class CommandTree:
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        required: bool = False,
+        required: bool = True,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
+        """
+        A decorator for adding a function as a child of this tree.
+
+        Parameters
+        ----------
+
+        flip_bools: bool
+            Whether to add `--no-<argument>` before arguments that default to `True`.
+
+        help: dict
+            A dictionary of help strings for the arguments.
+
+        required: bool
+            If any sibling child functions are not required, then the user will be
+            able to invoke the parent function by not selecting any of the child functions.
+
+        strings: dict
+            A dictionary of strings to use for the arguments.
+
+        types: dict
+            A dictionary of types to use for the arguments.
+
+        Examples
+        --------
+        With `flip_bools` set to `True`:
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command(flip_bools=True)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> tree.main("-h")
+        usage: --no-b
+        b: (default: True)
+
+        With `flip_bools` set to `False`:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command(flip_bools=False)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> tree.main("-h")
+        usage: -b
+        b: (default: True)
+
+
+        Here is an example of how the `required` argument works:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command()
+        ... def f1(a: int):
+        ...     # this function can be called because one of the children (f2) is not required
+        ...     return dict(f1=dict(a=a))
+        ...
+        >>> @f1.command(required=False)
+        ... def f2(a:int, b: bool):
+        ...     return dict(f2=dict(b=b))
+        ...
+        >>> @f1.command()
+        ... def f3(a: int, c: str):
+        ...     return dict(f3=dict(c=c))
+
+        Now we invoke `tree.main` without calling `f2` or `f3`:
+        >>> tree.main("-a", "1")
+        {'f1': {'a': 1}}
+        """
         return self._decorator(
             flip_bools=flip_bools,
             help=help,
@@ -324,6 +471,12 @@ class CommandTree:
         return wrap_help(reduce(operator.or_, get_alternatives()))
 
     def main(self, *args: str) -> Any:
+        """
+        Run the parser associated with this tree and execute the
+        function associated with a succeeding parser.
+
+        If `args` is empty, uses `sys.argv[1:]`.
+        """
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
         p = self._parser() >> done()
         result = p.parse(Sequence(list(_args))).get
@@ -345,6 +498,77 @@ class CommandTree:
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
+        """
+        A decorator for adding a function as a child of this tree.
+        As a subcommand, the function's name must be invoked on the command
+        line for the function to be called.
+
+        Parameters
+        ----------
+
+        flip_bools: bool
+            Whether to add `--no-<argument>` before arguments that default to `True`.
+
+        help: dict
+            A dictionary of help strings for the arguments.
+
+        required: bool
+            If any sibling child functions are not required, then the user will be
+            able to invoke the parent function by not selecting any of the child functions.
+
+        strings: dict
+            A dictionary of strings to use for the arguments.
+
+        types: dict
+            A dictionary of types to use for the arguments.
+
+        Examples
+        --------
+        With `flip_bools` set to `True`:
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.subcommand(flip_bools=True)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> tree.main("-h")
+        usage: f1 --no-b
+        b: (default: True)
+
+        With `flip_bools` set to `False`:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.subcommand(flip_bools=False)
+        ... def f1(b: bool = True):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> tree.main("-h")
+        usage: f1 -b
+        b: (default: True)
+
+
+        Here is an example of how the `required` argument works:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command()
+        ... def f1(a: int):
+        ...     # this function can be called because one of the children (f2) is not required
+        ...     return dict(f1=dict(a=a))
+        ...
+        >>> @f1.subcommand(required=False)
+        ... def f2(a:int, b: bool):
+        ...     return dict(f2=dict(b=b))
+        ...
+        >>> @f1.subcommand()
+        ... def f3(a: int, c: str):
+        ...     return dict(f3=dict(c=c))
+
+        Now we invoke `tree.main` without calling `f2` or `f3`:
+        >>> tree.main("-a", "1")
+        {'f1': {'a': 1}}
+        """
         return self._decorator(
             flip_bools=flip_bools,
             help=help,

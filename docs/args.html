@@ -189,6 +189,27 @@ class Args:
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
         Combines these parsers using `nonpositional`.
+
+        Parameters
+        ----------
+        flip_bools: bool
+             Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+        Examples
+        --------
+        &gt;&gt;&gt; @dataclass
+        ... class MyArgs(Args):
+        ...     tests: bool = True
+
+        Note the leading `--no-`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+        {&#39;tests&#39;: False}
+        &gt;&gt;&gt; MyArgs.parse_args()
+        {&#39;tests&#39;: True}
+
+        To suppress this behavior, set `flip_bools=False`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+        {&#39;tests&#39;: False}
         &#34;&#34;&#34;
         return _ArgsField.nonpositional(
             *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
@@ -380,6 +401,27 @@ class Args:
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
         Combines these parsers using `nonpositional`.
+
+        Parameters
+        ----------
+        flip_bools: bool
+             Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+        Examples
+        --------
+        &gt;&gt;&gt; @dataclass
+        ... class MyArgs(Args):
+        ...     tests: bool = True
+
+        Note the leading `--no-`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+        {&#39;tests&#39;: False}
+        &gt;&gt;&gt; MyArgs.parse_args()
+        {&#39;tests&#39;: True}
+
+        To suppress this behavior, set `flip_bools=False`:
+        &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+        {&#39;tests&#39;: False}
         &#34;&#34;&#34;
         return _ArgsField.nonpositional(
             *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
@@ -421,7 +463,27 @@ def parse_args(
 <dd>
 <div class="desc"><p>Returns a parser for the dataclass.
 Converts each field to a parser (<code>option</code> or <code>flag</code> depending on its type).
-Combines these parsers using <code>nonpositional</code>.</p></div>
+Combines these parsers using <code>nonpositional</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+... class MyArgs(Args):
+...     tests: bool = True
+</code></pre>
+<p>Note the leading <code>--no-</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
+{'tests': False}
+&gt;&gt;&gt; MyArgs.parse_args()
+{'tests': True}
+</code></pre>
+<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
+{'tests': False}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -432,6 +494,27 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
     Returns a parser for the dataclass.
     Converts each field to a parser (`option` or `flag` depending on its type).
     Combines these parsers using `nonpositional`.
+
+    Parameters
+    ----------
+    flip_bools: bool
+         Whether to add `--no-&lt;argument&gt;` before arguments that default to `True`.
+
+    Examples
+    --------
+    &gt;&gt;&gt; @dataclass
+    ... class MyArgs(Args):
+    ...     tests: bool = True
+
+    Note the leading `--no-`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+    {&#39;tests&#39;: False}
+    &gt;&gt;&gt; MyArgs.parse_args()
+    {&#39;tests&#39;: True}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+    {&#39;tests&#39;: False}
     &#34;&#34;&#34;
     return _ArgsField.nonpositional(
         *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools

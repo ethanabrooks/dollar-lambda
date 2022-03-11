@@ -385,9 +385,8 @@ class Parser(MonadPlus[A_co]):
             Before running the parser, checks if the input string is `--help` or `-h`.
             If it is, returns the usage message.
 
-        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
-        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
-        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+        Examples
+        --------
 
         &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;-h&#34;)
         usage: a
@@ -599,9 +598,14 @@ def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
 
     Parameters
     ----------
+    s: str
+        The word to that input will be checked against for equality.
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
@@ -647,17 +651,33 @@ def flag(
     &#34;&#34;&#34;
     Binds a boolean value to a variable.
 
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+
+
     Parameters
     ----------
     dest : str
         The variable to which the value will be bound.
 
-    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
-
     default : Optional[bool]
         An optional default value.
+
+    help : Optional[str]
+        An optional help string.
+
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+    Examples
+    --------
+
+    Here is an example using the `default` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
     &gt;&gt;&gt; p.parse_args()
@@ -669,17 +689,14 @@ def flag(
     usage: --verbose
     The following arguments are required: --verbose
 
-    help : Optional[str]
-        An optional help string.
+    Here is an example using the `help` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, help=&#34;Turn on verbose output.&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
     usage: --verbose
     verbose: Turn on verbose output.
 
-    short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    Here is an example using the `short` parameter:
 
     &gt;&gt;&gt; flag(&#34;verbose&#34;, short=True).parse_args(&#34;-v&#34;)  # this is the default
     {&#39;verbose&#39;: True}
@@ -687,8 +704,7 @@ def flag(
     usage: --verbose
     Expected &#39;--verbose&#39;. Got &#39;-v&#39;
 
-    string : Optional[str]
-        A custom string to use for the flag. Defaults to `--{dest}`.
+    Here is an example using the `string` parameter:
 
     &gt;&gt;&gt; flag(&#34;value&#34;, string=&#34;v&#34;).parse_args(&#34;v&#34;)  # note that string does not have to start with -
     {&#39;value&#39;: True}
@@ -769,6 +785,9 @@ def item(
     ----------
     help_name : Optional[str]
         Used for generating help text
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = item(&#34;name&#34;, help_name=&#34;Your first name&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;Alice&#34;)
@@ -866,29 +885,46 @@ def option(
     dest : str
         The name of variable to bind to:
 
-    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
-    {&#39;count&#39;: &#39;1&#39;}
-
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)  # note that flag need not begin with -
-    {&#39;count&#39;: &#39;1&#39;}
-
     default : Optional[Any]
         The default value to bind on failure:
-    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()  # note that default can be any type
-    {&#39;count&#39;: 2}
 
     help : Optional[str]
         The help message to display for the option:
-    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
-    usage: --count COUNT
-    count: The number we should count to
 
     short : bool
         Whether to check for the short form of the flag, which
         uses a single dash and the first character of `dest`, e.g. `-c` for `count`.
+
+    type : Callable[[str], Any]
+        Use the `type` argument to convert the input to a different type:
+
+    Examples
+    --------
+
+    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    In this example, you can see that the `flag` parameter allows the user to
+    specify an arbitrary lead string, including one that doesn&#39;t start with a dash.
+
+    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    This example demonstrates the use of the `default` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()
+    {&#39;count&#39;: 2}
+
+    Here we specify a help-string using the `help` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
+    usage: --count COUNT
+    count: The number we should count to
+
+    This example demonstrates the difference between `short=True` and `short=False`:
 
     &gt;&gt;&gt; option(&#34;count&#34;, short=True).parse_args(&#34;-c&#34;, &#34;1&#34;)
     {&#39;count&#39;: &#39;1&#39;}
@@ -896,8 +932,9 @@ def option(
     usage: --count COUNT
     Expected &#39;--count&#39;. Got &#39;-c&#39;
 
-    type : Callable[[str], Any]
-        Use the `type` argument to convert the input to a different type:
+    As with [argparse](https://docs.python.org/3/library/argparse.html#argument-parsing),
+    the `type` argument allows you to convert the input to a different type using a
+    function that takes a single string argument:
 
     &gt;&gt;&gt; option(&#34;x&#34;, type=int).parse_args(&#34;-x&#34;, &#34;1&#34;)  # converts &#34;1&#34; to an int
     {&#39;x&#39;: 1}
@@ -1377,10 +1414,13 @@ Expected 'hello'. Got 'goodbye'
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>s</code></strong> :&ensp;<code>str</code></dt>
+<dd>The word to that input will be checked against for equality.</dd>
 <dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
 If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
 </dl>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
@@ -1388,10 +1428,7 @@ If <code>True</code>, then the parser leaves the <code>unparsed</code> component
 <p>Look what happens when <code>peak=True</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;hello goodbye&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: hello goodbye
 Expected 'goodbye'. Got 'hello'
 </code></pre>
 <p>The first parser didn't consume the word and so "hello" got passed on to <code>equals("goodbye")</code>.
@@ -1416,9 +1453,14 @@ But this would work:</p>
 
     Parameters
     ----------
+    s: str
+        The word to that input will be checked against for equality.
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
@@ -1459,19 +1501,26 @@ But this would work:</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Binds a boolean value to a variable.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
-<dd>The variable to which the value will be bound.</dd>
-</dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
 </code></pre>
+<h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
+<dd>The variable to which the value will be bound.</dd>
 <dt><strong><code>default</code></strong> :&ensp;<code>Optional[bool]</code></dt>
 <dd>An optional default value.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>An optional help string.</dd>
+<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to check for the short form of the flag, which
+uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
+<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
 </dl>
+<h2 id="examples">Examples</h2>
+<p>Here is an example using the <code>default</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
 &gt;&gt;&gt; p.parse_args()
 {'verbose': False}
@@ -1479,42 +1528,23 @@ But this would work:</p>
 <p>By default <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> fails when it does not receive expected input:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args()
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 The following arguments are required: --verbose
 </code></pre>
-<dl>
-<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>An optional help string.</dd>
-</dl>
+<p>Here is an example using the <code>help</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, help=&quot;Turn on verbose output.&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 verbose: Turn on verbose output.
 </code></pre>
-<dl>
-<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to check for the short form of the flag, which
-uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
-</dl>
+<p>Here is an example using the <code>short</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, short=True).parse_args(&quot;-v&quot;)  # this is the default
 {'verbose': True}
 &gt;&gt;&gt; flag(&quot;verbose&quot;, short=False).parse_args(&quot;-v&quot;)  # fails
-**```usage```** :&amp;ensp;`--verbose`
-:   &amp;nbsp;
-
-
+usage: --verbose
 Expected '--verbose'. Got '-v'
 </code></pre>
-<dl>
-<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
-</dl>
+<p>Here is an example using the <code>string</code> parameter:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;value&quot;, string=&quot;v&quot;).parse_args(&quot;v&quot;)  # note that string does not have to start with -
 {'value': True}
 </code></pre></div>
@@ -1532,17 +1562,33 @@ Expected '--verbose'. Got '-v'
     &#34;&#34;&#34;
     Binds a boolean value to a variable.
 
+    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
+    {&#39;verbose&#39;: True}
+
+
     Parameters
     ----------
     dest : str
         The variable to which the value will be bound.
 
-    &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-    {&#39;verbose&#39;: True}
-
     default : Optional[bool]
         An optional default value.
+
+    help : Optional[str]
+        An optional help string.
+
+    short : bool
+        Whether to check for the short form of the flag, which
+        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+
+    string : Optional[str]
+        A custom string to use for the flag. Defaults to `--{dest}`.
+
+    Examples
+    --------
+
+    Here is an example using the `default` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, default=False)
     &gt;&gt;&gt; p.parse_args()
@@ -1554,17 +1600,14 @@ Expected '--verbose'. Got '-v'
     usage: --verbose
     The following arguments are required: --verbose
 
-    help : Optional[str]
-        An optional help string.
+    Here is an example using the `help` parameter:
 
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;, help=&#34;Turn on verbose output.&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
     usage: --verbose
     verbose: Turn on verbose output.
 
-    short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+    Here is an example using the `short` parameter:
 
     &gt;&gt;&gt; flag(&#34;verbose&#34;, short=True).parse_args(&#34;-v&#34;)  # this is the default
     {&#39;verbose&#39;: True}
@@ -1572,8 +1615,7 @@ Expected '--verbose'. Got '-v'
     usage: --verbose
     Expected &#39;--verbose&#39;. Got &#39;-v&#39;
 
-    string : Optional[str]
-        A custom string to use for the flag. Defaults to `--{dest}`.
+    Here is an example using the `string` parameter:
 
     &gt;&gt;&gt; flag(&#34;value&#34;, string=&#34;v&#34;).parse_args(&#34;v&#34;)  # note that string does not have to start with -
     {&#39;value&#39;: True}
@@ -1634,14 +1676,12 @@ One of the lowest level building blocks for parsers.</p>
 <dt><strong><code>help_name</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>Used for generating help text</dd>
 </dl>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = item(&quot;name&quot;, help_name=&quot;Your first name&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;Alice&quot;)
 {'name': 'Alice'}
 &gt;&gt;&gt; p.parse_args()
-**```usage```** :&amp;ensp;&lt;code&gt;name&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: name
 The following arguments are required: Your first name
 </code></pre></div>
 <details class="source">
@@ -1660,6 +1700,9 @@ The following arguments are required: Your first name
     ----------
     help_name : Optional[str]
         Used for generating help text
+
+    Examples
+    --------
 
     &gt;&gt;&gt; p = item(&#34;name&#34;, help_name=&#34;Your first name&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;Alice&#34;)
@@ -1789,56 +1832,46 @@ cause the <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser
 <dl>
 <dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
 <dd>The name of variable to bind to:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
-{'count': '1'}
-</code></pre>
-<dl>
 <dt><strong><code>flag</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>The flag to use for the option. If not provided, defaults to <code>--{dest}</code>.</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)  # note that flag need not begin with -
-{'count': '1'}
-</code></pre>
-<dl>
 <dt><strong><code>default</code></strong> :&ensp;<code>Optional[Any]</code></dt>
 <dd>The default value to bind on failure:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()  # note that default can be any type
-{'count': 2}
-</code></pre>
-<dl>
 <dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>The help message to display for the option:</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;`--count COUNT`
-:   &amp;nbsp;
-
-
-**```count```** :&amp;ensp;&lt;code&gt;The number we should count to&lt;/code&gt;
-:   &amp;nbsp;
-
-
-</code></pre>
-<dl>
 <dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Whether to check for the short form of the flag, which
 uses a single dash and the first character of <code>dest</code>, e.g. <code>-c</code> for <code>count</code>.</dd>
-</dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
-{'count': '1'}
-&gt;&gt;&gt; option(&quot;count&quot;, short=False).parse_args(&quot;-c&quot;, &quot;1&quot;)
-**```usage```** :&amp;ensp;`--count COUNT`
-:   &amp;nbsp;
-
-
-Expected '--count'. Got '-c'
-</code></pre>
-<dl>
 <dt><strong><code>type</code></strong> :&ensp;<code>Callable[[str], Any]</code></dt>
 <dd>Use the <code>type</code> argument to convert the input to a different type:</dd>
 </dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
+{'count': '1'}
+</code></pre>
+<p>In this example, you can see that the <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> parameter allows the user to
+specify an arbitrary lead string, including one that doesn't start with a dash.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)
+{'count': '1'}
+</code></pre>
+<p>This example demonstrates the use of the <code>default</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()
+{'count': 2}
+</code></pre>
+<p>Here we specify a help-string using the <code>help</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
+usage: --count COUNT
+count: The number we should count to
+</code></pre>
+<p>This example demonstrates the difference between <code>short=True</code> and <code>short=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
+{'count': '1'}
+&gt;&gt;&gt; option(&quot;count&quot;, short=False).parse_args(&quot;-c&quot;, &quot;1&quot;)
+usage: --count COUNT
+Expected '--count'. Got '-c'
+</code></pre>
+<p>As with <a href="https://docs.python.org/3/library/argparse.html#argument-parsing">argparse</a>,
+the <code>type</code> argument allows you to convert the input to a different type using a
+function that takes a single string argument:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;, type=int).parse_args(&quot;-x&quot;, &quot;1&quot;)  # converts &quot;1&quot; to an int
 {'x': 1}
 &gt;&gt;&gt; option(&quot;x&quot;, type=lambda x: int(x) + 1).parse_args(&quot;-x&quot;, &quot;1&quot;)
@@ -1864,29 +1897,46 @@ Expected '--count'. Got '-c'
     dest : str
         The name of variable to bind to:
 
-    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
-    {&#39;count&#39;: &#39;1&#39;}
-
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)  # note that flag need not begin with -
-    {&#39;count&#39;: &#39;1&#39;}
-
     default : Optional[Any]
         The default value to bind on failure:
-    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()  # note that default can be any type
-    {&#39;count&#39;: 2}
 
     help : Optional[str]
         The help message to display for the option:
-    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
-    usage: --count COUNT
-    count: The number we should count to
 
     short : bool
         Whether to check for the short form of the flag, which
         uses a single dash and the first character of `dest`, e.g. `-c` for `count`.
+
+    type : Callable[[str], Any]
+        Use the `type` argument to convert the input to a different type:
+
+    Examples
+    --------
+
+    &gt;&gt;&gt; option(&#34;count&#34;).parse_args(&#34;--count&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    In this example, you can see that the `flag` parameter allows the user to
+    specify an arbitrary lead string, including one that doesn&#39;t start with a dash.
+
+    &gt;&gt;&gt; option(&#34;count&#34;, flag=&#34;ct&#34;).parse_args(&#34;ct&#34;, &#34;1&#34;)
+    {&#39;count&#39;: &#39;1&#39;}
+
+    This example demonstrates the use of the `default` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, default=2).parse_args()
+    {&#39;count&#39;: 2}
+
+    Here we specify a help-string using the `help` parameter:
+
+    &gt;&gt;&gt; option(&#34;count&#34;, help=&#34;The number we should count to&#34;).parse_args(&#34;-h&#34;)
+    usage: --count COUNT
+    count: The number we should count to
+
+    This example demonstrates the difference between `short=True` and `short=False`:
 
     &gt;&gt;&gt; option(&#34;count&#34;, short=True).parse_args(&#34;-c&#34;, &#34;1&#34;)
     {&#39;count&#39;: &#39;1&#39;}
@@ -1894,8 +1944,9 @@ Expected '--count'. Got '-c'
     usage: --count COUNT
     Expected &#39;--count&#39;. Got &#39;-c&#39;
 
-    type : Callable[[str], Any]
-        Use the `type` argument to convert the input to a different type:
+    As with [argparse](https://docs.python.org/3/library/argparse.html#argument-parsing),
+    the `type` argument allows you to convert the input to a different type using a
+    function that takes a single string argument:
 
     &gt;&gt;&gt; option(&#34;x&#34;, type=int).parse_args(&#34;-x&#34;, &#34;1&#34;)  # converts &#34;1&#34; to an int
     {&#39;x&#39;: 1}
@@ -2556,9 +2607,8 @@ class Parser(MonadPlus[A_co]):
             Before running the parser, checks if the input string is `--help` or `-h`.
             If it is, returns the usage message.
 
-        &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
-        &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
-        [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+        Examples
+        --------
 
         &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;-h&#34;)
         usage: a
@@ -3209,20 +3259,11 @@ The tuples are <code>KeyValueTuple</code> namedtuples, with fields <code>key</co
 <dd>Before running the parser, checks if the input string is <code>--help</code> or <code>-h</code>.
 If it is, returns the usage message.</dd>
 </dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
-&gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;, return_dict=False)
-[('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-</code></pre>
+<h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;-h&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;a&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: a
 &gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;--help&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;a&lt;/code&gt;
-:   &amp;nbsp;
-
-
+usage: a
 </code></pre></div>
 <details class="source">
 <summary>
@@ -3248,9 +3289,8 @@ If it is, returns the usage message.</dd>
         Before running the parser, checks if the input string is `--help` or `-h`.
         If it is, returns the usage message.
 
-    &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
-    &gt;&gt;&gt; p.parse_args(&#34;a&#34;, &#34;b&#34;, return_dict=False)
-    [(&#39;as-many-as-you-like&#39;, &#39;a&#39;), (&#39;as-many-as-you-like&#39;, &#39;b&#39;)]
+    Examples
+    --------
 
     &gt;&gt;&gt; argument(&#34;a&#34;).parse_args(&#34;-h&#34;)
     usage: a

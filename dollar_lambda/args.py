@@ -160,6 +160,27 @@ class Args:
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
         Combines these parsers using `nonpositional`.
+
+        Parameters
+        ----------
+        flip_bools: bool
+             Whether to add `--no-<argument>` before arguments that default to `True`.
+
+        Examples
+        --------
+        >>> @dataclass
+        ... class MyArgs(Args):
+        ...     tests: bool = True
+
+        Note the leading `--no-`:
+        >>> MyArgs.parse_args("--no-tests")
+        {'tests': False}
+        >>> MyArgs.parse_args()
+        {'tests': True}
+
+        To suppress this behavior, set `flip_bools=False`:
+        >>> MyArgs.parse_args("--tests", flip_bools=False)
+        {'tests': False}
         """
         return _ArgsField.nonpositional(
             *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
