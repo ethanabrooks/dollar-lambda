@@ -562,17 +562,18 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
     """
     Checks if the next word is `s`.
 
+    >>> equals("hello").parse_args("hello")
+    {'hello': 'hello'}
+    >>> equals("hello").parse_args("goodbye")
+    usage: hello
+    Expected 'hello'. Got 'goodbye'
+
     Parameters
     ----------
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
 
-    >>> equals("hello").parse_args("hello")
-    {'hello': 'hello'}
-    >>> equals("hello").parse_args("goodbye")
-    usage: hello
-    Expected 'hello'. Got 'goodbye'
     >>> p = equals("hello") >> equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}

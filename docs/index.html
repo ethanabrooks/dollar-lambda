@@ -1607,21 +1607,19 @@ See <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositio
 </code></dt>
 <dd>
 <div class="desc"><p>Checks if the next word is <code>s</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;hello&quot;)
+{'hello': 'hello'}
+&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;goodbye&quot;)
+usage: hello
+Expected 'hello'. Got 'goodbye'
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
 If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
 </dl>
-<pre><code class="language-python-repl">&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;hello&quot;)
-{'hello': 'hello'}
-&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;goodbye&quot;)
-**```usage```** :&amp;ensp;&lt;code&gt;hello&lt;/code&gt;
-:   &amp;nbsp;
-
-
-Expected 'hello'. Got 'goodbye'
-&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
 </code></pre>
@@ -1648,17 +1646,18 @@ But this would work:</p>
     &#34;&#34;&#34;
     Checks if the next word is `s`.
 
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;hello&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;}
+    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
+    usage: hello
+    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
+
     Parameters
     ----------
     peak : bool
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
 
-    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;hello&#34;)
-    {&#39;hello&#39;: &#39;hello&#39;}
-    &gt;&gt;&gt; equals(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
-    usage: hello
-    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
     &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
