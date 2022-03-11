@@ -2,10 +2,11 @@
 Defines the `Args` dataclass and associated functions.
 """
 import dataclasses
+import typing
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
-from dollar_lambda.key_value import KeyValue
+from dollar_lambda.key_value import KeyValue, KeyValueTuple
 from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
 from dollar_lambda.sequence import Sequence
 
@@ -45,7 +46,7 @@ def field(
 
 
 @dataclass
-class ArgsField:
+class _ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
@@ -53,7 +54,7 @@ class ArgsField:
     type: Callable[[str], Any] = str
 
     @staticmethod
-    def parse(field: Field) -> "ArgsField":
+    def parse(field: Field) -> "_ArgsField":
         if "help" in field.metadata:
             help_ = field.metadata["help"]
         else:
@@ -70,13 +71,13 @@ class ArgsField:
         if field.default is dataclasses.MISSING:
             default = None
 
-        return ArgsField(
+        return _ArgsField(
             name=field.name, default=default, help=help_, string=string, type=type_
         )
 
     @staticmethod
     def nonpositional(
-        *fields: "ArgsField", flip_bools: bool = True
+        *fields: "_ArgsField", flip_bools: bool = True
     ) -> Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
@@ -111,11 +112,28 @@ class Args:
 
     >>> @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = False
-    ...     f: bool = True
-    ...     i: int = 1
-    ...     s: str = "a"
-    >>> p = MyArgs()
+    ...     verbose: bool
+    ...     count: int
+    >>> MyArgs.parse_args("--verbose", "--count", "1")
+    {'verbose': True, 'count': 1}
+
+    `MyArgs` will accept these arguments in any order:
+    >>> MyArgs.parse_args("--count", "1", "--verbose")
+    {'count': 1, 'verbose': True}
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    >>> @dataclass
+    ... class MyArgs(Args):
+    ...     tests: bool = True
+    >>> MyArgs.parse_args("--no-tests")
+    {'tests': False}
+    >>> MyArgs.parse_args()
+    {'tests': True}
+
+    To suppress this behavior, set `flip_bools=False`:
+    >>> MyArgs.parse_args("--tests", flip_bools=False)
+    {'tests': False}
 
     By using the `Args.parser()` method, `Args` can take advantage of all the same
     combinators as other parsers:
@@ -123,17 +141,8 @@ class Args:
     >>> from dollar_lambda import argument
     >>> p = MyArgs.parser()
     >>> p1 = p >> argument("a")
-    >>> p1.parse_args("-t", "hello")
-    {'t': True, 'f': True, 'i': 1, 's': 'a', 'a': 'hello'}
-
-    Note that when the default value of an argument is `True`, `Args` will, by default
-    add `--no-` to the front of the flag (while still assigning the value to the original key):
-    >>> MyArgs.parse_args("--no-f")
-    {'t': False, 'f': False, 'i': 1, 's': 'a'}
-
-    To suppress this behavior, set `flip_bools=False`:
-    >>> MyArgs.parser(flip_bools=False).parse_args("--no-t", "-f", "-i", "2", "-s", "b")
-    {'t': False, 'f': True, 'i': 1, 's': 'a'}
+    >>> p1.parse_args("--no-tests", "hello")
+    {'tests': False, 'a': 'hello'}
 
     To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     >>> @dataclass
@@ -142,17 +151,25 @@ class Args:
     >>> MyArgs.parse_args("-n", "1")
     {'n': 2}
     >>> MyArgs.parse_args()
-    usage: -n N
-    n: a number to increment
-    The following arguments are required: -n
+    {'n': 1}
     """
 
     @classmethod
     def parser(cls, flip_bools: bool = True) -> Parser[Sequence[KeyValue[Any]]]:
-        return ArgsField.nonpositional(
-            *[ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+        """
+        Returns a parser for the dataclass.
+        Converts each field to a parser (`option` or `flag` depending on its type).
+        Combines these parsers using `nonpositional`.
+        """
+        return _ArgsField.nonpositional(
+            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
         )
 
     @classmethod
-    def parse_args(cls, *args):
-        return (cls.parser() >> done()).parse_args(*args)
+    def parse_args(
+        cls, *args, flip_bools: bool = True
+    ) -> typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]:
+        """
+        Parses the arguments and returns a dictionary of the parsed values.
+        """
+        return (cls.parser(flip_bools=flip_bools) >> done()).parse_args(*args)

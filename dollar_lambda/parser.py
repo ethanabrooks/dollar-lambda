@@ -676,8 +676,6 @@ def flag(
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if default is not None:
-        parser = parser | defaults(**{dest: default})
     if short:
         short_string = f"-{dest[0]}"
         parser2 = flag(dest, short=False, string=short_string, default=default)
@@ -685,7 +683,8 @@ def flag(
     if default:
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
-    return replace(parser, usage=_string, helps=helps)
+    parser = replace(parser, usage=_string, helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})
 
 
 def help_parser(usage: Optional[str], parsed: Monoid1) -> Parser[Monoid1]:
@@ -824,7 +823,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
 def option(
     dest: str,
     flag: Optional[str] = None,
-    default=None,
+    default: Any = None,
     help: Optional[str] = None,
     short: bool = True,
     type: Callable[[str], Any] = str,
@@ -888,15 +887,14 @@ def option(
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if default:
-        parser = parser | defaults(**{dest: default})
+    if type is not str:
+        parser = type_(type, parser)
     if short and len(dest) > 1:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
-    if type is not str:
-        parser = type_(type, parser)
     helps = {dest: help} if help else {}
-    return replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
+    parser = replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})
 
 
 def peak(

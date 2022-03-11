@@ -705,8 +705,6 @@ def flag(
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if default is not None:
-        parser = parser | defaults(**{dest: default})
     if short:
         short_string = f&#34;-{dest[0]}&#34;
         parser2 = flag(dest, short=False, string=short_string, default=default)
@@ -714,7 +712,8 @@ def flag(
     if default:
         help = f&#34;{help + &#39; &#39; if help else &#39;&#39;}(default: {default})&#34;
     helps = {dest: help} if help else {}
-    return replace(parser, usage=_string, helps=helps)
+    parser = replace(parser, usage=_string, helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})
 
 
 def help_parser(usage: Optional[str], parsed: Monoid1) -&gt; Parser[Monoid1]:
@@ -724,7 +723,7 @@ def help_parser(usage: Optional[str], parsed: Monoid1) -&gt; Parser[Monoid1]:
         result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
-        return Result(HelpError(usage=usage))
+        return Result(HelpError(usage=usage or &#34;Usage not provided.&#34;))
 
     return Parser(f, usage=None, helps={})
 
@@ -751,9 +750,7 @@ def wrap_help(parser: Parser[A]) -&gt; Parser[A]:
     &gt;&gt;&gt; p.parse_args(&#34;subcommand2&#34;, &#34;-h&#34;)
     usage: --option2 OPTION2
     &#34;&#34;&#34;
-    _help_parser: Parser[Sequence[A]] = help_parser(
-        parser.usage, Sequence([])
-    )
+    _help_parser: Parser[Sequence[A]] = help_parser(parser.usage, Sequence([]))
 
     p = _help_parser &gt;= (lambda _: parser)
     return replace(p, usage=parser.usage, helps=parser.helps)
@@ -779,6 +776,7 @@ def item(
     usage: name
     The following arguments are required: Your first name
     &#34;&#34;&#34;
+
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
@@ -854,7 +852,7 @@ def nonpositional(*parsers: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Seq
 def option(
     dest: str,
     flag: Optional[str] = None,
-    default=None,
+    default: Any = None,
     help: Optional[str] = None,
     short: bool = True,
     type: Callable[[str], Any] = str,
@@ -918,15 +916,14 @@ def option(
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if default:
-        parser = parser | defaults(**{dest: default})
+    if type is not str:
+        parser = type_(type, parser)
     if short and len(dest) &gt; 1:
         parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
         parser = parser | parser2
-    if type is not str:
-        parser = type_(type, parser)
     helps = {dest: help} if help else {}
-    return replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)
+    parser = replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})
 
 
 def peak(
@@ -986,6 +983,7 @@ def sat(
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `parser` as an argument.
     &#34;&#34;&#34;
+
     def f(x: Monoid1) -&gt; Result[Monoid1]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
@@ -1017,6 +1015,7 @@ def sat_item(
     name: str
         The value to bind the result to.
     &#34;&#34;&#34;
+
     def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
         [kv] = parsed
         return predicate(kv.value)
@@ -1592,8 +1591,6 @@ Expected '--verbose'. Got '-v'
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if default is not None:
-        parser = parser | defaults(**{dest: default})
     if short:
         short_string = f&#34;-{dest[0]}&#34;
         parser2 = flag(dest, short=False, string=short_string, default=default)
@@ -1601,7 +1598,8 @@ Expected '--verbose'. Got '-v'
     if default:
         help = f&#34;{help + &#39; &#39; if help else &#39;&#39;}(default: {default})&#34;
     helps = {dest: help} if help else {}
-    return replace(parser, usage=_string, helps=helps)</code></pre>
+    parser = replace(parser, usage=_string, helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.help_parser"><code class="name flex">
@@ -1620,7 +1618,7 @@ Expected '--verbose'. Got '-v'
         result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
-        return Result(HelpError(usage=usage))
+        return Result(HelpError(usage=usage or &#34;Usage not provided.&#34;))
 
     return Parser(f, usage=None, helps={})</code></pre>
 </details>
@@ -1670,6 +1668,7 @@ The following arguments are required: Your first name
     usage: name
     The following arguments are required: Your first name
     &#34;&#34;&#34;
+
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Sequence[KeyValue[str]]]]:
@@ -1782,7 +1781,7 @@ cause the <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser
 </details>
 </dd>
 <dt id="dollar_lambda.parser.option"><code class="name flex">
-<span>def <span class="ident">option</span></span>(<span>dest: str, flag: Optional[str] = None, default=None, help: Optional[str] = None, short: bool = True, type: Callable[[str], Any] = builtins.str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+<span>def <span class="ident">option</span></span>(<span>dest: str, flag: Optional[str] = None, default: Any = None, help: Optional[str] = None, short: bool = True, type: Callable[[str], Any] = builtins.str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parses two words, binding the second to the first.</p>
@@ -1852,7 +1851,7 @@ Expected '--count'. Got '-c'
 <pre><code class="python">def option(
     dest: str,
     flag: Optional[str] = None,
-    default=None,
+    default: Any = None,
     help: Optional[str] = None,
     short: bool = True,
     type: Callable[[str], Any] = str,
@@ -1916,15 +1915,14 @@ Expected '--count'. Got '-c'
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if default:
-        parser = parser | defaults(**{dest: default})
+    if type is not str:
+        parser = type_(type, parser)
     if short and len(dest) &gt; 1:
         parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
         parser = parser | parser2
-    if type is not str:
-        parser = type_(type, parser)
     helps = {dest: help} if help else {}
-    return replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)</code></pre>
+    parser = replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)
+    return parser if default is None else parser | defaults(**{dest: default})</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.peak"><code class="name flex">
@@ -2024,6 +2022,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `parser` as an argument.
     &#34;&#34;&#34;
+
     def f(x: Monoid1) -&gt; Result[Monoid1]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
@@ -2081,6 +2080,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
     name: str
         The value to bind the result to.
     &#34;&#34;&#34;
+
     def _predicate(parsed: Sequence[KeyValue[str]]) -&gt; bool:
         [kv] = parsed
         return predicate(kv.value)
@@ -2207,9 +2207,7 @@ usage: --option2 OPTION2
     &gt;&gt;&gt; p.parse_args(&#34;subcommand2&#34;, &#34;-h&#34;)
     usage: --option2 OPTION2
     &#34;&#34;&#34;
-    _help_parser: Parser[Sequence[A]] = help_parser(
-        parser.usage, Sequence([])
-    )
+    _help_parser: Parser[Sequence[A]] = help_parser(parser.usage, Sequence([]))
 
     p = _help_parser &gt;= (lambda _: parser)
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>

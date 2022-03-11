@@ -38,14 +38,34 @@
 # `$λ` provides a variety of syntactic sugar options that enable users
 # to write parsers with minimal boilerplate.
 #
-#
-# Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life.
-# ## [Docs](https://ethanabrooks.github.io/dollar-lambda/)
+# ## [Documentation](https://ethanabrooks.github.io/dollar-lambda/)
 # ## Installation
 # ```
 # pip install -U dollar-lambda
 # ```
 # ## Example Usage
+# For simple settings,`@command` can infer the parser for the function signature:
+# %%
+from dollar_lambda import command
+
+
+@command()
+def main(foo: int = 0, bar: str = "hello", baz: bool = False):
+    return dict(foo=foo, bar=bar, baz=baz)
+
+
+main("-h")
+# %% [markdown]
+# This handles defaults:
+# %%
+main()
+# %% [markdown]
+# And of course allows the user to supply arguments:
+# %%
+main("--foo", "1", "--bar", "goodbye", "--baz")
+
+# %% [markdown]
+# `$λ` can also handle far more complex parsing patterns:
 # %%
 from dataclasses import dataclass, field
 
@@ -80,3 +100,7 @@ p.parse_args("--args", "123", "--different")  # order doesn't matter
 # But not both:
 # %%
 p.parse_args("--many", "2", "--different", "--args", "abc")
+
+# %% [markdown]
+# ### Thanks
+# Special thanks to ["Functional Pearls"](https://www.cs.nott.ac.uk/~pszgmh/pearl.pdf) by Graham Hutton and Erik Meijer for bringing these topics to life.

@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, TypeVar, cast
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda import parser as parser_mod
-from dollar_lambda.args import ArgsField
+from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
 from dollar_lambda.parser import Parse, Parser, done, equals, wrap_help
@@ -23,7 +23,7 @@ B = TypeVar("B")
 A_co = TypeVar("A_co", covariant=True)
 
 
-def func_to_parser(
+def _func_to_parser(
     func: Callable,
     exclude: Optional[List[str]] = None,
     flip_bools: bool = True,
@@ -36,18 +36,19 @@ def func_to_parser(
     _strings = {} if strings is None else strings
     _types = {} if types is None else types
 
-    return ArgsField.nonpositional(
-        *[
-            ArgsField(
-                name=k,
-                default=None if v.default == Parameter.empty else v.default,
-                help=_help.get(k),
-                string=_strings.get(k),
-                type=_types.get(k, v.annotation),
-            )
-            for k, v in signature(func).parameters.items()
-            if k not in _exclude
-        ],
+    parsers = [
+        _ArgsField(
+            name=k,
+            default=None if v.default == Parameter.empty else v.default,
+            help=_help.get(k),
+            string=_strings.get(k),
+            type=_types.get(k, v.annotation),
+        )
+        for k, v in signature(func).parameters.items()
+        if k not in _exclude
+    ]
+    return _ArgsField.nonpositional(
+        *parsers,
         flip_bools=flip_bools,
     )
 
@@ -129,8 +130,11 @@ def command(
     """
 
     def wrapper(func: Callable) -> Callable:
-        p = func_to_parser(
-            func, flip_bools=flip_bools, help=help, strings=strings, types=types
+        p = (
+            _func_to_parser(
+                func, flip_bools=flip_bools, help=help, strings=strings, types=types
+            )
+            >> done()
         )
         p = wrap_help(p)
 
@@ -147,34 +151,34 @@ def command(
 
 
 @dataclass
-class FunctionPair(Sequence[A]):
+class _FunctionPair(Sequence[A]):
     function: Callable
 
-    def __or__(self, other: Sequence[B]) -> "FunctionPair[A | B]":
-        function = other.function if isinstance(other, FunctionPair) else self.function
-        return FunctionPair(get=[*self, *other], function=function)
+    def __or__(self, other: Sequence[B]) -> "_FunctionPair[A | B]":
+        function = other.function if isinstance(other, _FunctionPair) else self.function
+        return _FunctionPair(get=[*self, *other], function=function)
 
 
-def command_parser(
+def _command_parser(
     func: Callable,
     usage: Optional[str] = None,
     help: Optional[Dict[str, str]] = None,
-) -> Parser[FunctionPair[A]]:
+) -> Parser[_FunctionPair[A]]:
     _help = {} if help is None else help
-    return Parser[FunctionPair[A]](
+    return Parser[_FunctionPair[A]](
         lambda cs: Result.return_(
-            Parse(parsed=FunctionPair(Sequence[A]([]), func), unparsed=cs)
+            Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
         ),
         usage=usage,
         helps=_help,
     )
 
 
-def subcommand_parser(
+def _subcommand_parser(
     func: Callable,
     usage: Optional[str] = None,
     help: Optional[Dict[str, str]] = None,
-) -> Parser[FunctionPair[KeyValue[str]]]:
+) -> Parser[_FunctionPair[KeyValue[str]]]:
     _help = {} if help is None else help
 
     # def f(
@@ -184,20 +188,20 @@ def subcommand_parser(
 
     def g(
         cs: Sequence[str],
-    ) -> Result[Parse[FunctionPair[KeyValue[str]]]]:
+    ) -> Result[Parse[_FunctionPair[KeyValue[str]]]]:
         return Result.return_(
-            Parse(parsed=FunctionPair(Sequence([]), func), unparsed=cs)
+            Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
         )
 
     eq = equals(func.__name__)
     p = eq >= (
-        lambda _: Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+        lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
     )
     return replace(p, usage=eq.usage, helps=eq.helps)
 
 
 @dataclass
-class Node:
+class _Node:
     function: Callable
     flip_bools: bool
     help: Optional[Dict[str, str]]
@@ -207,13 +211,13 @@ class Node:
     subcommand: bool
     tree: Optional["CommandTree"]
 
-    def parser(self, *exclude: str) -> Parser[FunctionPair[KeyValue[Any]]]:
+    def parser(self, *exclude: str) -> Parser[_FunctionPair[KeyValue[Any]]]:
         p1 = (
-            subcommand_parser(self.function)
+            _subcommand_parser(self.function)
             if self.subcommand
-            else command_parser(self.function)
+            else _command_parser(self.function)
         )
-        p2 = func_to_parser(
+        p2 = _func_to_parser(
             self.function,
             exclude=list(exclude),
             flip_bools=self.flip_bools,
@@ -272,8 +276,8 @@ class CommandTree:
     {'f3': {'a': 1, 'c': 'x'}}
     """
 
-    children: List[Node] = field(default_factory=list)
-    required: bool = False
+    _children: List[_Node] = field(default_factory=list)
+    _required: bool = False
 
     def command(
         self,
@@ -283,7 +287,7 @@ class CommandTree:
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
-        return self.decorator(
+        return self._decorator(
             flip_bools=flip_bools,
             help=help,
             required=required,
@@ -292,28 +296,28 @@ class CommandTree:
             types=types,
         )
 
-    def decorator(self, **kwargs) -> Callable:
+    def _decorator(self, **kwargs) -> Callable:
         def wrapper(function: Callable):
             tree = CommandTree()
-            self.children.append(Node(function=function, tree=tree, **kwargs))
+            self._children.append(_Node(function=function, tree=tree, **kwargs))
             return tree
 
         return wrapper
 
-    def parser(self, *variables: str) -> Parser[FunctionPair[KeyValue[Any]]]:
-        if not self.children:
+    def _parser(self, *variables: str) -> Parser[_FunctionPair[KeyValue[Any]]]:
+        if not self._children:
             raise RuntimeError(
                 "You must assign children to a CommandTree object in order to use it as a parser."
             )
 
-        def get_alternatives() -> Iterator[Parser[FunctionPair[KeyValue[Any]]]]:
-            for child in self.children:
-                parser: Parser[FunctionPair[KeyValue[Any]]] = child.parser(*variables)
-                if child.tree is not None and child.tree.children:
+        def get_alternatives() -> Iterator[Parser[_FunctionPair[KeyValue[Any]]]]:
+            for child in self._children:
+                parser: Parser[_FunctionPair[KeyValue[Any]]] = child.parser(*variables)
+                if child.tree is not None and child.tree._children:
                     parser = cast(
-                        Parser[FunctionPair[KeyValue[Any]]],
+                        Parser[_FunctionPair[KeyValue[Any]]],
                         parser
-                        >> child.tree.parser(*variables, *child.variable_names()),
+                        >> child.tree._parser(*variables, *child.variable_names()),
                     )
                 yield parser
 
@@ -321,7 +325,7 @@ class CommandTree:
 
     def main(self, *args: str) -> Any:
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
-        p = self.parser() >> done()
+        p = self._parser() >> done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             p.handle_error(result)
@@ -330,7 +334,7 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair = cast(FunctionPair, result.head.parsed)
+        pair = cast(_FunctionPair, result.head.parsed)
         return pair.function(**{kv.key: kv.value for kv in pair.get})
 
     def subcommand(
@@ -341,7 +345,7 @@ class CommandTree:
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
-        return self.decorator(
+        return self._decorator(
             flip_bools=flip_bools,
             help=help,
             required=required,

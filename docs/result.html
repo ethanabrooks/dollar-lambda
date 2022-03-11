@@ -59,17 +59,16 @@ class Result(MonadPlus[A_co]):
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
 
-        def priority(x: NonemptyList[A_co] | ArgumentError) -&gt; int:
-            if isinstance(x, NonemptyList):
-                return 0
-            if isinstance(x, HelpError):
-                return 1
-            if isinstance(x, ArgumentError):
-                return 2
-            raise RuntimeError(&#34;Unreachable&#34;)
-
-        get, *_ = sorted((a, b), key=priority)
-        return Result(get)
+        for get in [a, b]:
+            if isinstance(get, NonemptyList):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, HelpError):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, ArgumentError):
+                return Result(get)
+        raise RuntimeError(&#34;Unreachable&#34;)
 
     def __rshift__(
         self: Result[Sequence[A]], other: Result[Sequence[B]]
@@ -142,17 +141,16 @@ class Result(MonadPlus[A_co]):
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
             return Result(a + b)
 
-        def priority(x: NonemptyList[A_co] | ArgumentError) -&gt; int:
-            if isinstance(x, NonemptyList):
-                return 0
-            if isinstance(x, HelpError):
-                return 1
-            if isinstance(x, ArgumentError):
-                return 2
-            raise RuntimeError(&#34;Unreachable&#34;)
-
-        get, *_ = sorted((a, b), key=priority)
-        return Result(get)
+        for get in [a, b]:
+            if isinstance(get, NonemptyList):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, HelpError):
+                return Result(get)
+        for get in [a, b]:
+            if isinstance(get, ArgumentError):
+                return Result(get)
+        raise RuntimeError(&#34;Unreachable&#34;)
 
     def __rshift__(
         self: Result[Sequence[A]], other: Result[Sequence[B]]

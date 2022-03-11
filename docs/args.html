@@ -31,10 +31,11 @@
 Defines the `Args` dataclass and associated functions.
 &#34;&#34;&#34;
 import dataclasses
+import typing
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
-from dollar_lambda.key_value import KeyValue
+from dollar_lambda.key_value import KeyValue, KeyValueTuple
 from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
 from dollar_lambda.sequence import Sequence
 
@@ -74,7 +75,7 @@ def field(
 
 
 @dataclass
-class ArgsField:
+class _ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
@@ -82,7 +83,7 @@ class ArgsField:
     type: Callable[[str], Any] = str
 
     @staticmethod
-    def parse(field: Field) -&gt; &#34;ArgsField&#34;:
+    def parse(field: Field) -&gt; &#34;_ArgsField&#34;:
         if &#34;help&#34; in field.metadata:
             help_ = field.metadata[&#34;help&#34;]
         else:
@@ -99,13 +100,13 @@ class ArgsField:
         if field.default is dataclasses.MISSING:
             default = None
 
-        return ArgsField(
+        return _ArgsField(
             name=field.name, default=default, help=help_, string=string, type=type_
         )
 
     @staticmethod
     def nonpositional(
-        *fields: &#34;ArgsField&#34;, flip_bools: bool = True
+        *fields: &#34;_ArgsField&#34;, flip_bools: bool = True
     ) -&gt; Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
@@ -140,11 +141,28 @@ class Args:
 
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = False
-    ...     f: bool = True
-    ...     i: int = 1
-    ...     s: str = &#34;a&#34;
-    &gt;&gt;&gt; p = MyArgs()
+    ...     verbose: bool
+    ...     count: int
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--verbose&#34;, &#34;--count&#34;, &#34;1&#34;)
+    {&#39;verbose&#39;: True, &#39;count&#39;: 1}
+
+    `MyArgs` will accept these arguments in any order:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--count&#34;, &#34;1&#34;, &#34;--verbose&#34;)
+    {&#39;count&#39;: 1, &#39;verbose&#39;: True}
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    &gt;&gt;&gt; @dataclass
+    ... class MyArgs(Args):
+    ...     tests: bool = True
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+    {&#39;tests&#39;: False}
+    &gt;&gt;&gt; MyArgs.parse_args()
+    {&#39;tests&#39;: True}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+    {&#39;tests&#39;: False}
 
     By using the `Args.parser()` method, `Args` can take advantage of all the same
     combinators as other parsers:
@@ -152,17 +170,8 @@ class Args:
     &gt;&gt;&gt; from dollar_lambda import argument
     &gt;&gt;&gt; p = MyArgs.parser()
     &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p1.parse_args(&#34;-t&#34;, &#34;hello&#34;)
-    {&#39;t&#39;: True, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;, &#39;a&#39;: &#39;hello&#39;}
-
-    Note that when the default value of an argument is `True`, `Args` will, by default
-    add `--no-` to the front of the flag (while still assigning the value to the original key):
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-f&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
-
-    To suppress this behavior, set `flip_bools=False`:
-    &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
+    &gt;&gt;&gt; p1.parse_args(&#34;--no-tests&#34;, &#34;hello&#34;)
+    {&#39;tests&#39;: False, &#39;a&#39;: &#39;hello&#39;}
 
     To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
@@ -171,20 +180,28 @@ class Args:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
     {&#39;n&#39;: 2}
     &gt;&gt;&gt; MyArgs.parse_args()
-    usage: -n N
-    n: a number to increment
-    The following arguments are required: -n
+    {&#39;n&#39;: 1}
     &#34;&#34;&#34;
 
     @classmethod
     def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
-        return ArgsField.nonpositional(
-            *[ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+        &#34;&#34;&#34;
+        Returns a parser for the dataclass.
+        Converts each field to a parser (`option` or `flag` depending on its type).
+        Combines these parsers using `nonpositional`.
+        &#34;&#34;&#34;
+        return _ArgsField.nonpositional(
+            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
         )
 
     @classmethod
-    def parse_args(cls, *args):
-        return (cls.parser() &gt;&gt; done()).parse_args(*args)</code></pre>
+    def parse_args(
+        cls, *args, flip_bools: bool = True
+    ) -&gt; typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]:
+        &#34;&#34;&#34;
+        Parses the arguments and returns a dictionary of the parsed values.
+        &#34;&#34;&#34;
+        return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
 </details>
 </section>
 <section>
@@ -263,28 +280,36 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 from defining parsers with many arguments.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
-...     t: bool = False
-...     f: bool = True
-...     i: int = 1
-...     s: str = &quot;a&quot;
-&gt;&gt;&gt; p = MyArgs()
+...     verbose: bool
+...     count: int
+&gt;&gt;&gt; MyArgs.parse_args(&quot;--verbose&quot;, &quot;--count&quot;, &quot;1&quot;)
+{'verbose': True, 'count': 1}
+</code></pre>
+<p><code>MyArgs</code> will accept these arguments in any order:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--count&quot;, &quot;1&quot;, &quot;--verbose&quot;)
+{'count': 1, 'verbose': True}
+</code></pre>
+<p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> will, by default
+add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+... class MyArgs(Args):
+...     tests: bool = True
+&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
+{'tests': False}
+&gt;&gt;&gt; MyArgs.parse_args()
+{'tests': True}
+</code></pre>
+<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
+{'tests': False}
 </code></pre>
 <p>By using the <code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">Args.parser()</a></code> method, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can take advantage of all the same
 combinators as other parsers:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument
 &gt;&gt;&gt; p = MyArgs.parser()
 &gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
-&gt;&gt;&gt; p1.parse_args(&quot;-t&quot;, &quot;hello&quot;)
-{'t': True, 'f': True, 'i': 1, 's': 'a', 'a': 'hello'}
-</code></pre>
-<p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> will, by default
-add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-f&quot;)
-{'t': False, 'f': False, 'i': 1, 's': 'a'}
-</code></pre>
-<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&quot;--no-t&quot;, &quot;-f&quot;, &quot;-i&quot;, &quot;2&quot;, &quot;-s&quot;, &quot;b&quot;)
-{'t': False, 'f': True, 'i': 1, 's': 'a'}
+&gt;&gt;&gt; p1.parse_args(&quot;--no-tests&quot;, &quot;hello&quot;)
+{'tests': False, 'a': 'hello'}
 </code></pre>
 <p>To supply other metadata, like <code>help</code> text and more complex <code>type</code> converters, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
@@ -293,9 +318,7 @@ add <code>--no-</code> to the front of the flag (while still assigning the value
 &gt;&gt;&gt; MyArgs.parse_args(&quot;-n&quot;, &quot;1&quot;)
 {'n': 2}
 &gt;&gt;&gt; MyArgs.parse_args()
-usage: -n N
-n: a number to increment
-The following arguments are required: -n
+{'n': 1}
 </code></pre></div>
 <details class="source">
 <summary>
@@ -309,11 +332,28 @@ class Args:
 
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     t: bool = False
-    ...     f: bool = True
-    ...     i: int = 1
-    ...     s: str = &#34;a&#34;
-    &gt;&gt;&gt; p = MyArgs()
+    ...     verbose: bool
+    ...     count: int
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--verbose&#34;, &#34;--count&#34;, &#34;1&#34;)
+    {&#39;verbose&#39;: True, &#39;count&#39;: 1}
+
+    `MyArgs` will accept these arguments in any order:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--count&#34;, &#34;1&#34;, &#34;--verbose&#34;)
+    {&#39;count&#39;: 1, &#39;verbose&#39;: True}
+
+    Note that when the default value of an argument is `True`, `Args` will, by default
+    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    &gt;&gt;&gt; @dataclass
+    ... class MyArgs(Args):
+    ...     tests: bool = True
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-tests&#34;)
+    {&#39;tests&#39;: False}
+    &gt;&gt;&gt; MyArgs.parse_args()
+    {&#39;tests&#39;: True}
+
+    To suppress this behavior, set `flip_bools=False`:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
+    {&#39;tests&#39;: False}
 
     By using the `Args.parser()` method, `Args` can take advantage of all the same
     combinators as other parsers:
@@ -321,17 +361,8 @@ class Args:
     &gt;&gt;&gt; from dollar_lambda import argument
     &gt;&gt;&gt; p = MyArgs.parser()
     &gt;&gt;&gt; p1 = p &gt;&gt; argument(&#34;a&#34;)
-    &gt;&gt;&gt; p1.parse_args(&#34;-t&#34;, &#34;hello&#34;)
-    {&#39;t&#39;: True, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;, &#39;a&#39;: &#39;hello&#39;}
-
-    Note that when the default value of an argument is `True`, `Args` will, by default
-    add `--no-` to the front of the flag (while still assigning the value to the original key):
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;--no-f&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: False, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
-
-    To suppress this behavior, set `flip_bools=False`:
-    &gt;&gt;&gt; MyArgs.parser(flip_bools=False).parse_args(&#34;--no-t&#34;, &#34;-f&#34;, &#34;-i&#34;, &#34;2&#34;, &#34;-s&#34;, &#34;b&#34;)
-    {&#39;t&#39;: False, &#39;f&#39;: True, &#39;i&#39;: 1, &#39;s&#39;: &#39;a&#39;}
+    &gt;&gt;&gt; p1.parse_args(&#34;--no-tests&#34;, &#34;hello&#34;)
+    {&#39;tests&#39;: False, &#39;a&#39;: &#39;hello&#39;}
 
     To supply other metadata, like `help` text and more complex `type` converters, use `field`:
     &gt;&gt;&gt; @dataclass
@@ -340,223 +371,70 @@ class Args:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
     {&#39;n&#39;: 2}
     &gt;&gt;&gt; MyArgs.parse_args()
-    usage: -n N
-    n: a number to increment
-    The following arguments are required: -n
+    {&#39;n&#39;: 1}
     &#34;&#34;&#34;
 
     @classmethod
     def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
-        return ArgsField.nonpositional(
-            *[ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+        &#34;&#34;&#34;
+        Returns a parser for the dataclass.
+        Converts each field to a parser (`option` or `flag` depending on its type).
+        Combines these parsers using `nonpositional`.
+        &#34;&#34;&#34;
+        return _ArgsField.nonpositional(
+            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
         )
 
     @classmethod
-    def parse_args(cls, *args):
-        return (cls.parser() &gt;&gt; done()).parse_args(*args)</code></pre>
+    def parse_args(
+        cls, *args, flip_bools: bool = True
+    ) -&gt; typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]:
+        &#34;&#34;&#34;
+        Parses the arguments and returns a dictionary of the parsed values.
+        &#34;&#34;&#34;
+        return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.args.Args.parse_args"><code class="name flex">
-<span>def <span class="ident">parse_args</span></span>(<span>*args)</span>
+<span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True) ‑> Union[Sequence[<a title="dollar_lambda.key_value.KeyValueTuple" href="key_value.html#dollar_lambda.key_value.KeyValueTuple">KeyValueTuple</a>], Dict[str, Any]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Parses the arguments and returns a dictionary of the parsed values.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def parse_args(cls, *args):
-    return (cls.parser() &gt;&gt; done()).parse_args(*args)</code></pre>
+def parse_args(
+    cls, *args, flip_bools: bool = True
+) -&gt; typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]:
+    &#34;&#34;&#34;
+    Parses the arguments and returns a dictionary of the parsed values.
+    &#34;&#34;&#34;
+    return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.args.Args.parser"><code class="name flex">
 <span>def <span class="ident">parser</span></span>(<span>flip_bools: bool = True) ‑> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns a parser for the dataclass.
+Converts each field to a parser (<code>option</code> or <code>flag</code> depending on its type).
+Combines these parsers using <code>nonpositional</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
-    return ArgsField.nonpositional(
-        *[ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
-    )</code></pre>
-</details>
-</dd>
-</dl>
-</dd>
-<dt id="dollar_lambda.args.ArgsField"><code class="flex name class">
-<span>class <span class="ident">ArgsField</span></span>
-<span>(</span><span>name: str, default: Any = None, help: Optional[str] = None, string: Optional[str] = None, type: Callable[[str], Any] = builtins.str)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>ArgsField(name: str, default: Any = None, help: Optional[str] = None, string: Optional[str] = None, type: Callable[[str], Any] = <class 'str'>)</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@dataclass
-class ArgsField:
-    name: str
-    default: Any = None
-    help: Optional[str] = None
-    string: Optional[str] = None
-    type: Callable[[str], Any] = str
-
-    @staticmethod
-    def parse(field: Field) -&gt; &#34;ArgsField&#34;:
-        if &#34;help&#34; in field.metadata:
-            help_ = field.metadata[&#34;help&#34;]
-        else:
-            help_ = None
-        if &#34;string&#34; in field.metadata:
-            string = field.metadata[&#34;string&#34;]
-        else:
-            string = None
-        if &#34;type&#34; in field.metadata:
-            type_ = field.metadata[&#34;type&#34;]
-        else:
-            type_ = field.type
-        default = field.default
-        if field.default is dataclasses.MISSING:
-            default = None
-
-        return ArgsField(
-            name=field.name, default=default, help=help_, string=string, type=type_
-        )
-
-    @staticmethod
-    def nonpositional(
-        *fields: &#34;ArgsField&#34;, flip_bools: bool = True
-    ) -&gt; Parser[Sequence[KeyValue[Any]]]:
-        def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
-            for field in fields:
-                if field.type == bool:
-                    if field.string is None and field.default is True and flip_bools:
-                        string: Optional[str] = f&#34;--no-{field.name}&#34;
-                    else:
-                        string = field.string
-                    yield flag(
-                        dest=field.name,
-                        string=string,
-                        default=field.default,
-                        help=field.help,
-                    )
-                else:
-                    opt = option(
-                        dest=field.name,
-                        default=field.default,
-                        flag=field.string,
-                        help=field.help,
-                    )
-                    yield type_(field.type, opt)
-
-        return nonpositional(*get_parsers())</code></pre>
-</details>
-<h3>Class variables</h3>
-<dl>
-<dt id="dollar_lambda.args.ArgsField.default"><code class="name">var <span class="ident">default</span> : Any</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="dollar_lambda.args.ArgsField.help"><code class="name">var <span class="ident">help</span> : Optional[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="dollar_lambda.args.ArgsField.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="dollar_lambda.args.ArgsField.string"><code class="name">var <span class="ident">string</span> : Optional[str]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="dollar_lambda.args.ArgsField.type"><code class="name">var <span class="ident">type</span> : Callable[[str], Any]</code></dt>
-<dd>
-<div class="desc"><p>str(object='') -&gt; str
-str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
-<p>Create a new string object from the given object. If encoding or
-errors is specified, then the object must expose a data buffer
-that will be decoded using the given encoding and error handler.
-Otherwise, returns the result of object.<strong>str</strong>() (if defined)
-or repr(object).
-encoding defaults to sys.getdefaultencoding().
-errors defaults to 'strict'.</p></div>
-</dd>
-</dl>
-<h3>Static methods</h3>
-<dl>
-<dt id="dollar_lambda.args.ArgsField.nonpositional"><code class="name flex">
-<span>def <span class="ident">nonpositional</span></span>(<span>*fields: <a title="dollar_lambda.args.ArgsField" href="#dollar_lambda.args.ArgsField">ArgsField</a>, flip_bools: bool = True) ‑> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def nonpositional(
-    *fields: &#34;ArgsField&#34;, flip_bools: bool = True
-) -&gt; Parser[Sequence[KeyValue[Any]]]:
-    def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
-        for field in fields:
-            if field.type == bool:
-                if field.string is None and field.default is True and flip_bools:
-                    string: Optional[str] = f&#34;--no-{field.name}&#34;
-                else:
-                    string = field.string
-                yield flag(
-                    dest=field.name,
-                    string=string,
-                    default=field.default,
-                    help=field.help,
-                )
-            else:
-                opt = option(
-                    dest=field.name,
-                    default=field.default,
-                    flag=field.string,
-                    help=field.help,
-                )
-                yield type_(field.type, opt)
-
-    return nonpositional(*get_parsers())</code></pre>
-</details>
-</dd>
-<dt id="dollar_lambda.args.ArgsField.parse"><code class="name flex">
-<span>def <span class="ident">parse</span></span>(<span>field: dataclasses.Field) ‑> <a title="dollar_lambda.args.ArgsField" href="#dollar_lambda.args.ArgsField">ArgsField</a></span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def parse(field: Field) -&gt; &#34;ArgsField&#34;:
-    if &#34;help&#34; in field.metadata:
-        help_ = field.metadata[&#34;help&#34;]
-    else:
-        help_ = None
-    if &#34;string&#34; in field.metadata:
-        string = field.metadata[&#34;string&#34;]
-    else:
-        string = None
-    if &#34;type&#34; in field.metadata:
-        type_ = field.metadata[&#34;type&#34;]
-    else:
-        type_ = field.type
-    default = field.default
-    if field.default is dataclasses.MISSING:
-        default = None
-
-    return ArgsField(
-        name=field.name, default=default, help=help_, string=string, type=type_
+    &#34;&#34;&#34;
+    Returns a parser for the dataclass.
+    Converts each field to a parser (`option` or `flag` depending on its type).
+    Combines these parsers using `nonpositional`.
+    &#34;&#34;&#34;
+    return _ArgsField.nonpositional(
+        *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
     )</code></pre>
 </details>
 </dd>
@@ -588,18 +466,6 @@ def parse(field: Field) -&gt; &#34;ArgsField&#34;:
 <ul class="">
 <li><code><a title="dollar_lambda.args.Args.parse_args" href="#dollar_lambda.args.Args.parse_args">parse_args</a></code></li>
 <li><code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">parser</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="dollar_lambda.args.ArgsField" href="#dollar_lambda.args.ArgsField">ArgsField</a></code></h4>
-<ul class="two-column">
-<li><code><a title="dollar_lambda.args.ArgsField.default" href="#dollar_lambda.args.ArgsField.default">default</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.help" href="#dollar_lambda.args.ArgsField.help">help</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.name" href="#dollar_lambda.args.ArgsField.name">name</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.nonpositional" href="#dollar_lambda.args.ArgsField.nonpositional">nonpositional</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.parse" href="#dollar_lambda.args.ArgsField.parse">parse</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.string" href="#dollar_lambda.args.ArgsField.string">string</a></code></li>
-<li><code><a title="dollar_lambda.args.ArgsField.type" href="#dollar_lambda.args.ArgsField.type">type</a></code></li>
 </ul>
 </li>
 </ul>
