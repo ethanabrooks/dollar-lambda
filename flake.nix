@@ -14,7 +14,7 @@
             (system: import nixpkgs { inherit system; })).${system};
         in {
           devShell = pkgs.mkShell {
-            buildInputs = [ pkgs.python310 ];
+            buildInputs = [ pkgs.gnumake pkgs.python310 ];
             shellHook = ''
               [ -d .venv ] || python -m venv .venv
               .venv/bin/pip install --upgrade pip
