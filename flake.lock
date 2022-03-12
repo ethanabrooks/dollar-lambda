@@ -15,39 +15,9 @@
         "type": "indirect"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1646933238,
-        "narHash": "sha256-RZJnLN0o4B35eTnUc2tEAD12X5TNeeJhhvH3Fd6Pmdo=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "bacbfd713b4781a4a82c1f390f8fe21ae3b8b95b",
-        "type": "github"
-      },
-      "original": {
-        "id": "nixpkgs",
-        "ref": "nixos-21.11",
-        "type": "indirect"
-      }
-    },
-    "pytypeclass": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_2"
-      },
-      "locked": {
-        "narHash": "sha256-UCqaU1rqkW1IU806IqEKnxgYG1+1KaagBw9Vv/oEKio=",
-        "path": "/Users/alec/pytypeclass",
-        "type": "path"
-      },
-      "original": {
-        "path": "/Users/alec/pytypeclass",
-        "type": "path"
-      }
-    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
-        "pytypeclass": "pytypeclass"
+        "nixpkgs": "nixpkgs"
       }
     }
   },

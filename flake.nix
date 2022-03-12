@@ -1,11 +1,7 @@
 {
-  description = "TODO";
-  inputs = {
-    nixpkgs.url = "nixpkgs/nixos-21.11";
-    # nixpkgs.url = "nixpkgs/nixos-unstable";
-    pytypeclass.url = "path:/Users/alec/pytypeclass";
-  };
-  outputs = { self, nixpkgs, pytypeclass }:
+  description = "";
+  inputs = { nixpkgs.url = "nixpkgs/nixos-21.11"; };
+  outputs = { self, nixpkgs }:
     (let systems = [ "x86_64-darwin" ];
     in {
       packages = nixpkgs.lib.genAttrs systems (system:
@@ -22,13 +18,6 @@
               .venv/bin/poetry install
             '';
           };
-          dollar-lambda = (pkgs.python310Packages.buildPythonPackage {
-            name = "dollar-lambda";
-            src = ./.;
-            propagatedBuildInputs = [ pytypeclass.defaultPackage.${system} ];
-          });
         });
-      defaultPackage = nixpkgs.lib.genAttrs systems
-        (system: self.packages.${system}.dollar-lambda);
     });
 }
