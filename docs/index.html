@@ -225,7 +225,7 @@ the parser will not behave as expected:</p>
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
 {'verbose': False, 'quiet': True}
 </code></pre>
-<p>Why is happening? There are two permutions:</p>
+<p>Why is happening? There are two permutations:</p>
 <ul>
 <li><code>flag("verbose", default=False) &gt;&gt; flag("quiet")</code> and</li>
 <li><code>flag("quiet") &gt;&gt; flag("verbose", default=False)</code></li>
@@ -746,7 +746,7 @@ the parser will not behave as expected:
 &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn&#39;t
 {&#39;verbose&#39;: False, &#39;quiet&#39;: True}
 
-Why is happening? There are two permutions:
+Why is happening? There are two permutations:
 
 - `flag(&#34;verbose&#34;, default=False) &gt;&gt; flag(&#34;quiet&#34;)` and
 - `flag(&#34;quiet&#34;) &gt;&gt; flag(&#34;verbose&#34;, default=False)`
@@ -1984,7 +1984,7 @@ the parser will not behave as expected:</p>
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
 {'verbose': False, 'quiet': True}
 </code></pre>
-<p>Why is happening? There are two permutions:</p>
+<p>Why is happening? There are two permutations:</p>
 <ul>
 <li><code>flag("verbose", default=False) &gt;&gt; flag("quiet")</code> and</li>
 <li><code>flag("quiet") &gt;&gt; flag("verbose", default=False)</code></li>
@@ -2023,7 +2023,7 @@ cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()<
     &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn&#39;t
     {&#39;verbose&#39;: False, &#39;quiet&#39;: True}
 
-    Why is happening? There are two permutions:
+    Why is happening? There are two permutations:
 
     - `flag(&#34;verbose&#34;, default=False) &gt;&gt; flag(&#34;quiet&#34;)` and
     - `flag(&#34;quiet&#34;) &gt;&gt; flag(&#34;verbose&#34;, default=False)`
