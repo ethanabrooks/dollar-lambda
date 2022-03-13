@@ -119,7 +119,7 @@ Or the other set of args:
 
 
 ```python
-p.parse_args("--args", "123", "--different")  # order doesn't matter
+p.parse_args("--args", "123", "--different")  # order doesn’t matter
 ```
 
 

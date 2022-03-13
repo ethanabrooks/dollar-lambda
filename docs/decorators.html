@@ -89,9 +89,10 @@ def command(
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
-    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
-    component parsers from the function&#39;s signature and automatically executes the function with
-    the parsed arguments, if parsing succeeds:
+    A succinct way to generate a simple `nonpositional` parser. `@command`
+    derives the component parsers from the function’s signature and
+    automatically executes the function with the parsed arguments, if parsing
+    succeeds:
 
     &gt;&gt;&gt; @command(help=dict(a=&#34;something about a&#34;), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):
@@ -395,9 +396,10 @@ class CommandTree:
 <span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable[[Callable], Callable]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A succinct way to generate a simple <code>nonpositional</code> parser. <code>@command</code> derives the
-component parsers from the function's signature and automatically executes the function with
-the parsed arguments, if parsing succeeds:</p>
+<div class="desc"><p>A succinct way to generate a simple <code>nonpositional</code> parser. <code>@command</code>
+derives the component parsers from the function’s signature and
+automatically executes the function with the parsed arguments, if parsing
+succeeds:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
 ... def f(a: int = 1, b: bool = False):
 ...     return dict(a=a, b=b)
@@ -482,9 +484,10 @@ Expected '--quiet-mode'. Got '--quiet'
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
-    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
-    component parsers from the function&#39;s signature and automatically executes the function with
-    the parsed arguments, if parsing succeeds:
+    A succinct way to generate a simple `nonpositional` parser. `@command`
+    derives the component parsers from the function’s signature and
+    automatically executes the function with the parsed arguments, if parsing
+    succeeds:
 
     &gt;&gt;&gt; @command(help=dict(a=&#34;something about a&#34;), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):

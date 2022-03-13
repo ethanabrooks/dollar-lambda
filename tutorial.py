@@ -101,7 +101,7 @@ p = p2 >> argument("a")
 p.parse_args("--verbose", "value")
 # %% [markdown]
 # `monad_monad_argparse` of course defines a `nonpositional` utility for handling non-positional arguments as well. But seeing how easy it is to implement such a parser illustrates the power and flexibility of this library.
-# First let's introduce a simple utility function: `empty()`. This parser always returns the empty list.
+# First let’s introduce a simple utility function: `empty()`. This parser always returns the empty list.
 
 # %%
 from dollar_lambda import empty
@@ -136,7 +136,7 @@ def nonpositional(*parsers):
 
 
 # %% [markdown]
-# Let's test it:
+# Let’s test it:
 
 # %%
 from dollar_lambda import done

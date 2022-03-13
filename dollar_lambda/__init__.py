@@ -164,11 +164,11 @@ Unrecognized argument: --quiet
 `done` is usually necessary to get `nonpositional` to behave in the way that you
 expect, but more on that later.
 
-## Parser Combinators
+## Parser combinators
 
 Parser combinators are functions that combine multiple parsers into new, more
-complex parsers.  Our example uses three such functions: `nonpositional`, `|`,
-or `Parser.__or__`; and `>>` or `Parser.__rshift__`.
+complex parsers.  Our example uses three such functions: `nonpositional`, `|`
+or `Parser.__or__`, and `>>` or `Parser.__rshift__`.
 
 ### `Parser.__or__`
 

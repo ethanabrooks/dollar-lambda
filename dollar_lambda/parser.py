@@ -110,7 +110,7 @@ class Parser(MonadPlus[A_co]):
         >>> p = flag("a") + flag("b") + flag("c")
         >>> p.parse_args("-c", "-a", "-b")   # this works
         {'c': True, 'a': True, 'b': True}
-        >>> p.parse_args("-a", "-c", "-b")   # this doesn't
+        >>> p.parse_args("-a", "-c", "-b")   # this doesn’t
         usage: -a -b -c
         Expected '-b'. Got '-c'
 
@@ -207,10 +207,11 @@ class Parser(MonadPlus[A_co]):
         Note that `>=` as a synonym for `bind` (as defined in [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26))
         and we typically prefer using the infix operator to the spelled out method.
 
-        Let's start with our simplest parser, `argument`:
+        Let’s start with our simplest parser, `argument`:
+
         >>> p1 = argument("some_dest")
 
-        Now let's use the `equals` parser to write a function that takes the output of `p1` and fails unless
+        Now let’s use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
         >>> def f(kvs: Sequence(KeyValue[str])) -> Sequence(KeyValue[str]):
         ...     [kv] = kvs
@@ -431,7 +432,8 @@ def apply(
     >>> p1.parse_args("--hello", return_dict=False)
     [('hello', True)]
 
-    This will double `p1`'s output:
+    This will double `p1`’s output:
+
     >>> p2 = apply(lambda kv: Result.return_(kv + kv), p1)
     >>> p2.parse_args("--hello", return_dict=False)
     [('hello', True), ('hello', True)]
@@ -506,7 +508,8 @@ def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
     >>> (flag("fails") | defaults(fails="succeeds")).parse_args()
     {'fails': 'succeeds'}
 
-    Here's a more complex example derived from the tutorial:
+    Here’s a more complex example derived from the tutorial:
+
     >>> p = nonpositional(
     ...     (
     ...         flag("verbose") + defaults(quiet=False)  # either --verbose and default "quiet" to False
@@ -571,7 +574,8 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
     Parameters
     ----------
     peak : bool
-        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `False`, then the parser will consume the word and return the
+        remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
 
     >>> p = equals("hello") >> equals("goodbye")
@@ -579,13 +583,15 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
     {'hello': 'hello', 'goodbye': 'goodbye'}
 
     Look what happens when `peak=True`:
+
     >>> p = equals("hello", peak=True) >> equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
     usage: hello goodbye
     Expected 'goodbye'. Got 'hello'
 
-    The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
-    But this would work:
+    The first parser didn’t consume the word and so "hello" got passed on to
+    `equals("goodbye")`.  But this would work:
+
     >>> p = equals("hello", peak=True) >> equals("hello") >>equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
@@ -788,7 +794,7 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     the parser will not behave as expected:
 
     >>> p = nonpositional(flag("verbose", default=False), flag("quiet"))
-    >>> p.parse_args("--quiet", "--verbose")  # you expect this to set verbose to True, but it doesn't
+    >>> p.parse_args("--quiet", "--verbose")  # you expect this to set verbose to True, but it doesn’t
     {'verbose': False, 'quiet': True}
 
     Why is happening? There are two permutations:
@@ -796,11 +802,12 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     - `flag("verbose", default=False) >> flag("quiet")` and
     - `flag("quiet") >> flag("verbose", default=False)`
 
-    In our example, both permutations are actually succeeding. This first succeeds by falling
-    back to the default, and leaving the last word of the input, `--verbose`, unparsed.
-    Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
+    In our example, both permutations are actually succeeding. This first
+    succeeds by falling back to the default, and leaving the last word of the
+    input, `--verbose`, unparsed.  Either interpretation is valid, and
+    `nonpositional` returns one arbitrarily—just not the one we expected.
 
-    Now let's add `>> done()` to the end:
+    Now let’s add `>> done()` to the end:
     >>> p = nonpositional(flag("verbose", default=False), flag("quiet")) >> done()
 
     This ensures that the first permutation will fail because the leftover `--verbose` input will

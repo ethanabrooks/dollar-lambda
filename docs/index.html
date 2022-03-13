@@ -59,8 +59,8 @@ parsers</li>
 </ul>
 <p>As a rule, <code>$λ</code> avoids reproducing python functionality and focuses on the main
 job of an argument parser: parsing. Arguably, <code>$λ</code> is way more expressive than
-any reasonable person would ever need&hellip; but even if it's not the parser that we
-need, it's the parser we deserve.</p>
+any reasonable person would ever need… but even if it’s not the parser that we
+need, it’s the parser we deserve.</p>
 <h1 id="installation">Installation</h1>
 <p>You guessed it:</p>
 <pre><code class="language-sh">pip install dollar-lambda
@@ -153,11 +153,11 @@ Unrecognized argument: --quiet
 </code></pre>
 <p><code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> to behave in the way that you
 expect, but more on that later.</p>
-<h2 id="parser-combinators">Parser Combinators</h2>
+<h2 id="parser-combinators">Parser combinators</h2>
 <p>Parser combinators are functions that combine multiple parsers into new, more
 complex parsers.
-Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <code>|</code>,
-or <code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code>; and <code>&gt;&gt;</code> or <code><a title="dollar_lambda.Parser.__rshift__" href="#dollar_lambda.Parser.__rshift__">Parser.__rshift__()</a></code>.</p>
+Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <code>|</code>
+or <code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code>, and <code>&gt;&gt;</code> or <code><a title="dollar_lambda.Parser.__rshift__" href="#dollar_lambda.Parser.__rshift__">Parser.__rshift__()</a></code>.</p>
 <h3 id="parser__or__"><code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code></h3>
 <p>The <code>|</code> operator is used for alternatives. Specifically, it will try the first
 parser, and if that fails, try the second:</p>
@@ -232,7 +232,7 @@ use <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositio
 will probably want to add <code>&gt;&gt;</code> followed by <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> (or another parser) after
 <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>. Otherwise, the parser will not behave as expected:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;))
-&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
+&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn’t
 {'verbose': False, 'quiet': True}
 </code></pre>
 <p>Why is happening? There are two permutations:</p>
@@ -245,7 +245,7 @@ by falling back to the default, and leaving the last word of the input,
 <code>--verbose</code>, unparsed.
 Either interpretation is valid, and <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>
 returns one arbitrarily—just not the one we expected.</p>
-<p>Now let's add <code>&gt;&gt; done()</code> to the end:</p>
+<p>Now let’s add <code>&gt;&gt; done()</code> to the end:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;)) &gt;&gt; done()
 </code></pre>
 <p>This ensures that the first permutation will fail because the leftover
@@ -585,8 +585,8 @@ shortcuts for cutting down boilerplate:
 
 As a rule, `$λ` avoids reproducing python functionality and focuses on the main
 job of an argument parser: parsing. Arguably, `$λ` is way more expressive than
-any reasonable person would ever need... but even if it&#39;s not the parser that we
-need, it&#39;s the parser we deserve.
+any reasonable person would ever need… but even if it’s not the parser that we
+need, it’s the parser we deserve.
 
 # Installation
 
@@ -703,11 +703,11 @@ Unrecognized argument: --quiet
 `done` is usually necessary to get `nonpositional` to behave in the way that you
 expect, but more on that later.
 
-## Parser Combinators
+## Parser combinators
 
 Parser combinators are functions that combine multiple parsers into new, more
-complex parsers.  Our example uses three such functions: `nonpositional`, `|`,
-or `Parser.__or__`; and `&gt;&gt;` or `Parser.__rshift__`.
+complex parsers.  Our example uses three such functions: `nonpositional`, `|`
+or `Parser.__or__`, and `&gt;&gt;` or `Parser.__rshift__`.
 
 ### `Parser.__or__`
 
@@ -797,7 +797,7 @@ will probably want to add `&gt;&gt;` followed by `done` (or another parser) afte
 `nonpositional`. Otherwise, the parser will not behave as expected:
 
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;))
-&gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn&#39;t
+&gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn’t
 {&#39;verbose&#39;: False, &#39;quiet&#39;: True}
 
 Why is happening? There are two permutations:
@@ -810,7 +810,8 @@ by falling back to the default, and leaving the last word of the input,
 `--verbose`, unparsed.  Either interpretation is valid, and `nonpositional`
 returns one arbitrarily—just not the one we expected.
 
-Now let&#39;s add `&gt;&gt; done()` to the end:
+Now let’s add `&gt;&gt; done()` to the end:
+
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;)) &gt;&gt; done()
 
 This ensures that the first permutation will fail because the leftover
@@ -1237,7 +1238,7 @@ __pdoc__[&#34;Parser.__ge__&#34;] = True</code></pre>
 &gt;&gt;&gt; p1.parse_args(&quot;--hello&quot;, return_dict=False)
 [('hello', True)]
 </code></pre>
-<p>This will double <code>p1</code>'s output:</p>
+<p>This will double <code>p1</code>’s output:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
 &gt;&gt;&gt; p2.parse_args(&quot;--hello&quot;, return_dict=False)
 [('hello', True), ('hello', True)]
@@ -1256,7 +1257,8 @@ __pdoc__[&#34;Parser.__ge__&#34;] = True</code></pre>
     &gt;&gt;&gt; p1.parse_args(&#34;--hello&#34;, return_dict=False)
     [(&#39;hello&#39;, True)]
 
-    This will double `p1`&#39;s output:
+    This will double `p1`’s output:
+
     &gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
     &gt;&gt;&gt; p2.parse_args(&#34;--hello&#34;, return_dict=False)
     [(&#39;hello&#39;, True), (&#39;hello&#39;, True)]
@@ -1359,9 +1361,10 @@ The following arguments are required: name
 <span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable[[Callable], Callable]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A succinct way to generate a simple <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> parser. <code>@command</code> derives the
-component parsers from the function's signature and automatically executes the function with
-the parsed arguments, if parsing succeeds:</p>
+<div class="desc"><p>A succinct way to generate a simple <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> parser. <code>@command</code>
+derives the component parsers from the function’s signature and
+automatically executes the function with the parsed arguments, if parsing
+succeeds:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
 ... def f(a: int = 1, b: bool = False):
 ...     return dict(a=a, b=b)
@@ -1446,9 +1449,10 @@ Expected '--quiet-mode'. Got '--quiet'
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
-    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
-    component parsers from the function&#39;s signature and automatically executes the function with
-    the parsed arguments, if parsing succeeds:
+    A succinct way to generate a simple `nonpositional` parser. `@command`
+    derives the component parsers from the function’s signature and
+    automatically executes the function with the parsed arguments, if parsing
+    succeeds:
 
     &gt;&gt;&gt; @command(help=dict(a=&#34;something about a&#34;), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):
@@ -1548,7 +1552,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 &gt;&gt;&gt; (flag(&quot;fails&quot;) | defaults(fails=&quot;succeeds&quot;)).parse_args()
 {'fails': 'succeeds'}
 </code></pre>
-<p>Here's a more complex example derived from the tutorial:</p>
+<p>Here’s a more complex example derived from the tutorial:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
 ...     (
 ...         flag(&quot;verbose&quot;) + defaults(quiet=False)  # either --verbose and default &quot;quiet&quot; to False
@@ -1576,7 +1580,8 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
     &gt;&gt;&gt; (flag(&#34;fails&#34;) | defaults(fails=&#34;succeeds&#34;)).parse_args()
     {&#39;fails&#39;: &#39;succeeds&#39;}
 
-    Here&#39;s a more complex example derived from the tutorial:
+    Here’s a more complex example derived from the tutorial:
+
     &gt;&gt;&gt; p = nonpositional(
     ...     (
     ...         flag(&#34;verbose&#34;) + defaults(quiet=False)  # either --verbose and default &#34;quiet&#34; to False
@@ -1689,7 +1694,8 @@ Expected 'hello'. Got 'goodbye'
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
-<dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
+<dd>If <code>False</code>, then the parser will consume the word and return the
+remaining words as <code>unparsed</code>.
 If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
 </dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
@@ -1705,7 +1711,8 @@ If <code>True</code>, then the parser leaves the <code>unparsed</code> component
 
 Expected 'goodbye'. Got 'hello'
 </code></pre>
-<p>The first parser didn't consume the word and so "hello" got passed on to <code>equals("goodbye")</code>.
+<p>The first parser didn’t consume the word and so "hello" got passed on to
+<code>equals("goodbye")</code>.
 But this would work:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
@@ -1728,7 +1735,8 @@ But this would work:</p>
     Parameters
     ----------
     peak : bool
-        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `False`, then the parser will consume the word and return the
+        remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
 
     &gt;&gt;&gt; p = equals(&#34;hello&#34;) &gt;&gt; equals(&#34;goodbye&#34;)
@@ -1736,13 +1744,15 @@ But this would work:</p>
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
 
     Look what happens when `peak=True`:
+
     &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     usage: hello goodbye
     Expected &#39;goodbye&#39;. Got &#39;hello&#39;
 
-    The first parser didn&#39;t consume the word and so &#34;hello&#34; got passed on to `equals(&#34;goodbye&#34;)`.
-    But this would work:
+    The first parser didn’t consume the word and so &#34;hello&#34; got passed on to
+    `equals(&#34;goodbye&#34;)`.  But this would work:
+
     &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
@@ -2054,7 +2064,7 @@ returning the first permutations that is successful:</p>
 to add <code>&gt;&gt;</code> followed by <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> (or another parser) after <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>. Otherwise,
 the parser will not behave as expected:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;))
-&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
+&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn’t
 {'verbose': False, 'quiet': True}
 </code></pre>
 <p>Why is happening? There are two permutations:</p>
@@ -2062,10 +2072,12 @@ the parser will not behave as expected:</p>
 <li><code>flag("verbose", default=False) &gt;&gt; flag("quiet")</code> and</li>
 <li><code>flag("quiet") &gt;&gt; flag("verbose", default=False)</code></li>
 </ul>
-<p>In our example, both permutations are actually succeeding. This first succeeds by falling
-back to the default, and leaving the last word of the input, <code>--verbose</code>, unparsed.
-Either interpretation is valid, and <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> returns one arbitrarily &ndash; just not the one we expected.</p>
-<p>Now let's add <code>&gt;&gt; done()</code> to the end:</p>
+<p>In our example, both permutations are actually succeeding. This first
+succeeds by falling back to the default, and leaving the last word of the
+input, <code>--verbose</code>, unparsed.
+Either interpretation is valid, and
+<code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> returns one arbitrarily—just not the one we expected.</p>
+<p>Now let’s add <code>&gt;&gt; done()</code> to the end:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;)) &gt;&gt; done()
 </code></pre>
 <p>This ensures that the first permutation will fail because the leftover <code>--verbose</code> input will
@@ -2093,7 +2105,7 @@ cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()<
     the parser will not behave as expected:
 
     &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;))
-    &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn&#39;t
+    &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn’t
     {&#39;verbose&#39;: False, &#39;quiet&#39;: True}
 
     Why is happening? There are two permutations:
@@ -2101,11 +2113,12 @@ cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()<
     - `flag(&#34;verbose&#34;, default=False) &gt;&gt; flag(&#34;quiet&#34;)` and
     - `flag(&#34;quiet&#34;) &gt;&gt; flag(&#34;verbose&#34;, default=False)`
 
-    In our example, both permutations are actually succeeding. This first succeeds by falling
-    back to the default, and leaving the last word of the input, `--verbose`, unparsed.
-    Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
+    In our example, both permutations are actually succeeding. This first
+    succeeds by falling back to the default, and leaving the last word of the
+    input, `--verbose`, unparsed.  Either interpretation is valid, and
+    `nonpositional` returns one arbitrarily—just not the one we expected.
 
-    Now let&#39;s add `&gt;&gt; done()` to the end:
+    Now let’s add `&gt;&gt; done()` to the end:
     &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;)) &gt;&gt; done()
 
     This ensures that the first permutation will fail because the leftover `--verbose` input will
@@ -2966,7 +2979,7 @@ class Parser(MonadPlus[A_co]):
         &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
         {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
-        &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)   # this doesn&#39;t
+        &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)   # this doesn’t
         usage: -a -b -c
         Expected &#39;-b&#39;. Got &#39;-c&#39;
 
@@ -3063,10 +3076,11 @@ class Parser(MonadPlus[A_co]):
         Note that `&gt;=` as a synonym for `bind` (as defined in [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26))
         and we typically prefer using the infix operator to the spelled out method.
 
-        Let&#39;s start with our simplest parser, `argument`:
+        Let’s start with our simplest parser, `argument`:
+
         &gt;&gt;&gt; p1 = argument(&#34;some_dest&#34;)
 
-        Now let&#39;s use the `equals` parser to write a function that takes the output of `p1` and fails unless
+        Now let’s use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
         &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
         ...     [kv] = kvs
@@ -3425,7 +3439,7 @@ Expected '--verbose'. Got '--debug'
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;a&quot;) + flag(&quot;b&quot;) + flag(&quot;c&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-c&quot;, &quot;-a&quot;, &quot;-b&quot;)   # this works
 {'c': True, 'a': True, 'b': True}
-&gt;&gt;&gt; p.parse_args(&quot;-a&quot;, &quot;-c&quot;, &quot;-b&quot;)   # this doesn't
+&gt;&gt;&gt; p.parse_args(&quot;-a&quot;, &quot;-c&quot;, &quot;-b&quot;)   # this doesn’t
 usage: -a -b -c
 Expected '-b'. Got '-c'
 </code></pre>
@@ -3459,7 +3473,7 @@ Expected '-b'. Got '-c'
     &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
     {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
-    &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)   # this doesn&#39;t
+    &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)   # this doesn’t
     usage: -a -b -c
     Expected &#39;-b&#39;. Got &#39;-c&#39;
 
@@ -3607,10 +3621,10 @@ avoid using it directly, preferring higher level combinators like <code>&gt;&gt;
 <code>|</code> (<code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code>) and <code>+</code> (<code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code>).</p>
 <p>Note that <code>&gt;=</code> as a synonym for <code>bind</code> (as defined in <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26"><code>pytypeclass</code></a>)
 and we typically prefer using the infix operator to the spelled out method.</p>
-<p>Let's start with our simplest parser, <code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code>:</p>
+<p>Let’s start with our simplest parser, <code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;some_dest&quot;)
 </code></pre>
-<p>Now let's use the <code><a title="dollar_lambda.equals" href="#dollar_lambda.equals">equals()</a></code> parser to write a function that takes the output of <code>p1</code> and fails unless
+<p>Now let’s use the <code><a title="dollar_lambda.equals" href="#dollar_lambda.equals">equals()</a></code> parser to write a function that takes the output of <code>p1</code> and fails unless
 the next argument is the same as the first:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
 ...     [kv] = kvs
@@ -3640,10 +3654,11 @@ Expected 'a'. Got 'b'
     Note that `&gt;=` as a synonym for `bind` (as defined in [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26))
     and we typically prefer using the infix operator to the spelled out method.
 
-    Let&#39;s start with our simplest parser, `argument`:
+    Let’s start with our simplest parser, `argument`:
+
     &gt;&gt;&gt; p1 = argument(&#34;some_dest&#34;)
 
-    Now let&#39;s use the `equals` parser to write a function that takes the output of `p1` and fails unless
+    Now let’s use the `equals` parser to write a function that takes the output of `p1` and fails unless
     the next argument is the same as the first:
     &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
     ...     [kv] = kvs
@@ -3955,7 +3970,7 @@ If it is, returns the usage message.</dd>
 <li><a href="#done">done</a></li>
 </ul>
 </li>
-<li><a href="#parser-combinators">Parser Combinators</a><ul>
+<li><a href="#parser-combinators">Parser combinators</a><ul>
 <li><a href="#parser__or__">Parser.__or__</a></li>
 <li><a href="#parser__rshift__">Parser.__rshift__</a></li>
 <li><a href="#nonpositional-and-parser__add__">nonpositional and Parser.__add__</a></li>

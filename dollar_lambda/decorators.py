@@ -60,9 +60,10 @@ def command(
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -> Callable[[Callable], Callable]:
     """
-    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
-    component parsers from the function's signature and automatically executes the function with
-    the parsed arguments, if parsing succeeds:
+    A succinct way to generate a simple `nonpositional` parser. `@command`
+    derives the component parsers from the function’s signature and
+    automatically executes the function with the parsed arguments, if parsing
+    succeeds:
 
     >>> @command(help=dict(a="something about a"), types=dict(a=lambda x: int(x) + 1))
     ... def f(a: int = 1, b: bool = False):

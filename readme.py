@@ -95,7 +95,7 @@ p.parse_args("--many", "2", "--args", "abc")
 # %% [markdown]
 # Or the other set of args:
 # %%
-p.parse_args("--args", "123", "--different")  # order doesn't matter
+p.parse_args("--args", "123", "--different")  # order doesn’t matter
 # %% [markdown]
 # But not both:
 # %%
