@@ -7,10 +7,8 @@ A custom template could override this by setting root_module_name to false befor
 #}
 <!doctype html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="refresh" content="0; url=./{{ root_module_name.replace(".","/") }}.html"/>
-</head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=./{{ root_module_name.replace(".","/") }}.html">
 </html>
 {% else %}
 {% extends "frame.html.jinja2" %}
