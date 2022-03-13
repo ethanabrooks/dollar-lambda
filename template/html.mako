@@ -394,6 +394,8 @@
   <style>
     body {
       font-family: 'IBM Plex Sans', sans-serif;
+      line-height: 1.45;
+      font-size: 15px;
     }
 
     pre, code {
