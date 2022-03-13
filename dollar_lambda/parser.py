@@ -367,11 +367,10 @@ class Parser(MonadPlus[A_co]):
         >>> p = argument("as-many-as-you-like").many()
         >>> p.parse_args("a", "b", return_dict=False)
         [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
-
         >>> argument("a").parse_args("-h")
-        usage: a
+        "usage: a"
         >>> argument("a").parse_args("--help")
-        usage: a
+        "usage: a"
         """
         _args = args if args or TESTING else sys.argv[1:]
         if check_help:
