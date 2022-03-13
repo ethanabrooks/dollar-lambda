@@ -108,7 +108,7 @@ Expected '--verbose'. Got '-x'
 Let’s walk through this step by step. First, let’s learn what `flag`, `option`
 and `done` do.
 
-## High-Level parsers
+## High-level parsers
 
 These three functions create high-level parsers. `flag` binds a boolean value to
 a variable whereas `option` binds an arbitrary value to a variable. `done` does

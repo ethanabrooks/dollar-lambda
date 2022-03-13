@@ -394,15 +394,15 @@
   <style>
     @font-face {
       font-family: 'Fira Code';
-      src: url(./woff2/Firacode-Regular.woff2);
+      src: url(./woff2/Firacode-Regular.woff2) format("woff2");
       font-weight: normal;
     }
 
-    /*@font-face {
+    @font-face {
       font-family: 'Fira Code';
-      src: url(./woff2/Firacode-Bold.woff2);
+      src: url(./woff2/Firacode-Bold.woff2) format("woff2");
       font-weight: bold;
-    }*/
+    }
 
     @font-face {
       font-family: 'Fira Code Bold';
@@ -416,12 +416,10 @@
 
     pre, code {
       font-family: 'Fira Code';
-      font-variant-ligatures: normal;
     }
 
-    p {
-      text-align: justify;
-      hyphens: auto;
+    code {
+      white-space: nowrap;
     }
   </style>
 
