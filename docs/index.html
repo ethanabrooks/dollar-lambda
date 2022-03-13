@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda API documentation</title>
-<meta name="description" content="**$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
+<meta name="description" content="**$λ** provides an alternative to [`argparse`]() based on functional first
+principles. This means that this package can handle many kinds of
 …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -23,11 +24,13 @@
 <h1 class="title">Package <code>dollar_lambda</code></h1>
 </header>
 <section id="section-intro">
-<p><strong>$λ</strong> This package provides an alternative to <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a> based on functional first principles.
-This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with <code>argparse</code>.</p>
+<p><strong>$λ</strong> provides an alternative to <a href=""><code>argparse</code></a> based on functional first
+principles. This means that this package can handle many kinds of
+argument-parsing patterns that are either very awkward, difficult, or impossible
+with <code>argparse</code>.</p>
 <h1 id="why">Why <code>$λ</code>?</h1>
-<p><code>$λ</code> was built with minimal dependencies from functional first principles.
-As a result, it is the most</p>
+<p><code>$λ</code> was built with minimal dependencies from functional first principles. As a
+result, it is the most</p>
 <ul>
 <li>versatile</li>
 <li>type-safe</li>
@@ -35,30 +38,32 @@ As a result, it is the most</p>
 </ul>
 <p>argument parser on the market.</p>
 <h3 id="versatile">Versatile</h3>
-<p><code>$λ</code> provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see
-in the tutorial, there are many parsing patterns that <code>$λ</code> can handle which are not possible with
-other parsing libraries.</p>
+<p><code>$λ</code> provides high-level functionality equivalent to other parsers. But unlike
+other parsers, it permits low-level customization to handle arbitrarily complex
+parsing patterns. As we’ll see in the tutorial, there are many parsing patterns
+that <code>$λ</code> can handle which are not possible with other parsing libraries.</p>
 <h3 id="type-safe">Type-safe</h3>
-<p><code>$λ</code> uses type annotations as much as Python allows. Types are checked
-using <a href="https://mypy.readthedocs.io/en/stable/index.html#"><code>MyPy</code></a> and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, <code>$λ</code>
-avoids mutations and side-effects and preserves <a href="https://en.wikipedia.org/wiki/Referential_transparency">referential transparency</a>.
-This makes it easier for the type-checker <em>and for the user</em> to reason about the code.</p>
+<p><code>$λ</code> uses type annotations as much as Python allows. Types are checked using
+<a href=""><code>MyPy</code></a> and exported with the package so that users can also benefit from the
+type system. Furthermore, with rare exceptions, <code>$λ</code> avoids mutations and
+side-effects and preserves <a href="">referential transparency</a>. This makes it easier
+for the type-checker <em>and for the user</em> to reason about the code.</p>
 <h3 id="concise">Concise</h3>
-<p>As we'll demonstrate in the tutorial, <code>$λ</code> provides three main syntactic shortcuts for cutting
-down boilerplate:</p>
+<p>As we’ll demonstrate in the tutorial, <code>$λ</code> provides three main syntactic
+shortcuts for cutting down boilerplate:</p>
 <ul>
 <li>operators like <code>&gt;&gt;</code>, <code>|</code>, and <code>+</code> (and <code>&gt;=</code> if you want to get fancy)</li>
-<li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for building tree-shaped parsers</li>
+<li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for building tree-shaped
+parsers</li>
 <li>the <code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> syntax built on top of python <code>dataclasses</code>.</li>
 </ul>
-<p>As a rule, <code>$λ</code> avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing. Arguably, <code>$λ</code> is way more expressive than any reasonable
-person would ever need&hellip; but even if it's not the parser that we need, it's the parser we deserve.</p>
+<p>As a rule, <code>$λ</code> avoids reproducing python functionality and focuses on the main
+job of an argument parser: parsing. Arguably, <code>$λ</code> is way more expressive than
+any reasonable person would ever need&hellip; but even if it's not the parser that we
+need, it's the parser we deserve.</p>
 <h1 id="installation">Installation</h1>
 <p>You guessed it:</p>
-<pre><code>pip install dollar-lambda
+<pre><code class="language-sh">pip install dollar-lambda
 </code></pre>
 <h1 id="tutorial">Tutorial</h1>
 <p>Here is an example developed in the <code>argparse</code> tutorial:</p>
@@ -101,11 +106,12 @@ x: the base
 y: the exponent
 Expected '--verbose'. Got '-x'
 </code></pre>
-<p>Let's walk through this step by step. First, let's learn what <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code>, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> and <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> do.</p>
-<h2 id="high-level-parsers">High-Level Parsers</h2>
-<p>These three functions create high-level parsers. <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> binds a boolean value to a variable
-whereas <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> binds an arbitrary value to a variable. <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> does not bind any values to variables,
-but causes the parser to fail in some cases.</p>
+<p>Let’s walk through this step by step. First, let’s learn what <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code>, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>
+and <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> do.</p>
+<h2 id="high-level-parsers">High-Level parsers</h2>
+<p>These three functions create high-level parsers. <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> binds a boolean value to
+a variable whereas <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> binds an arbitrary value to a variable. <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> does
+not bind any values to variables, but causes the parser to fail in some cases.</p>
 <h3 id="flag"><code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code></h3>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
@@ -121,9 +127,9 @@ The following arguments are required: --verbose
 {'verbose': False}
 </code></pre>
 <h3 id="option"><code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code></h3>
-<p><code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> is similar but takes an argument:
-By default, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> expects a single <code>-</code> for single-character variable names (as in <code>-x</code>),
-as opposed to <code>--</code> for longer names (as in <code>--xenophon</code>):</p>
+<p><code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> is similar but takes an argument: By default, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> expects a single
+<code>-</code> for single-character variable names (as in <code>-x</code>), as opposed to <code>--</code> for
+longer names (as in <code>--xenophon</code>):</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;).parse_args(&quot;-x&quot;, &quot;1&quot;)
 {'x': '1'}
 &gt;&gt;&gt; option(&quot;xenophon&quot;).parse_args(&quot;--xenophon&quot;, &quot;1&quot;)
@@ -139,20 +145,22 @@ as opposed to <code>--</code> for longer names (as in <code>--xenophon</code>):<
 {'verbose': True}
 </code></pre>
 <p><code>--quiet</code> is not parsed here but this does not cause the parser to fail.
-If we want to prevent leftover inputs, we can use <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code>:</p>
+If we
+want to prevent leftover inputs, we can use <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 usage: --verbose
 Unrecognized argument: --quiet
 </code></pre>
-<p><code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> to behave in the way that you expect,
-but more on that later.</p>
+<p><code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> to behave in the way that you
+expect, but more on that later.</p>
 <h2 id="parser-combinators">Parser Combinators</h2>
-<p>Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <code>|</code> or <code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code>,
-and <code>&gt;&gt;</code> or <code><a title="dollar_lambda.Parser.__rshift__" href="#dollar_lambda.Parser.__rshift__">Parser.__rshift__()</a></code>.</p>
+<p>Parser combinators are functions that combine multiple parsers into new, more
+complex parsers.
+Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <code>|</code>,
+or <code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code>; and <code>&gt;&gt;</code> or <code><a title="dollar_lambda.Parser.__rshift__" href="#dollar_lambda.Parser.__rshift__">Parser.__rshift__()</a></code>.</p>
 <h3 id="parser__or__"><code><a title="dollar_lambda.Parser.__or__" href="#dollar_lambda.Parser.__or__">Parser.__or__()</a></code></h3>
-<p>The <code>|</code> operator is used for alternatives. Specifically, it will try the first parser,
-and if that fails, try the second:</p>
+<p>The <code>|</code> operator is used for alternatives. Specifically, it will try the first
+parser, and if that fails, try the second:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;) # flag(&quot;verbose&quot;) fails
 {'quiet': True}
@@ -175,8 +183,9 @@ The following arguments are required: --verbose
 {'quiet': False}
 </code></pre>
 <h3 id="parser__rshift__"><code><a title="dollar_lambda.Parser.__rshift__" href="#dollar_lambda.Parser.__rshift__">Parser.__rshift__()</a></code></h3>
-<p>The <code>&gt;&gt;</code> operator is used for sequential composition. It applies the first parser and then
-hands the output of the first parser to the second parser. If either parser fails, the composition fails:</p>
+<p>The <code>&gt;&gt;</code> operator is used for sequential composition. It applies the first
+parser and then hands the output of the first parser to the second parser. If
+either parser fails, the composition fails:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) &gt;&gt; done()
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
@@ -188,15 +197,16 @@ usage: --verbose
 Unrecognized argument: --something-else
 </code></pre>
 <h3 id="nonpositional-and-parser__add__"><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> and <code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code></h3>
-<p><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> takes a sequence of parsers as arguments and attempts all permutations of them,
-returning the first permutations that is successful:</p>
+<p><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> takes a sequence of parsers as arguments and attempts all
+permutations of them, returning the first permutations that is successful:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;), flag(&quot;quiet&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 {'verbose': True, 'quiet': True}
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # reverse order also works
 {'quiet': True, 'verbose': True}
 </code></pre>
-<p>For just two parsers you can use <code>+</code>, or <code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code>, instead of <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>:</p>
+<p>For just two parsers you can use <code>+</code>, or <code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code>, instead of
+<code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) + flag(&quot;quiet&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 {'verbose': True, 'quiet': True}
@@ -218,9 +228,9 @@ use <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositio
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;-x&quot;, &quot;1&quot;, &quot;--quiet&quot;)  # works
 {'verbose': True, 'x': '1', 'quiet': True}
 </code></pre>
-<p>If alternatives or defaults appear among the arguments to <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, you will probably want
-to add <code>&gt;&gt;</code> followed by <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> (or another parser) after <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>. Otherwise,
-the parser will not behave as expected:</p>
+<p>If alternatives or defaults appear among the arguments to <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, you
+will probably want to add <code>&gt;&gt;</code> followed by <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> (or another parser) after
+<code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>. Otherwise, the parser will not behave as expected:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
 {'verbose': False, 'quiet': True}
@@ -230,19 +240,21 @@ the parser will not behave as expected:</p>
 <li><code>flag("verbose", default=False) &gt;&gt; flag("quiet")</code> and</li>
 <li><code>flag("quiet") &gt;&gt; flag("verbose", default=False)</code></li>
 </ul>
-<p>In our example, both permutations are actually succeeding. This first succeeds by falling
-back to the default, and leaving the last word of the input, <code>--verbose</code>, unparsed.
-Either interpretation is valid, and <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> returns one arbitrarily &ndash; just not the one we expected.</p>
+<p>In our example, both permutations are actually succeeding. This first succeeds
+by falling back to the default, and leaving the last word of the input,
+<code>--verbose</code>, unparsed.
+Either interpretation is valid, and <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>
+returns one arbitrarily—just not the one we expected.</p>
 <p>Now let's add <code>&gt;&gt; done()</code> to the end:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;)) &gt;&gt; done()
 </code></pre>
-<p>This ensures that the first permutation will fail because the leftover <code>--verbose</code> input will
-cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> parser to fail:</p>
+<p>This ensures that the first permutation will fail because the leftover
+<code>--verbose</code> input will cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> parser to fail:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)
 {'quiet': True, 'verbose': True}
 </code></pre>
 <h2 id="putting-it-all-together">Putting it all together</h2>
-<p>Let's recall the original example:</p>
+<p>Let’s recall the original example:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
 ...     (flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)),
 ...     option(&quot;x&quot;, type=int, help=&quot;the base&quot;),
@@ -252,10 +264,10 @@ cause the <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()<
 &gt;&gt;&gt; def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 </code></pre>
-<p>As we've seen <code>flag("verbose") | flag("quiet")</code> succeeds on either <code>--verbose</code> or <code>--quiet</code>
-(but one or the other is required).</p>
-<p><code>option("x", type=int)</code> succeeds on <code>-x X</code>, where <code>X</code> is
-some integer, binding that integer to the variable <code>"x"</code>. Similarly for <code>option("y", type=int)</code>.</p>
+<p>As we’ve seen <code>flag("verbose") | flag("quiet")</code> succeeds on either <code>--verbose</code>
+or <code>--quiet</code> (but one or the other is required).</p>
+<p><code>option("x", type=int)</code> succeeds on <code>-x X</code>, where <code>X</code> is some integer, binding
+that integer to the variable <code>"x"</code>. Similarly for <code>option("y", type=int)</code>.</p>
 <p><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> takes the three parsers:</p>
 <ul>
 <li><code>flag("verbose") | flag("quiet")</code></li>
@@ -263,14 +275,16 @@ some integer, binding that integer to the variable <code>"x"</code>. Similarly f
 <li><code>option("y", type=int)</code></li>
 </ul>
 <p>and applies them in every order, until some order succeeds.
-Finally <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code> ensures that only one of these parser permutations will succeed, preventing ambiguity.</p>
+Finally <code><a title="dollar_lambda.done" href="#dollar_lambda.done">done()</a></code>
+ensures that only one of these parser permutations will succeed, preventing
+ambiguity.</p>
 <h2 id="alternative-syntax">Alternative syntax</h2>
-<p>There are a few alternative ways to express the functionality that we've seen so far.
-We will start with the most succinct, but least flexible implementation and then
-demonstrate some alternatives that tradeoff succinctness for flexibility.</p>
+<p>There are a few alternative ways to express the functionality that we’ve seen so
+far. We will start with the most succinct, but least flexible implementation and
+then demonstrate some alternatives that tradeoff succinctness for flexibility.</p>
 <h3 id="command"><code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code></h3>
-<p><code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> is a decorator that creates a parser automatically based on
-the decorated function's signature:</p>
+<p><code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> is a decorator that creates a parser automatically based on the
+decorated function’s signature:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
 ... def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
@@ -287,8 +301,8 @@ y: the exponent
 <pre><code class="language-python-repl">&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
 </code></pre>
-<p>Note that unlike our previous implementation, this will not complain if both or neither
-<code>--verbose</code> and <code>--quiet</code> are given:</p>
+<p>Note that unlike our previous implementation, this will not complain if both or
+neither <code>--verbose</code> and <code>--quiet</code> are given:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;)
 {'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
 &gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--quiet&quot;)
@@ -308,15 +322,15 @@ y: the exponent
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 </code></pre>
-<p>Note that <code>verbose_function</code> must include all the arguments from <code>base_function</code>.
-And we make <code>quiet_function</code> a second branch:</p>
+<p>Note that <code>verbose_function</code> must include all the arguments from
+<code>base_function</code>. And we make <code>quiet_function</code> a second branch:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 </code></pre>
-<p>Again we include all arguments from <code>base_function</code>.
-Now we can invoke <code>tree.main</code> to dynamically dispatch the parsed arguments to the function
-whose corresponding parser succeeds first:</p>
+<p>Again we include all arguments from <code>base_function</code>. Now we can invoke
+<code>tree.main</code> to dynamically dispatch the parsed arguments to the function whose
+corresponding parser succeeds first:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)  # this will dispatch to verbose_function
 {'x': 1, 'y': 2, 'verbose': True}
 &gt;&gt;&gt; tree.main(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--quiet&quot;)  # this will dispatch to quiet_function
@@ -329,7 +343,8 @@ x: the base
 y: the exponent
 Unrecognized argument: --verbose
 </code></pre>
-<p>To make one or the other flag required, the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> method takes a <code>required</code> argument.</p>
+<p>To make one or the other flag required, the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> method takes a <code>required</code>
+argument.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
@@ -351,15 +366,18 @@ x: the base
 y: the exponent
 The following arguments are required: --verbose
 </code></pre>
-<p>Note that all children must be required or else <code>base_function</code> will execute in the
-absence of any flags.</p>
-<p><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> is especially useful when you want different parse-results to invoke different functions.
-One drawback of <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> is that it cannot be freely combined with other parsers.
-Parsers produced by <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> are specialized for use with decorated functions
-and don't play well with more general-purpose parsers.</p>
+<p>Note that all children must be required or else <code>base_function</code> will execute in
+the absence of any flags.</p>
+<p><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> is especially useful when you want different parse-results to
+invoke different functions.
+One drawback of <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> is that it cannot be
+freely combined with other parsers.
+Parsers produced by <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> are
+specialized for use with decorated functions and don’t play well with more
+general-purpose parsers.</p>
 <h3 id="args"><code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code></h3>
-<p><code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> is a lighter-weight alternative, providing mostly syntactic sugar and a bit of logic around
-the <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> function:</p>
+<p><code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> is a lighter-weight alternative, providing mostly syntactic sugar and a
+bit of logic around the <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> function:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; from dataclasses import dataclass
 &gt;&gt;&gt; @dataclass  # make sure not to forget this!
 ... class MyArgs(Args):
@@ -367,7 +385,8 @@ the <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositio
 ...    y: int = field(help=&quot;the exponent&quot;)
 </code></pre>
 <p>Make sure to import <code><a title="dollar_lambda.field" href="#dollar_lambda.field">field()</a></code> from <code><a title="dollar_lambda" href="#dollar_lambda">dollar_lambda</a></code>, not from <code>dataclasses</code>.
-Now we can use <code>MyArgs.parser()</code> in combinations with other parsers:</p>
+Now
+we can use <code>MyArgs.parser()</code> in combinations with other parsers:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
 &gt;&gt;&gt; p = MyArgs.parser() + p1 &gt;&gt; done()
 &gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
@@ -401,8 +420,8 @@ usage: -x X -y Y
 </code></pre>
 <h2 id="variations-on-the-example">Variations on the example</h2>
 <h3 id="variable-numbers-of-arguments">Variable numbers of arguments</h3>
-<p>What if there was a special argument, <code>verbosity</code>,
-that only makes sense if the user chooses <code>--verbose</code>?</p>
+<p>What if there was a special argument, <code>verbosity</code>, that only makes sense if the
+user chooses <code>--verbose</code>?</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = (
 ...     nonpositional(
 ...         ((flag(&quot;verbose&quot;) + option(&quot;verbosity&quot;, type=int)) | flag(&quot;quiet&quot;)),
@@ -412,9 +431,9 @@ that only makes sense if the user chooses <code>--verbose</code>?</p>
 ...     &gt;&gt; done()
 ... )
 </code></pre>
-<p>Remember that <code>+</code> or <code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code> evaluates two parsers in both orders
-and stopping at the first order that succeeds. So this allows us to
-supply <code>--verbose</code> and <code>--verbosity</code> in any order.</p>
+<p>Remember that <code>+</code> or <code><a title="dollar_lambda.Parser.__add__" href="#dollar_lambda.Parser.__add__">Parser.__add__()</a></code> evaluates two parsers in both orders and
+stopping at the first order that succeeds. So this allows us to supply
+<code>--verbose</code> and <code>--verbosity</code> in any order.</p>
 <p>Now:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--quiet&quot;)
 {'x': 1, 'y': 2, 'quiet': True}
@@ -443,9 +462,9 @@ Expected '--verbose'. Got '-x'
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 </code></pre>
 <h3 id="parsermany"><code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code></h3>
-<p>What if we want to specify verbosity by the number of times that <code>--verbose</code> appears?
-For this we need <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code>. Before showing how we could use <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> in this setting,
-let's look at how it works.</p>
+<p>What if we want to specify verbosity by the number of times that <code>--verbose</code>
+appears? For this we need <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code>. Before showing how we could use
+<code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> in this setting, let’s look at how it works.</p>
 <p><code>parser.many</code> takes <code><a title="dollar_lambda.parser" href="parser.html">dollar_lambda.parser</a></code> and tries to apply it as many times as possible.
 <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> is a bit like the <code>*</code> pattern, if you are familiar with regexes.
 <code>parser.many</code> always succeeds:</p>
@@ -459,8 +478,8 @@ let's look at how it works.</p>
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;, return_dict=False)
 [('verbose', True), ('verbose', True)]
 </code></pre>
-<p>As you can see, <code>return_dict=False</code> returns a list of tuples instead of a dict, so that you
-can have duplicate keys.</p>
+<p>As you can see, <code>return_dict=False</code> returns a list of tuples instead of a dict,
+so that you can have duplicate keys.</p>
 <p>Now returning to the original example:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = (
 ...     nonpositional(
@@ -478,14 +497,13 @@ can have duplicate keys.</p>
 2
 </code></pre>
 <h3 id="parsermany1"><code><a title="dollar_lambda.Parser.many1" href="#dollar_lambda.Parser.many1">Parser.many1()</a></code></h3>
-<p>In the previous example, the parse will default to <code>verbosity=0</code> if no <code>--verbose</code> flags
-are given.
-What if we wanted users to be explicit about choosing a "quiet" setting?
-In other words, what if the user actually had to provide an explicit <code>--quiet</code> flag when
-no <code>--verbose</code> flags were given?</p>
-<p>For this, we use <code><a title="dollar_lambda.Parser.many1" href="#dollar_lambda.Parser.many1">Parser.many1()</a></code>. This method is like <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> except that it fails
-when on zero successes (recall that <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> always succeeds). So if <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code>
-is like regex <code>*</code>, <code><a title="dollar_lambda.Parser.many1" href="#dollar_lambda.Parser.many1">Parser.many1()</a></code> is like <code>+</code>. Take a look:</p>
+<p>In the previous example, the parse will default to <code>verbosity=0</code> if no
+<code>--verbose</code> flags are given. What if we wanted users to be explicit about
+choosing a "quiet" setting? In other words, what if the user actually had to
+provide an explicit <code>--quiet</code> flag when no <code>--verbose</code> flags were given?</p>
+<p>For this, we use <code><a title="dollar_lambda.Parser.many1" href="#dollar_lambda.Parser.many1">Parser.many1()</a></code>. This method is like <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> except that
+it fails when on zero successes (recall that <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> always succeeds). So
+if <code><a title="dollar_lambda.Parser.many" href="#dollar_lambda.Parser.many">Parser.many()</a></code> is like regex <code>*</code>, <code><a title="dollar_lambda.Parser.many1" href="#dollar_lambda.Parser.many1">Parser.many1()</a></code> is like <code>+</code>. Take a look:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;).many()
 &gt;&gt;&gt; p.parse_args()  # succeeds
 {}
@@ -496,7 +514,7 @@ The following arguments are required: --verbose
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)  # succeeds
 {'verbose': True}
 </code></pre>
-<p>To compell that <code>--quiet</code> flag from our users, we can do the following:</p>
+<p>To compel that <code>--quiet</code> flag from our users, we can do the following:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = (
 ...     nonpositional(
 ...         ((flag(&quot;verbose&quot;).many1()) | flag(&quot;quiet&quot;)),
@@ -520,12 +538,15 @@ Expected '--verbose'. Got '-x'
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-**$λ** This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html) based on functional first principles.
-This means that this package can handle many kinds of argument-parsing patterns that are either very awkward, difficult, or impossible with `argparse`.
+**$λ** provides an alternative to [`argparse`]() based on functional first
+principles. This means that this package can handle many kinds of
+argument-parsing patterns that are either very awkward, difficult, or impossible
+with `argparse`.
 
 # Why `$λ`?
-`$λ` was built with minimal dependencies from functional first principles.
-As a result, it is the most
+
+`$λ` was built with minimal dependencies from functional first principles. As a
+result, it is the most
 
 - versatile
 - type-safe
@@ -534,31 +555,44 @@ As a result, it is the most
 argument parser on the market.
 
 ### Versatile
-`$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we&#39;ll see
-in the tutorial, there are many parsing patterns that `$λ` can handle which are not possible with
-other parsing libraries.
+
+`$λ` provides high-level functionality equivalent to other parsers. But unlike
+other parsers, it permits low-level customization to handle arbitrarily complex
+parsing patterns. As we’ll see in the tutorial, there are many parsing patterns
+that `$λ` can handle which are not possible with other parsing libraries.
+
 ### Type-safe
-`$λ` uses type annotations as much as Python allows. Types are checked
-using [`MyPy`](https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package
-so that users can also benefit from the type system. Furthermore, with rare exceptions, `$λ`
-avoids mutations and side-effects and preserves [referential transparency](https://en.wikipedia.org/wiki/Referential_transparency).
-This makes it easier for the type-checker _and for the user_ to reason about the code.
+
+`$λ` uses type annotations as much as Python allows. Types are checked using
+[`MyPy`]() and exported with the package so that users can also benefit from the
+type system. Furthermore, with rare exceptions, `$λ` avoids mutations and
+side-effects and preserves [referential transparency](). This makes it easier
+for the type-checker _and for the user_ to reason about the code.
+
+[argparse]: https://docs.python.org/3/library/argparse.html
+[mypy]: https://mypy.readthedocs.io/en/stable/index.html
+[referential transparency]: https://en.wikipedia.org/wiki/Referential_transparency
+
 ### Concise
-As we&#39;ll demonstrate in the tutorial, `$λ` provides three main syntactic shortcuts for cutting
-down boilerplate:
+
+As we’ll demonstrate in the tutorial, `$λ` provides three main syntactic
+shortcuts for cutting down boilerplate:
 
 - operators like `&gt;&gt;`, `|`, and `+` (and `&gt;=` if you want to get fancy)
-- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
+- the `command` decorator and the `CommandTree` object for building tree-shaped
+  parsers
 - the `Args` syntax built on top of python `dataclasses`.
 
-As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
-person would ever need... but even if it&#39;s not the parser that we need, it&#39;s the parser we deserve.
+As a rule, `$λ` avoids reproducing python functionality and focuses on the main
+job of an argument parser: parsing. Arguably, `$λ` is way more expressive than
+any reasonable person would ever need... but even if it&#39;s not the parser that we
+need, it&#39;s the parser we deserve.
 
 # Installation
+
 You guessed it:
-```
+
+```sh
 pip install dollar-lambda
 ```
 
@@ -588,12 +622,14 @@ Here is the equivalent in this package:
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
 It succeeds for either `--verbose` or `--quiet`:
+
 &gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;))
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
 &gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--quiet&#34;))
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: False, &#39;quiet&#39;: True}
 
 But fails for both:
+
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--quiet&#34;)
 usage: [--verbose | --quiet] -x X -y Y
 x: the base
@@ -601,37 +637,44 @@ y: the exponent
 Unrecognized argument: --quiet
 
 And fails for neither:
+
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;)
 usage: [--verbose | --quiet] -x X -y Y
 x: the base
 y: the exponent
 Expected &#39;--verbose&#39;. Got &#39;-x&#39;
 
-Let&#39;s walk through this step by step. First, let&#39;s learn what `flag`, `option` and `done` do.
+Let’s walk through this step by step. First, let’s learn what `flag`, `option`
+and `done` do.
 
-## High-Level Parsers
-These three functions create high-level parsers. `flag` binds a boolean value to a variable
-whereas `option` binds an arbitrary value to a variable. `done` does not bind any values to variables,
-but causes the parser to fail in some cases.
+## High-Level parsers
+
+These three functions create high-level parsers. `flag` binds a boolean value to
+a variable whereas `option` binds an arbitrary value to a variable. `done` does
+not bind any values to variables, but causes the parser to fail in some cases.
 
 ### `flag`
+
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
 {&#39;verbose&#39;: True}
 
 By default `flag` fails when it does not receive expected input:
+
 &gt;&gt;&gt; p.parse_args()
 usage: --verbose
 The following arguments are required: --verbose
 
 Alternately, you can set a default value:
+
 &gt;&gt;&gt; flag(&#34;verbose&#34;, default=False).parse_args()
 {&#39;verbose&#39;: False}
 
 ### `option`
-`option` is similar but takes an argument:
-By default, `option` expects a single `-` for single-character variable names (as in `-x`),
-as opposed to `--` for longer names (as in `--xenophon`):
+
+`option` is similar but takes an argument: By default, `option` expects a single
+`-` for single-character variable names (as in `-x`), as opposed to `--` for
+longer names (as in `--xenophon`):
 
 &gt;&gt;&gt; option(&#34;x&#34;).parse_args(&#34;-x&#34;, &#34;1&#34;)
 {&#39;x&#39;: &#39;1&#39;}
@@ -639,34 +682,37 @@ as opposed to `--` for longer names (as in `--xenophon`):
 {&#39;xenophon&#39;: &#39;1&#39;}
 
 Use the `type` argument to convert the input to a different type:
+
 &gt;&gt;&gt; option(&#34;x&#34;, type=int).parse_args(&#34;-x&#34;, &#34;1&#34;)  # converts &#34;1&#34; to an int
 {&#39;x&#39;: 1}
 
 ### `done`
+
 Without `done` the parser will not complain about leftover (unparsed) input:
 
 &gt;&gt;&gt; flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
 {&#39;verbose&#39;: True}
 
-`--quiet` is not parsed here but this does not cause the parser to fail.
-If we want to prevent leftover inputs, we can use `done`:
+`--quiet` is not parsed here but this does not cause the parser to fail.  If we
+want to prevent leftover inputs, we can use `done`:
 
 &gt;&gt;&gt; (flag(&#34;verbose&#34;) &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
 usage: --verbose
 Unrecognized argument: --quiet
 
-`done` is usually necessary to get `nonpositional` to behave in the way that you expect,
-but more on that later.
+`done` is usually necessary to get `nonpositional` to behave in the way that you
+expect, but more on that later.
 
 ## Parser Combinators
-Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: `nonpositional`, `|` or `Parser.__or__`,
-and `&gt;&gt;` or `Parser.__rshift__`.
+
+Parser combinators are functions that combine multiple parsers into new, more
+complex parsers.  Our example uses three such functions: `nonpositional`, `|`,
+or `Parser.__or__`; and `&gt;&gt;` or `Parser.__rshift__`.
 
 ### `Parser.__or__`
 
-The `|` operator is used for alternatives. Specifically, it will try the first parser,
-and if that fails, try the second:
+The `|` operator is used for alternatives. Specifically, it will try the first
+parser, and if that fails, try the second:
 
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
 &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;) # flag(&#34;verbose&#34;) fails
@@ -675,6 +721,7 @@ and if that fails, try the second:
 {&#39;verbose&#39;: True}
 
 By default one of the two flags would be required to prevent failure:
+
 &gt;&gt;&gt; p.parse_args() # neither flag is provided so this fails
 usage: [--verbose | --quiet]
 The following arguments are required: --verbose
@@ -693,8 +740,9 @@ This is just sugar for
 
 ### `Parser.__rshift__`
 
-The `&gt;&gt;` operator is used for sequential composition. It applies the first parser and then
-hands the output of the first parser to the second parser. If either parser fails, the composition fails:
+The `&gt;&gt;` operator is used for sequential composition. It applies the first
+parser and then hands the output of the first parser to the second parser. If
+either parser fails, the composition fails:
 
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;) &gt;&gt; done()
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
@@ -707,8 +755,9 @@ usage: --verbose
 Unrecognized argument: --something-else
 
 ### `nonpositional` and `Parser.__add__`
-`nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
-returning the first permutations that is successful:
+
+`nonpositional` takes a sequence of parsers as arguments and attempts all
+permutations of them, returning the first permutations that is successful:
 
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;), flag(&#34;quiet&#34;))
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
@@ -716,7 +765,9 @@ returning the first permutations that is successful:
 &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # reverse order also works
 {&#39;quiet&#39;: True, &#39;verbose&#39;: True}
 
-For just two parsers you can use `+`, or `Parser.__add__`, instead of `nonpositional`:
+For just two parsers you can use `+`, or `Parser.__add__`, instead of
+`nonpositional`:
+
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;quiet&#34;)
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
 {&#39;verbose&#39;: True, &#39;quiet&#39;: True}
@@ -724,23 +775,26 @@ For just two parsers you can use `+`, or `Parser.__add__`, instead of `nonpositi
 {&#39;quiet&#39;: True, &#39;verbose&#39;: True}
 
 This will not cover all permutations for more than two parsers:
+
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;quiet&#34;) + option(&#34;x&#34;)
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;-x&#34;, &#34;1&#34;, &#34;--quiet&#34;)
 usage: --verbose --quiet -x X
 Expected &#39;--quiet&#39;. Got &#39;-x&#39;
 
 To see why note the implicit parentheses:
+
 &gt;&gt;&gt; p = (flag(&#34;verbose&#34;) + flag(&#34;quiet&#34;)) + option(&#34;x&#34;)
 
 In order to cover the case where `-x` comes between `--verbose` and `--quiet`,
 use `nonpositional`:
+
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;), flag(&#34;quiet&#34;), option(&#34;x&#34;))
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;-x&#34;, &#34;1&#34;, &#34;--quiet&#34;)  # works
 {&#39;verbose&#39;: True, &#39;x&#39;: &#39;1&#39;, &#39;quiet&#39;: True}
 
-If alternatives or defaults appear among the arguments to `nonpositional`, you will probably want
-to add `&gt;&gt;` followed by `done` (or another parser) after `nonpositional`. Otherwise,
-the parser will not behave as expected:
+If alternatives or defaults appear among the arguments to `nonpositional`, you
+will probably want to add `&gt;&gt;` followed by `done` (or another parser) after
+`nonpositional`. Otherwise, the parser will not behave as expected:
 
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;))
 &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)  # you expect this to set verbose to True, but it doesn&#39;t
@@ -751,20 +805,23 @@ Why is happening? There are two permutations:
 - `flag(&#34;verbose&#34;, default=False) &gt;&gt; flag(&#34;quiet&#34;)` and
 - `flag(&#34;quiet&#34;) &gt;&gt; flag(&#34;verbose&#34;, default=False)`
 
-In our example, both permutations are actually succeeding. This first succeeds by falling
-back to the default, and leaving the last word of the input, `--verbose`, unparsed.
-Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
+In our example, both permutations are actually succeeding. This first succeeds
+by falling back to the default, and leaving the last word of the input,
+`--verbose`, unparsed.  Either interpretation is valid, and `nonpositional`
+returns one arbitrarily—just not the one we expected.
 
 Now let&#39;s add `&gt;&gt; done()` to the end:
 &gt;&gt;&gt; p = nonpositional(flag(&#34;verbose&#34;, default=False), flag(&#34;quiet&#34;)) &gt;&gt; done()
 
-This ensures that the first permutation will fail because the leftover `--verbose` input will
-cause the `done` parser to fail:
+This ensures that the first permutation will fail because the leftover
+`--verbose` input will cause the `done` parser to fail:
+
 &gt;&gt;&gt; p.parse_args(&#34;--quiet&#34;, &#34;--verbose&#34;)
 {&#39;quiet&#39;: True, &#39;verbose&#39;: True}
 
 ## Putting it all together
-Let&#39;s recall the original example:
+
+Let’s recall the original example:
 
 &gt;&gt;&gt; p = nonpositional(
 ...     (flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)),
@@ -775,11 +832,11 @@ Let&#39;s recall the original example:
 &gt;&gt;&gt; def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
-As we&#39;ve seen `flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)` succeeds on either `--verbose` or `--quiet`
-(but one or the other is required).
+As we’ve seen `flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)` succeeds on either `--verbose`
+or `--quiet` (but one or the other is required).
 
-`option(&#34;x&#34;, type=int)` succeeds on `-x X`, where `X` is
-some integer, binding that integer to the variable `&#34;x&#34;`. Similarly for `option(&#34;y&#34;, type=int)`.
+`option(&#34;x&#34;, type=int)` succeeds on `-x X`, where `X` is some integer, binding
+that integer to the variable `&#34;x&#34;`. Similarly for `option(&#34;y&#34;, type=int)`.
 
 `nonpositional` takes the three parsers:
 
@@ -787,17 +844,20 @@ some integer, binding that integer to the variable `&#34;x&#34;`. Similarly for 
 - `option(&#34;x&#34;, type=int)`
 - `option(&#34;y&#34;, type=int)`
 
-and applies them in every order, until some order succeeds.
-Finally `done()` ensures that only one of these parser permutations will succeed, preventing ambiguity.
+and applies them in every order, until some order succeeds.  Finally `done()`
+ensures that only one of these parser permutations will succeed, preventing
+ambiguity.
 
 ## Alternative syntax
-There are a few alternative ways to express the functionality that we&#39;ve seen so far.
-We will start with the most succinct, but least flexible implementation and then
-demonstrate some alternatives that tradeoff succinctness for flexibility.
+
+There are a few alternative ways to express the functionality that we’ve seen so
+far. We will start with the most succinct, but least flexible implementation and
+then demonstrate some alternatives that tradeoff succinctness for flexibility.
 
 ### `command`
-`command` is a decorator that creates a parser automatically based on
-the decorated function&#39;s signature:
+
+`command` is a decorator that creates a parser automatically based on the
+decorated function’s signature:
 
 &gt;&gt;&gt; @command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
 ... def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
@@ -815,36 +875,42 @@ y: the exponent
 &gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: False}
 
-Note that unlike our previous implementation, this will not complain if both or neither
-`--verbose` and `--quiet` are given:
+Note that unlike our previous implementation, this will not complain if both or
+neither `--verbose` and `--quiet` are given:
+
 &gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;)
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: False, &#39;quiet&#39;: False}
 &gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--quiet&#34;)
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;quiet&#39;: True}
 
 ### `CommandTree`
+
 To make the flags mutually exclusive, we can use `CommandTree`:
+
 &gt;&gt;&gt; tree = CommandTree()
 
 First, we make `base_function` the root of our tree:
+
 &gt;&gt;&gt; @tree.command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
 ... def base_function(x: int, y: int):
 ...     print(dict(x=x, y=y))
 
 Next, we make `verbose_function` a branch off of `base_function`:
+
 &gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool):
 ...     print(dict(x=x, y=y, verbose=verbose))
 
-Note that `verbose_function` must include all the arguments from `base_function`.
-And we make `quiet_function` a second branch:
+Note that `verbose_function` must include all the arguments from
+`base_function`. And we make `quiet_function` a second branch:
+
 &gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 
-Again we include all arguments from `base_function`.
-Now we can invoke `tree.main` to dynamically dispatch the parsed arguments to the function
-whose corresponding parser succeeds first:
+Again we include all arguments from `base_function`. Now we can invoke
+`tree.main` to dynamically dispatch the parsed arguments to the function whose
+corresponding parser succeeds first:
 
 &gt;&gt;&gt; tree.main(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)  # this will dispatch to verbose_function
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True}
@@ -858,7 +924,9 @@ x: the base
 y: the exponent
 Unrecognized argument: --verbose
 
-To make one or the other flag required, the `command` method takes a `required` argument.
+To make one or the other flag required, the `command` method takes a `required`
+argument.
+
 &gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
@@ -880,18 +948,19 @@ x: the base
 y: the exponent
 The following arguments are required: --verbose
 
-Note that all children must be required or else `base_function` will execute in the
-absence of any flags.
+Note that all children must be required or else `base_function` will execute in
+the absence of any flags.
 
-`CommandTree` is especially useful when you want different parse-results to invoke different functions.
-One drawback of `CommandTree` is that it cannot be freely combined with other parsers.
-Parsers produced by `CommandTree` are specialized for use with decorated functions
-and don&#39;t play well with more general-purpose parsers.
+`CommandTree` is especially useful when you want different parse-results to
+invoke different functions.  One drawback of `CommandTree` is that it cannot be
+freely combined with other parsers.  Parsers produced by `CommandTree` are
+specialized for use with decorated functions and don’t play well with more
+general-purpose parsers.
 
 ### `Args`
 
-`Args` is a lighter-weight alternative, providing mostly syntactic sugar and a bit of logic around
-the `nonpositional` function:
+`Args` is a lighter-weight alternative, providing mostly syntactic sugar and a
+bit of logic around the `nonpositional` function:
 
 &gt;&gt;&gt; from dataclasses import dataclass
 &gt;&gt;&gt; @dataclass  # make sure not to forget this!
@@ -899,8 +968,8 @@ the `nonpositional` function:
 ...    x: int = field(help=&#34;the base&#34;)
 ...    y: int = field(help=&#34;the exponent&#34;)
 
-Make sure to import `field` from `dollar_lambda`, not from `dataclasses`.
-Now we can use `MyArgs.parser()` in combinations with other parsers:
+Make sure to import `field` from `dollar_lambda`, not from `dataclasses`.  Now
+we can use `MyArgs.parser()` in combinations with other parsers:
 
 &gt;&gt;&gt; p1 = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
 &gt;&gt;&gt; p = MyArgs.parser() + p1 &gt;&gt; done()
@@ -912,6 +981,7 @@ y: the exponent
 {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True}
 
 You can omit the `field` expressions:
+
 &gt;&gt;&gt; from dataclasses import dataclass
 &gt;&gt;&gt; @dataclass  # make sure not to forget this!
 ... class MyArgs(Args):
@@ -921,6 +991,7 @@ You can omit the `field` expressions:
 {&#39;x&#39;: 1, &#39;y&#39;: 2}
 
 But you lose help-strings:
+
 &gt;&gt;&gt; MyArgs.parse_args(&#34;-h&#34;)
 usage: -x X -y Y
 
@@ -935,10 +1006,11 @@ The `field` expressions can also be used to define default values:
 {&#39;x&#39;: 1, &#39;y&#39;: 2}
 
 ## Variations on the example
+
 ### Variable numbers of arguments
 
-What if there was a special argument, `verbosity`,
-that only makes sense if the user chooses `--verbose`?
+What if there was a special argument, `verbosity`, that only makes sense if the
+user chooses `--verbose`?
 
 &gt;&gt;&gt; p = (
 ...     nonpositional(
@@ -949,9 +1021,9 @@ that only makes sense if the user chooses `--verbose`?
 ...     &gt;&gt; done()
 ... )
 
-Remember that `+` or `Parser.__add__` evaluates two parsers in both orders
-and stopping at the first order that succeeds. So this allows us to
-supply `--verbose` and `--verbosity` in any order.
+Remember that `+` or `Parser.__add__` evaluates two parsers in both orders and
+stopping at the first order that succeeds. So this allows us to supply
+`--verbose` and `--verbosity` in any order.
 
 Now:
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--quiet&#34;)
@@ -983,9 +1055,9 @@ This is also a case where you might want to use `CommandTree`:
 
 ### `Parser.many`
 
-What if we want to specify verbosity by the number of times that `--verbose` appears?
-For this we need `Parser.many`. Before showing how we could use `Parser.many` in this setting,
-let&#39;s look at how it works.
+What if we want to specify verbosity by the number of times that `--verbose`
+appears? For this we need `Parser.many`. Before showing how we could use
+`Parser.many` in this setting, let’s look at how it works.
 
 `parser.many` takes `parser` and tries to apply it as many times as possible.
 `Parser.many` is a bit like the `*` pattern, if you are familiar with regexes.
@@ -1001,8 +1073,8 @@ let&#39;s look at how it works.
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;, return_dict=False)
 [(&#39;verbose&#39;, True), (&#39;verbose&#39;, True)]
 
-As you can see, `return_dict=False` returns a list of tuples instead of a dict, so that you
-can have duplicate keys.
+As you can see, `return_dict=False` returns a list of tuples instead of a dict,
+so that you can have duplicate keys.
 
 Now returning to the original example:
 
@@ -1023,14 +1095,14 @@ Now returning to the original example:
 
 ### `Parser.many1`
 
-In the previous example, the parse will default to `verbosity=0` if no `--verbose` flags
-are given.  What if we wanted users to be explicit about choosing a &#34;quiet&#34; setting?
-In other words, what if the user actually had to provide an explicit `--quiet` flag when
-no `--verbose` flags were given?
+In the previous example, the parse will default to `verbosity=0` if no
+`--verbose` flags are given. What if we wanted users to be explicit about
+choosing a &#34;quiet&#34; setting? In other words, what if the user actually had to
+provide an explicit `--quiet` flag when no `--verbose` flags were given?
 
-For this, we use `Parser.many1`. This method is like `Parser.many` except that it fails
-when on zero successes (recall that `Parser.many` always succeeds). So if `Parser.many`
-is like regex `*`, `Parser.many1` is like `+`. Take a look:
+For this, we use `Parser.many1`. This method is like `Parser.many` except that
+it fails when on zero successes (recall that `Parser.many` always succeeds). So
+if `Parser.many` is like regex `*`, `Parser.many1` is like `+`. Take a look:
 
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;).many()
 &gt;&gt;&gt; p.parse_args()  # succeeds
@@ -1042,7 +1114,7 @@ The following arguments are required: --verbose
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)  # succeeds
 {&#39;verbose&#39;: True}
 
-To compell that `--quiet` flag from our users, we can do the following:
+To compel that `--quiet` flag from our users, we can do the following:
 
 &gt;&gt;&gt; p = (
 ...     nonpositional(
@@ -1054,6 +1126,7 @@ To compell that `--quiet` flag from our users, we can do the following:
 ... )
 
 Now omitting both `--verbose` and `--quiet` will fail:
+
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;)
 usage: [--verbose [--verbose ...] | --quiet] -x X -y Y
 Expected &#39;--verbose&#39;. Got &#39;-x&#39;
@@ -3876,7 +3949,7 @@ If it is, returns the usage message.</dd>
 </li>
 <li><a href="#installation">Installation</a></li>
 <li><a href="#tutorial">Tutorial</a><ul>
-<li><a href="#high-level-parsers">High-Level Parsers</a><ul>
+<li><a href="#high-level-parsers">High-Level parsers</a><ul>
 <li><a href="#flag">flag</a></li>
 <li><a href="#option">option</a></li>
 <li><a href="#done">done</a></li>
