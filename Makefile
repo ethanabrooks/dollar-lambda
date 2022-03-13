@@ -15,6 +15,6 @@ readme.md: readme.py
 .PHONY: docs
 docs: dollar_lambda/
 	rm -rf docs/
-	pdoc3 --html dollar_lambda
+	pdoc3 --template-dir template --html dollar_lambda
 	mv html/dollar_lambda docs/
 	rm -rf html
