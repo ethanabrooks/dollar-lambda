@@ -4,3 +4,7 @@
 - write docs
 - improve types
 - add Tap-style convenience class
+- Headings in docs can be subtler (https://practicaltypography.com/headings.html)
+- `check_help` docs were acting funny when example command output wasn’t Python.
+- Double check letter spacing (https://practicaltypography.com/letterspacing.html)
+- Fira Code’s ligature for >= might be undesirable.
