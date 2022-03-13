@@ -15,9 +15,9 @@
     <%
         returns = show_type_annotations and func.return_annotation() or ''
         if returns:
-            returns = ' \N{non-breaking hyphen}> ' + returns
+            returns = ' <span style="white-space: nowrap;">-></span> ' + returns
     %>
-`${func.name}(${", ".join(func.params(annotate=show_type_annotations))})${returns}`
+`!!! ${func.name}(${", ".join(func.params(annotate=show_type_annotations))})${returns}`
 ${func.docstring | deflist}
 </%def>
 

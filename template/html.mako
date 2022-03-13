@@ -107,7 +107,7 @@
     <dt id="${f.refname}"><code class="name flex">
         <%
             params = ', '.join(f.params(annotate=show_type_annotations, link=link))
-            return_type = get_annotation(f.return_annotation, '\N{non-breaking hyphen}>')
+            return_type = get_annotation(f.return_annotation, '<span style="white-space: nowrap;">-></span>')
         %>
         <span>${f.funcdef()} ${ident(f.name)}</span>(<span>${params})${return_type}</span>
     </code></dt>
@@ -380,7 +380,6 @@
   % endif
 
   <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-  <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
   % if syntax_highlighting:
     <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/${hljs_style}.min.css" crossorigin>
   %endif
@@ -390,15 +389,39 @@
   <style media="screen and (min-width: 700px)">${css.desktop()}</style>
   <style media="print">${css.print()}</style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Fira Code';
+      src: url(./woff2/Firacode-Regular.woff2);
+      font-weight: normal;
+    }
+
+    /*@font-face {
+      font-family: 'Fira Code';
+      src: url(./woff2/Firacode-Bold.woff2);
+      font-weight: bold;
+    }*/
+
+    @font-face {
+      font-family: 'Fira Code Bold';
+      src: url(./woff2/Firacode-Bold.woff2);
+      font-weight: bold;
+    }
+
     body {
       font-family: 'IBM Plex Sans', sans-serif;
     }
 
     pre, code {
-      font-family: 'Fira Code', monospace;
+      font-family: 'Fira Code';
+      font-variant-ligatures: normal;
+    }
+
+    p {
+      text-align: justify;
+      hyphens: auto;
     }
   </style>
 

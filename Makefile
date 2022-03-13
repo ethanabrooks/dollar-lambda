@@ -17,4 +17,5 @@ docs: dollar_lambda/
 	rm -rf docs/
 	pdoc3 --template-dir template --html dollar_lambda
 	mv html/dollar_lambda docs/
+	cp -r woff2 docs/woff2
 	rm -rf html
