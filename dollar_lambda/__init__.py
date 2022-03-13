@@ -1,8 +1,10 @@
 """
-**$λ** provides an alternative to [`argparse`]() based on functional first
-principles. This means that this package can handle many kinds of
+**$λ** provides an alternative to [`argparse`][argparse] based on functional
+first principles. This means that this package can handle many kinds of
 argument-parsing patterns that are either very awkward, difficult, or impossible
 with `argparse`.
+
+[argparse]: https://docs.python.org/3/library/argparse.html
 
 # Why `$λ`?
 
@@ -25,12 +27,11 @@ that `$λ` can handle which are not possible with other parsing libraries.
 ### Type-safe
 
 `$λ` uses type annotations as much as Python allows. Types are checked using
-[`MyPy`]() and exported with the package so that users can also benefit from the
-type system. Furthermore, with rare exceptions, `$λ` avoids mutations and
-side-effects and preserves [referential transparency](). This makes it easier
+[`MyPy`][mypy] and exported with the package so that users can also benefit from
+the type system. Furthermore, with rare exceptions, `$λ` avoids mutations and
+side-effects and preserves [referential transparency][]. This makes it easier
 for the type-checker _and for the user_ to reason about the code.
 
-[argparse]: https://docs.python.org/3/library/argparse.html
 [mypy]: https://mypy.readthedocs.io/en/stable/index.html
 [referential transparency]: https://en.wikipedia.org/wiki/Referential_transparency
 
