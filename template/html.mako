@@ -400,7 +400,7 @@
       font-family: 'Fira Code', monospace;
     }
 
-    code {
+    p code {
       white-space: nowrap;
     }
   </style>
