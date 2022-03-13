@@ -7,14 +7,14 @@ import typing
 from dataclasses import dataclass
 from typing import Callable, Generator, Iterator, Type, TypeVar, overload
 
-from pytypeclass import MonadPlus
+from pytypeclass import Monad, MonadPlus
 
-A = TypeVar("A", covariant=True)
-B = TypeVar("B")
+A_co = TypeVar("A_co", covariant=True)
+A = TypeVar("A")
 
 
 @dataclass
-class Sequence(MonadPlus[A], typing.Sequence[A]):
+class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     """
     This class combines the functionality of [`MonadPlus`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24)
     and [`typing.Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence).
@@ -34,47 +34,49 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     Sequence(get=[1, -1, 2, -2])
     """
 
-    get: typing.Sequence[A]
+    get: typing.Sequence[A_co]
 
     @overload
-    def __getitem__(self, i: int) -> "A":
+    def __getitem__(self, i: int) -> "A_co":
         ...
 
     @overload
-    def __getitem__(self, i: slice) -> Sequence[A]:
+    def __getitem__(self, i: slice) -> Sequence[A_co]:
         ...
 
-    def __getitem__(self, i: int | slice) -> A | Sequence[A]:
+    def __getitem__(self, i: int | slice) -> A_co | Sequence[A_co]:
         if isinstance(i, int):
             return self.get[i]
         return Sequence(self.get[i])
 
-    def __iter__(self) -> Generator[A, None, None]:
+    def __iter__(self) -> Generator[A_co, None, None]:
         yield from self.get
 
     def __len__(self) -> int:
         return len(self.get)
 
-    def __or__(self, other: Sequence[B]) -> Sequence[A | B]:
+    def __or__(self, other: Sequence[A]) -> Sequence[A_co | A]:
         return Sequence([*self, *other])
 
-    def __add__(self, other: Sequence[B]) -> Sequence[A | B]:
+    def __add__(self, other: Sequence[A]) -> Sequence[A_co | A]:
         return self | other
 
-    def bind(self, f: Callable[[A], Sequence[B]]) -> Sequence[B]:
+    def bind(self, f: Callable[[A_co], Monad[A]]) -> Sequence[A]:
         """
         >>> Sequence([1, 2]) >= (lambda x: Sequence([x, -x]))
         Sequence(get=[1, -1, 2, -2])
         """
 
-        def g() -> Iterator[B]:
+        def g() -> Iterator[A]:
             for a in self:
-                yield from f(a)
+                y = f(a)
+                assert isinstance(y, Sequence), y
+                yield from y
 
         return Sequence(list(g()))
 
     @staticmethod
-    def return_(a: B) -> Sequence[B]:
+    def return_(a: A) -> Sequence[A]:
         """
         >>> Sequence.return_(1)
         Sequence(get=[1])
@@ -82,5 +84,5 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
         return Sequence([a])
 
     @classmethod
-    def zero(cls: Type[Sequence[A]]) -> Sequence[A]:
+    def zero(cls: Type[Sequence[A_co]]) -> Sequence[A_co]:
         return Sequence([])

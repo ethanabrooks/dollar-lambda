@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
 from typing import Any, Callable, Dict, Generator, Generic, Optional, Type, TypeVar
 
-from pytypeclass import MonadPlus, Monoid
+from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.error import (
@@ -193,7 +193,10 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **p.helps},
         )
 
-    def bind(self, f: Callable[[A_co], Parser[B]]) -> Parser[B]:
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> Parser[B]:
+        return self.bind(f)
+
+    def bind(self, f: Callable[[A_co], Monad[B]]) -> Parser[B]:
         """
         Returns a new parser that
 
@@ -224,7 +227,9 @@ class Parser(MonadPlus[A_co]):
         """
 
         def h(parse: Parse[A_co]) -> Result[Parse[B]]:
-            return f(parse.parsed).parse(parse.unparsed)
+            y = f(parse.parsed)
+            assert isinstance(y, Parser), y
+            return y.parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -> Result[Parse[B]]:
             return self.parse(cs) >= h
@@ -307,7 +312,9 @@ class Parser(MonadPlus[A_co]):
 
         @lru_cache()
         def f(cs: tuple):
-            return Parser.do(g).parse(Sequence(list(cs)))
+            y = Parser.do(g)
+            assert isinstance(y, Parser), y
+            return y.parse(Sequence(list(cs)))
 
         return Parser(
             lambda cs: f(tuple(cs)),
@@ -421,7 +428,7 @@ class Parser(MonadPlus[A_co]):
 
 
 def apply(
-    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
+    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]  # type: ignore[misc]
 ) -> Parser[Monoid_co]:
     """
     Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
