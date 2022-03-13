@@ -396,18 +396,14 @@
       font-family: 'Fira Code';
       src: url(./woff2/Firacode-Regular.woff2) format("woff2");
       font-weight: normal;
+      font-display: swap;
     }
 
     @font-face {
       font-family: 'Fira Code';
       src: url(./woff2/Firacode-Bold.woff2) format("woff2");
       font-weight: bold;
-    }
-
-    @font-face {
-      font-family: 'Fira Code Bold';
-      src: url(./woff2/Firacode-Bold.woff2);
-      font-weight: bold;
+      font-display: swap;
     }
 
     body {
@@ -415,7 +411,7 @@
     }
 
     pre, code {
-      font-family: 'Fira Code';
+      font-family: 'Fira Code', monospace;
     }
 
     code {
