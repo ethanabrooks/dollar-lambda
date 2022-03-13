@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="${html_lang}">
-<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
     <title>Search</title>
@@ -26,8 +25,6 @@
         li {padding-top: 10px;}
     </style>
     <base target="_parent">
-</head>
-<body>
 <noscript>
     JavaScript is not supported/enabled in your browser. The search feature won't work.
 </noscript>
@@ -139,4 +136,3 @@
         });
     }
 </script>
-</body>

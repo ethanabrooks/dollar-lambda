@@ -363,7 +363,6 @@
 
 <!doctype html>
 <html lang="${html_lang}">
-<head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
   <meta name="generator" content="pdoc ${pdoc.__version__}" />
@@ -390,6 +389,18 @@
   <style>${css.mobile()}</style>
   <style media="screen and (min-width: 700px)">${css.desktop()}</style>
   <style media="print">${css.print()}</style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+
+    pre, code {
+      font-family: 'Fira Code', monospace;
+    }
+  </style>
 
   % if google_analytics:
     <script>
@@ -417,8 +428,6 @@
   % endif
 
   <%include file="head.mako"/>
-</head>
-<body>
 <main>
   % if module_list:
     <article id="content">
@@ -447,5 +456,4 @@
         }).then(response => response.ok && window.location.reload()), 700);
     </script>
 % endif
-</body>
 </html>
