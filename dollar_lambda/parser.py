@@ -56,7 +56,9 @@ class Parse(Generic[A_co]):
 
 def empty() -> Parser[Sequence]:
     """
-    Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+    Always returns `{}`, no matter the input. Mostly useful for use in
+    `nonpositional`.
+
     >>> empty().parse_args("any", "arguments")
     {}
     """
@@ -96,7 +98,8 @@ class Parser(MonadPlus[A_co]):
         self: Parser[Sequence[A]], other: Parser[Sequence[B]]
     ) -> Parser[Sequence[A | B]]:
         """
-        Parse two arguments in either order.
+        Parses two arguments in either order.
+
         >>> p = flag("verbose") + flag("debug")
         >>> p.parse_args("--verbose", "--debug")
         {'verbose': True, 'debug': True}
@@ -106,7 +109,9 @@ class Parser(MonadPlus[A_co]):
         usage: --verbose --debug
         Expected '--verbose'. Got '--debug'
 
-        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        Note that if more than two arguments are chained together with `+`, some
+        combinations will not parse:
+
         >>> p = flag("a") + flag("b") + flag("c")
         >>> p.parse_args("-c", "-a", "-b")   # this works
         {'c': True, 'a': True, 'b': True}
@@ -115,9 +120,11 @@ class Parser(MonadPlus[A_co]):
         Expected '-b'. Got '-c'
 
         This makes more sense when one supplies the implicit parentheses:
+
         >>> p = (flag("a") + flag("b")) + flag("c")
 
         In order to chain together more than two arguments, use `nonpositional`:
+
         >>> p = nonpositional(flag("a"), flag("b"), flag("c"))
         >>> p.parse_args("-a", "-c", "-b")
         {'a': True, 'c': True, 'b': True}
@@ -426,7 +433,8 @@ def apply(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -> Parser[Monoid_co]:
     """
-    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Converts any errors that
+    arise into `ArgumentError`.
 
     >>> p1 = flag("hello")
     >>> p1.parse_args("--hello", return_dict=False)
@@ -499,9 +507,9 @@ def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
 
 def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
     """
-    Useful for assigning default values to arguments.
-    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
-    `defaults` never fails.
+    Useful for assigning default values to arguments. It ignores the input and
+    always returns `kwargs` converted into `Sequence[KeyValue]`. `defaults`
+    never fails.
 
     >>> defaults(a=1, b=2).parse_args()
     {'a': 1, 'b': 2}
@@ -529,6 +537,7 @@ def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
 def done() -> Parser[Sequence[A]]:
     """
     `done` succeds on the end of input and fails on everything else.
+
     >>> done().parse_args()
     {}
     >>> done().parse_args("arg")
@@ -539,15 +548,15 @@ def done() -> Parser[Sequence[A]]:
     >>> flag("verbose").parse_args("--verbose", "--quiet")
     {'verbose': True}
 
-    `--quiet` is not parsed here but this does not cause the parser to fail.
-    If we want to prevent leftover inputs, we can use `done`:
+    `--quiet` is not parsed here but this does not cause the parser to fail. If
+    we want to prevent leftover inputs, we can use `done`:
 
     >>> (flag("verbose") >> done()).parse_args("--verbose", "--quiet")
     usage: --verbose
     Unrecognized argument: --quiet
 
-    `done` is usually necessary to get `nonpositional` to behave in the way that you expect.
-    See `nonpositional` API docs for details.
+    `done` is usually necessary to get `nonpositional` to behave in the way that
+    you expect. See `nonpositional` for details.
     """
 
     def f(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
@@ -561,7 +570,7 @@ def done() -> Parser[Sequence[A]]:
     return Parser(f, usage=None, helps={})
 
 
-def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
+def equals(s: str, peek=False) -> Parser[Sequence[KeyValue[str]]]:
     """
     Checks if the next word is `s`.
 
@@ -573,7 +582,7 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
 
     Parameters
     ----------
-    peak : bool
+    peek : bool
         If `False`, then the parser will consume the word and return the
         remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
@@ -582,22 +591,22 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
 
-    Look what happens when `peak=True`:
+    Look what happens when `peek=True`:
 
-    >>> p = equals("hello", peak=True) >> equals("goodbye")
+    >>> p = equals("hello", peek=True) >> equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
     usage: hello goodbye
     Expected 'goodbye'. Got 'hello'
 
-    The first parser didn’t consume the word and so "hello" got passed on to
-    `equals("goodbye")`.  But this would work:
+    The first parser didn’t consume the word and so ”hello” got passed on to
+    `equals("goodbye")`. But this would work:
 
-    >>> p = equals("hello", peak=True) >> equals("hello") >>equals("goodbye")
+    >>> p = equals("hello", peek=True) >> equals("hello") >>equals("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
     """
-    if peak:
-        return sat_peak(
+    if peek:
+        return sat_peek(
             predicate=lambda _s: _s == s,
             on_fail=lambda _s: UnequalError(
                 left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
@@ -640,7 +649,8 @@ def flag(
     >>> p.parse_args()
     {'verbose': False}
 
-    By default `flag` fails when it does not receive expected input:
+    By default `flag` fails when it receives uexpected input:
+
     >>> p = flag("verbose")
     >>> p.parse_args()
     usage: --verbose
@@ -655,8 +665,8 @@ def flag(
     verbose: Turn on verbose output.
 
     short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+        Whether to check for the short form of the flag, which uses a single
+        dash and the first character of `dest`, e.g. `-f` for `foo`.
 
     >>> flag("verbose", short=True).parse_args("-v")  # this is the default
     {'verbose': True}
@@ -698,7 +708,7 @@ def help_parser(usage: Optional[str], parsed: Monoid1) -> Parser[Monoid1]:
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Monoid1]]:
-        result = (equals("--help", peak=True) | equals("-h", peak=True)).parse(cs)
+        result = (equals("--help", peek=True) | equals("-h", peek=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
         return Result(HelpError(usage=usage or "Usage not provided."))
@@ -905,7 +915,7 @@ def option(
     return parser if default is None else parser | defaults(**{dest: default})
 
 
-def peak(
+def peek(
     name: str,
     description: Optional[str] = None,
 ) -> Parser[Sequence[KeyValue[str]]]:
@@ -1006,7 +1016,7 @@ def sat_item(
     return sat(item(name), _predicate, _on_fail)
 
 
-def sat_peak(
+def sat_peek(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
@@ -1019,7 +1029,7 @@ def sat_peak(
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(peak(name), _predicate, _on_fail)
+    return sat(peek(name), _predicate, _on_fail)
 
 
 def type_(

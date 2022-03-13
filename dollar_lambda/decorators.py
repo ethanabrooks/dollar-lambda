@@ -90,7 +90,8 @@ def command(
     >>> f("--no-cuda")
     {'cuda': False}
 
-    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+    As the following example demonstrates, when `flip_bools=False` is given the
+    output can be somewhat confusing:
 
     >>> @command(flip_bools=False)
     ... def f(cuda: bool = True):

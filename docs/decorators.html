@@ -119,7 +119,8 @@ def command(
     &gt;&gt;&gt; f(&#34;--no-cuda&#34;)
     {&#39;cuda&#39;: False}
 
-    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+    As the following example demonstrates, when `flip_bools=False` is given the
+    output can be somewhat confusing:
 
     &gt;&gt;&gt; @command(flip_bools=False)
     ... def f(cuda: bool = True):
@@ -423,7 +424,8 @@ arguments.</p>
 &gt;&gt;&gt; f(&quot;--no-cuda&quot;)
 {'cuda': False}
 </code></pre>
-<p>As the following example demonstrates, when <code>flip_bools=False</code> output can be somewhat confusing:</p>
+<p>As the following example demonstrates, when <code>flip_bools=False</code> is given the
+output can be somewhat confusing:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=False)
 ... def f(cuda: bool = True):
 ...     return dict(cuda=cuda)
@@ -514,7 +516,8 @@ Expected '--quiet-mode'. Got '--quiet'
     &gt;&gt;&gt; f(&#34;--no-cuda&#34;)
     {&#39;cuda&#39;: False}
 
-    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+    As the following example demonstrates, when `flip_bools=False` is given the
+    output can be somewhat confusing:
 
     &gt;&gt;&gt; @command(flip_bools=False)
     ... def f(cuda: bool = True):

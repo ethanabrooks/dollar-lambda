@@ -559,7 +559,7 @@ Now returning to the original example:
 
 In the previous example, the parse will default to `verbosity=0` if no
 `--verbose` flags are given. What if we wanted users to be explicit about
-choosing a "quiet" setting? In other words, what if the user actually had to
+choosing a “quiet” setting? In other words, what if the user actually had to
 provide an explicit `--quiet` flag when no `--verbose` flags were given?
 
 For this, we use `Parser.many1`. This method is like `Parser.many` except that

@@ -121,8 +121,10 @@ class Args:
     >>> MyArgs.parse_args("--count", "1", "--verbose")
     {'count': 1, 'verbose': True}
 
-    Note that when the default value of an argument is `True`, `Args` will, by default
-    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    Note that when the default value of an argument is `True`, `Args` will, by
+    default, add `--no-` to the front of the flag (while still assigning the
+    value to the original key):
+
     >>> @dataclass
     ... class MyArgs(Args):
     ...     tests: bool = True
@@ -132,11 +134,12 @@ class Args:
     {'tests': True}
 
     To suppress this behavior, set `flip_bools=False`:
+
     >>> MyArgs.parse_args("--tests", flip_bools=False)
     {'tests': False}
 
-    By using the `Args.parser()` method, `Args` can take advantage of all the same
-    combinators as other parsers:
+    By using the `Args.parser()` method, `Args` can take advantage of all the
+    same combinators as other parsers:
 
     >>> from dollar_lambda import argument
     >>> p = MyArgs.parser()
@@ -144,7 +147,9 @@ class Args:
     >>> p1.parse_args("--no-tests", "hello")
     {'tests': False, 'a': 'hello'}
 
-    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
+    To supply other metadata, like `help` text and more complex `type`
+    converters, use `field`:
+
     >>> @dataclass
     ... class MyArgs(Args):
     ...     n: int = field(default=0, help="a number to increment", type=lambda x: 1 + int(x))
@@ -157,9 +162,9 @@ class Args:
     @classmethod
     def parser(cls, flip_bools: bool = True) -> Parser[Sequence[KeyValue[Any]]]:
         """
-        Returns a parser for the dataclass.
-        Converts each field to a parser (`option` or `flag` depending on its type).
-        Combines these parsers using `nonpositional`.
+        Returns a parser for the dataclass. Converts each field to a parser
+        (`option` or `flag` depending on its type) and combines them using
+        `nonpositional`.
         """
         return _ArgsField.nonpositional(
             *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools

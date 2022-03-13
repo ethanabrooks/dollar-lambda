@@ -85,7 +85,9 @@ class Parse(Generic[A_co]):
 
 def empty() -&gt; Parser[Sequence]:
     &#34;&#34;&#34;
-    Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+    Always returns `{}`, no matter the input. Mostly useful for use in
+    `nonpositional`.
+
     &gt;&gt;&gt; empty().parse_args(&#34;any&#34;, &#34;arguments&#34;)
     {}
     &#34;&#34;&#34;
@@ -125,7 +127,8 @@ class Parser(MonadPlus[A_co]):
         self: Parser[Sequence[A]], other: Parser[Sequence[B]]
     ) -&gt; Parser[Sequence[A | B]]:
         &#34;&#34;&#34;
-        Parse two arguments in either order.
+        Parses two arguments in either order.
+
         &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;debug&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
         {&#39;verbose&#39;: True, &#39;debug&#39;: True}
@@ -135,7 +138,9 @@ class Parser(MonadPlus[A_co]):
         usage: --verbose --debug
         Expected &#39;--verbose&#39;. Got &#39;--debug&#39;
 
-        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        Note that if more than two arguments are chained together with `+`, some
+        combinations will not parse:
+
         &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
         {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
@@ -144,9 +149,11 @@ class Parser(MonadPlus[A_co]):
         Expected &#39;-b&#39;. Got &#39;-c&#39;
 
         This makes more sense when one supplies the implicit parentheses:
+
         &gt;&gt;&gt; p = (flag(&#34;a&#34;) + flag(&#34;b&#34;)) + flag(&#34;c&#34;)
 
         In order to chain together more than two arguments, use `nonpositional`:
+
         &gt;&gt;&gt; p = nonpositional(flag(&#34;a&#34;), flag(&#34;b&#34;), flag(&#34;c&#34;))
         &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)
         {&#39;a&#39;: True, &#39;c&#39;: True, &#39;b&#39;: True}
@@ -455,7 +462,8 @@ def apply(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -&gt; Parser[Monoid_co]:
     &#34;&#34;&#34;
-    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Converts any errors that
+    arise into `ArgumentError`.
 
     &gt;&gt;&gt; p1 = flag(&#34;hello&#34;)
     &gt;&gt;&gt; p1.parse_args(&#34;--hello&#34;, return_dict=False)
@@ -528,9 +536,9 @@ def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
 
 def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
-    Useful for assigning default values to arguments.
-    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
-    `defaults` never fails.
+    Useful for assigning default values to arguments. It ignores the input and
+    always returns `kwargs` converted into `Sequence[KeyValue]`. `defaults`
+    never fails.
 
     &gt;&gt;&gt; defaults(a=1, b=2).parse_args()
     {&#39;a&#39;: 1, &#39;b&#39;: 2}
@@ -558,6 +566,7 @@ def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
 def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     `done` succeds on the end of input and fails on everything else.
+
     &gt;&gt;&gt; done().parse_args()
     {}
     &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
@@ -568,15 +577,15 @@ def done() -&gt; Parser[Sequence[A]]:
     &gt;&gt;&gt; flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
     {&#39;verbose&#39;: True}
 
-    `--quiet` is not parsed here but this does not cause the parser to fail.
-    If we want to prevent leftover inputs, we can use `done`:
+    `--quiet` is not parsed here but this does not cause the parser to fail. If
+    we want to prevent leftover inputs, we can use `done`:
 
     &gt;&gt;&gt; (flag(&#34;verbose&#34;) &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
     usage: --verbose
     Unrecognized argument: --quiet
 
-    `done` is usually necessary to get `nonpositional` to behave in the way that you expect.
-    See `nonpositional` API docs for details.
+    `done` is usually necessary to get `nonpositional` to behave in the way that
+    you expect. See `nonpositional` for details.
     &#34;&#34;&#34;
 
     def f(cs: Sequence[str]) -&gt; Result[Parse[Sequence[A]]]:
@@ -590,7 +599,7 @@ def done() -&gt; Parser[Sequence[A]]:
     return Parser(f, usage=None, helps={})
 
 
-def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+def equals(s: str, peek=False) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
     Checks if the next word is `s`.
 
@@ -602,7 +611,7 @@ def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
 
     Parameters
     ----------
-    peak : bool
+    peek : bool
         If `False`, then the parser will consume the word and return the
         remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
@@ -611,22 +620,22 @@ def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
 
-    Look what happens when `peak=True`:
+    Look what happens when `peek=True`:
 
-    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peek=True) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     usage: hello goodbye
     Expected &#39;goodbye&#39;. Got &#39;hello&#39;
 
-    The first parser didn’t consume the word and so &#34;hello&#34; got passed on to
-    `equals(&#34;goodbye&#34;)`.  But this would work:
+    The first parser didn’t consume the word and so ”hello” got passed on to
+    `equals(&#34;goodbye&#34;)`. But this would work:
 
-    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peek=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
     &#34;&#34;&#34;
-    if peak:
-        return sat_peak(
+    if peek:
+        return sat_peek(
             predicate=lambda _s: _s == s,
             on_fail=lambda _s: UnequalError(
                 left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
@@ -669,7 +678,8 @@ def flag(
     &gt;&gt;&gt; p.parse_args()
     {&#39;verbose&#39;: False}
 
-    By default `flag` fails when it does not receive expected input:
+    By default `flag` fails when it receives uexpected input:
+
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
     &gt;&gt;&gt; p.parse_args()
     usage: --verbose
@@ -684,8 +694,8 @@ def flag(
     verbose: Turn on verbose output.
 
     short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+        Whether to check for the short form of the flag, which uses a single
+        dash and the first character of `dest`, e.g. `-f` for `foo`.
 
     &gt;&gt;&gt; flag(&#34;verbose&#34;, short=True).parse_args(&#34;-v&#34;)  # this is the default
     {&#39;verbose&#39;: True}
@@ -727,7 +737,7 @@ def help_parser(usage: Optional[str], parsed: Monoid1) -&gt; Parser[Monoid1]:
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Monoid1]]:
-        result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
+        result = (equals(&#34;--help&#34;, peek=True) | equals(&#34;-h&#34;, peek=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
         return Result(HelpError(usage=usage or &#34;Usage not provided.&#34;))
@@ -934,7 +944,7 @@ def option(
     return parser if default is None else parser | defaults(**{dest: default})
 
 
-def peak(
+def peek(
     name: str,
     description: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[str]]]:
@@ -1035,7 +1045,7 @@ def sat_item(
     return sat(item(name), _predicate, _on_fail)
 
 
-def sat_peak(
+def sat_peek(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
@@ -1048,7 +1058,7 @@ def sat_peak(
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(peak(name), _predicate, _on_fail)
+    return sat(peek(name), _predicate, _on_fail)
 
 
 def type_(
@@ -1089,7 +1099,8 @@ def type_(
 <span>def <span class="ident">apply</span></span>(<span>f: Callable[[Monoid1], Result[Monoid_co]], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Monoid1]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+Monoid_co]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Takes the output of <code>parser</code> and applies <code>f</code> to it. Convert any errors that arise into <code>ArgumentError</code>.</p>
+<div class="desc"><p>Takes the output of <code>parser</code> and applies <code>f</code> to it. Converts any errors that
+arise into <code>ArgumentError</code>.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;hello&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;--hello&quot;, return_dict=False)
 [('hello', True)]
@@ -1107,7 +1118,8 @@ def type_(
     f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
 ) -&gt; Parser[Monoid_co]:
     &#34;&#34;&#34;
-    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+    Takes the output of `parser` and applies `f` to it. Converts any errors that
+    arise into `ArgumentError`.
 
     &gt;&gt;&gt; p1 = flag(&#34;hello&#34;)
     &gt;&gt;&gt; p1.parse_args(&#34;--hello&#34;, return_dict=False)
@@ -1237,9 +1249,9 @@ The following arguments are required: name
 <span>def <span class="ident">defaults</span></span>(<span>**kwargs: Any) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Useful for assigning default values to arguments.
-It ignore the input and always returns <code>kwargs</code> converted into <code>Sequence[KeyValue]</code>.
-<code><a title="dollar_lambda.parser.defaults" href="#dollar_lambda.parser.defaults">defaults()</a></code> never fails.</p>
+<div class="desc"><p>Useful for assigning default values to arguments. It ignores the input and
+always returns <code>kwargs</code> converted into <code>Sequence[KeyValue]</code>. <code><a title="dollar_lambda.parser.defaults" href="#dollar_lambda.parser.defaults">defaults()</a></code>
+never fails.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; defaults(a=1, b=2).parse_args()
 {'a': 1, 'b': 2}
 &gt;&gt;&gt; (flag(&quot;fails&quot;) | defaults(fails=&quot;succeeds&quot;)).parse_args()
@@ -1264,9 +1276,9 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 </summary>
 <pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
-    Useful for assigning default values to arguments.
-    It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
-    `defaults` never fails.
+    Useful for assigning default values to arguments. It ignores the input and
+    always returns `kwargs` converted into `Sequence[KeyValue]`. `defaults`
+    never fails.
 
     &gt;&gt;&gt; defaults(a=1, b=2).parse_args()
     {&#39;a&#39;: 1, &#39;b&#39;: 2}
@@ -1305,14 +1317,14 @@ Unrecognized argument: arg
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 {'verbose': True}
 </code></pre>
-<p><code>--quiet</code> is not parsed here but this does not cause the parser to fail.
-If we want to prevent leftover inputs, we can use <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code>:</p>
+<p><code>--quiet</code> is not parsed here but this does not cause the parser to fail. If
+we want to prevent leftover inputs, we can use <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 usage: --verbose
 Unrecognized argument: --quiet
 </code></pre>
-<p><code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> to behave in the way that you expect.
-See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> API docs for details.</p></div>
+<p><code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> to behave in the way that
+you expect. See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> for details.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1320,6 +1332,7 @@ See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.par
 <pre><code class="python">def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     `done` succeds on the end of input and fails on everything else.
+
     &gt;&gt;&gt; done().parse_args()
     {}
     &gt;&gt;&gt; done().parse_args(&#34;arg&#34;)
@@ -1330,15 +1343,15 @@ See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.par
     &gt;&gt;&gt; flag(&#34;verbose&#34;).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
     {&#39;verbose&#39;: True}
 
-    `--quiet` is not parsed here but this does not cause the parser to fail.
-    If we want to prevent leftover inputs, we can use `done`:
+    `--quiet` is not parsed here but this does not cause the parser to fail. If
+    we want to prevent leftover inputs, we can use `done`:
 
     &gt;&gt;&gt; (flag(&#34;verbose&#34;) &gt;&gt; done()).parse_args(&#34;--verbose&#34;, &#34;--quiet&#34;)
     usage: --verbose
     Unrecognized argument: --quiet
 
-    `done` is usually necessary to get `nonpositional` to behave in the way that you expect.
-    See `nonpositional` API docs for details.
+    `done` is usually necessary to get `nonpositional` to behave in the way that
+    you expect. See `nonpositional` for details.
     &#34;&#34;&#34;
 
     def f(cs: Sequence[str]) -&gt; Result[Parse[Sequence[A]]]:
@@ -1356,7 +1369,8 @@ See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.par
 <span>def <span class="ident">empty</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Always returns {}, no matter the input. Mostly useful for use in <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>.</p>
+<div class="desc"><p>Always returns <code>{}</code>, no matter the input. Mostly useful for use in
+<code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
 {}
 </code></pre></div>
@@ -1366,7 +1380,9 @@ See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.par
 </summary>
 <pre><code class="python">def empty() -&gt; Parser[Sequence]:
     &#34;&#34;&#34;
-    Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+    Always returns `{}`, no matter the input. Mostly useful for use in
+    `nonpositional`.
+
     &gt;&gt;&gt; empty().parse_args(&#34;any&#34;, &#34;arguments&#34;)
     {}
     &#34;&#34;&#34;
@@ -1374,7 +1390,7 @@ See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.par
 </details>
 </dd>
 <dt id="dollar_lambda.parser.equals"><code class="name flex">
-<span>def <span class="ident">equals</span></span>(<span>s: str, peak=False) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+<span>def <span class="ident">equals</span></span>(<span>s: str, peek=False) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Checks if the next word is <code>s</code>.</p>
@@ -1386,7 +1402,7 @@ Expected 'hello'. Got 'goodbye'
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
+<dt><strong><code>peek</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If <code>False</code>, then the parser will consume the word and return the
 remaining words as <code>unparsed</code>.
 If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
@@ -1395,8 +1411,8 @@ If <code>True</code>, then the parser leaves the <code>unparsed</code> component
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
 </code></pre>
-<p>Look what happens when <code>peak=True</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
+<p>Look what happens when <code>peek=True</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peek=True) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 **```usage```** :&amp;ensp;&lt;code&gt;hello goodbye&lt;/code&gt;
 :   &amp;nbsp;
@@ -1404,10 +1420,9 @@ If <code>True</code>, then the parser leaves the <code>unparsed</code> component
 
 Expected 'goodbye'. Got 'hello'
 </code></pre>
-<p>The first parser didn’t consume the word and so "hello" got passed on to
-<code>equals("goodbye")</code>.
-But this would work:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
+<p>The first parser didn’t consume the word and so ”hello” got passed on to
+<code>equals("goodbye")</code>. But this would work:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peek=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
 </code></pre></div>
@@ -1415,7 +1430,7 @@ But this would work:</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+<pre><code class="python">def equals(s: str, peek=False) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
     Checks if the next word is `s`.
 
@@ -1427,7 +1442,7 @@ But this would work:</p>
 
     Parameters
     ----------
-    peak : bool
+    peek : bool
         If `False`, then the parser will consume the word and return the
         remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
@@ -1436,22 +1451,22 @@ But this would work:</p>
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
 
-    Look what happens when `peak=True`:
+    Look what happens when `peek=True`:
 
-    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peek=True) &gt;&gt; equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     usage: hello goodbye
     Expected &#39;goodbye&#39;. Got &#39;hello&#39;
 
-    The first parser didn’t consume the word and so &#34;hello&#34; got passed on to
-    `equals(&#34;goodbye&#34;)`.  But this would work:
+    The first parser didn’t consume the word and so ”hello” got passed on to
+    `equals(&#34;goodbye&#34;)`. But this would work:
 
-    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peak=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p = equals(&#34;hello&#34;, peek=True) &gt;&gt; equals(&#34;hello&#34;) &gt;&gt;equals(&#34;goodbye&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
     {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
     &#34;&#34;&#34;
-    if peak:
-        return sat_peak(
+    if peek:
+        return sat_peek(
             predicate=lambda _s: _s == s,
             on_fail=lambda _s: UnequalError(
                 left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
@@ -1490,7 +1505,7 @@ But this would work:</p>
 &gt;&gt;&gt; p.parse_args()
 {'verbose': False}
 </code></pre>
-<p>By default <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> fails when it does not receive expected input:</p>
+<p>By default <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> fails when it receives uexpected input:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args()
 **```usage```** :&amp;ensp;`--verbose`
@@ -1513,8 +1528,8 @@ verbose: Turn on verbose output.
 </code></pre>
 <dl>
 <dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to check for the short form of the flag, which
-uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
+<dd>Whether to check for the short form of the flag, which uses a single
+dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
 </dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, short=True).parse_args(&quot;-v&quot;)  # this is the default
 {'verbose': True}
@@ -1562,7 +1577,8 @@ Expected '--verbose'. Got '-v'
     &gt;&gt;&gt; p.parse_args()
     {&#39;verbose&#39;: False}
 
-    By default `flag` fails when it does not receive expected input:
+    By default `flag` fails when it receives uexpected input:
+
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
     &gt;&gt;&gt; p.parse_args()
     usage: --verbose
@@ -1577,8 +1593,8 @@ Expected '--verbose'. Got '-v'
     verbose: Turn on verbose output.
 
     short : bool
-        Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+        Whether to check for the short form of the flag, which uses a single
+        dash and the first character of `dest`, e.g. `-f` for `foo`.
 
     &gt;&gt;&gt; flag(&#34;verbose&#34;, short=True).parse_args(&#34;-v&#34;)  # this is the default
     {&#39;verbose&#39;: True}
@@ -1629,7 +1645,7 @@ Expected '--verbose'. Got '-v'
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Monoid1]]:
-        result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
+        result = (equals(&#34;--help&#34;, peek=True) | equals(&#34;-h&#34;, peek=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
         return Result(HelpError(usage=usage or &#34;Usage not provided.&#34;))
@@ -1942,8 +1958,8 @@ Expected '--count'. Got '-c'
     return parser if default is None else parser | defaults(**{dest: default})</code></pre>
 </details>
 </dd>
-<dt id="dollar_lambda.parser.peak"><code class="name flex">
-<span>def <span class="ident">peak</span></span>(<span>name: str, description: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+<dt id="dollar_lambda.parser.peek"><code class="name flex">
+<span>def <span class="ident">peek</span></span>(<span>name: str, description: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1951,7 +1967,7 @@ Expected '--count'. Got '-c'
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def peak(
+<pre><code class="python">def peek(
     name: str,
     description: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[str]]]:
@@ -2109,8 +2125,8 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
     return sat(item(name), _predicate, _on_fail)</code></pre>
 </details>
 </dd>
-<dt id="dollar_lambda.parser.sat_peak"><code class="name flex">
-<span>def <span class="ident">sat_peak</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+<dt id="dollar_lambda.parser.sat_peek"><code class="name flex">
+<span>def <span class="ident">sat_peek</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2118,7 +2134,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def sat_peak(
+<pre><code class="python">def sat_peek(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
@@ -2131,7 +2147,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(peak(name), _predicate, _on_fail)</code></pre>
+    return sat(peek(name), _predicate, _on_fail)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.type_"><code class="name flex">
@@ -2313,7 +2329,8 @@ class Parser(MonadPlus[A_co]):
         self: Parser[Sequence[A]], other: Parser[Sequence[B]]
     ) -&gt; Parser[Sequence[A | B]]:
         &#34;&#34;&#34;
-        Parse two arguments in either order.
+        Parses two arguments in either order.
+
         &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;debug&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
         {&#39;verbose&#39;: True, &#39;debug&#39;: True}
@@ -2323,7 +2340,9 @@ class Parser(MonadPlus[A_co]):
         usage: --verbose --debug
         Expected &#39;--verbose&#39;. Got &#39;--debug&#39;
 
-        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        Note that if more than two arguments are chained together with `+`, some
+        combinations will not parse:
+
         &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
         &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
         {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
@@ -2332,9 +2351,11 @@ class Parser(MonadPlus[A_co]):
         Expected &#39;-b&#39;. Got &#39;-c&#39;
 
         This makes more sense when one supplies the implicit parentheses:
+
         &gt;&gt;&gt; p = (flag(&#34;a&#34;) + flag(&#34;b&#34;)) + flag(&#34;c&#34;)
 
         In order to chain together more than two arguments, use `nonpositional`:
+
         &gt;&gt;&gt; p = nonpositional(flag(&#34;a&#34;), flag(&#34;b&#34;), flag(&#34;c&#34;))
         &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)
         {&#39;a&#39;: True, &#39;c&#39;: True, &#39;b&#39;: True}
@@ -2773,7 +2794,7 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; Parser[A_co]:
 <span>def <span class="ident">__add__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]], other: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[typing.Union[~A, ~B]]]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parse two arguments in either order.</p>
+<div class="desc"><p>Parses two arguments in either order.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) + flag(&quot;debug&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--debug&quot;)
 {'verbose': True, 'debug': True}
@@ -2783,7 +2804,8 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; Parser[A_co]:
 usage: --verbose --debug
 Expected '--verbose'. Got '--debug'
 </code></pre>
-<p>Note that if more than two arguments are chained together with <code>+</code>, some combinations will not parse:</p>
+<p>Note that if more than two arguments are chained together with <code>+</code>, some
+combinations will not parse:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;a&quot;) + flag(&quot;b&quot;) + flag(&quot;c&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-c&quot;, &quot;-a&quot;, &quot;-b&quot;)   # this works
 {'c': True, 'a': True, 'b': True}
@@ -2807,7 +2829,8 @@ Expected '-b'. Got '-c'
     self: Parser[Sequence[A]], other: Parser[Sequence[B]]
 ) -&gt; Parser[Sequence[A | B]]:
     &#34;&#34;&#34;
-    Parse two arguments in either order.
+    Parses two arguments in either order.
+
     &gt;&gt;&gt; p = flag(&#34;verbose&#34;) + flag(&#34;debug&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--debug&#34;)
     {&#39;verbose&#39;: True, &#39;debug&#39;: True}
@@ -2817,7 +2840,9 @@ Expected '-b'. Got '-c'
     usage: --verbose --debug
     Expected &#39;--verbose&#39;. Got &#39;--debug&#39;
 
-    Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+    Note that if more than two arguments are chained together with `+`, some
+    combinations will not parse:
+
     &gt;&gt;&gt; p = flag(&#34;a&#34;) + flag(&#34;b&#34;) + flag(&#34;c&#34;)
     &gt;&gt;&gt; p.parse_args(&#34;-c&#34;, &#34;-a&#34;, &#34;-b&#34;)   # this works
     {&#39;c&#39;: True, &#39;a&#39;: True, &#39;b&#39;: True}
@@ -2826,9 +2851,11 @@ Expected '-b'. Got '-c'
     Expected &#39;-b&#39;. Got &#39;-c&#39;
 
     This makes more sense when one supplies the implicit parentheses:
+
     &gt;&gt;&gt; p = (flag(&#34;a&#34;) + flag(&#34;b&#34;)) + flag(&#34;c&#34;)
 
     In order to chain together more than two arguments, use `nonpositional`:
+
     &gt;&gt;&gt; p = nonpositional(flag(&#34;a&#34;), flag(&#34;b&#34;), flag(&#34;c&#34;))
     &gt;&gt;&gt; p.parse_args(&#34;-a&#34;, &#34;-c&#34;, &#34;-b&#34;)
     {&#39;a&#39;: True, &#39;c&#39;: True, &#39;b&#39;: True}
@@ -3326,10 +3353,10 @@ If it is, returns the usage message.</dd>
 <li><code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item</a></code></li>
 <li><code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional</a></code></li>
 <li><code><a title="dollar_lambda.parser.option" href="#dollar_lambda.parser.option">option</a></code></li>
-<li><code><a title="dollar_lambda.parser.peak" href="#dollar_lambda.parser.peak">peak</a></code></li>
+<li><code><a title="dollar_lambda.parser.peek" href="#dollar_lambda.parser.peek">peek</a></code></li>
 <li><code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat</a></code></li>
 <li><code><a title="dollar_lambda.parser.sat_item" href="#dollar_lambda.parser.sat_item">sat_item</a></code></li>
-<li><code><a title="dollar_lambda.parser.sat_peak" href="#dollar_lambda.parser.sat_peak">sat_peak</a></code></li>
+<li><code><a title="dollar_lambda.parser.sat_peek" href="#dollar_lambda.parser.sat_peek">sat_peek</a></code></li>
 <li><code><a title="dollar_lambda.parser.type_" href="#dollar_lambda.parser.type_">type_</a></code></li>
 <li><code><a title="dollar_lambda.parser.wrap_help" href="#dollar_lambda.parser.wrap_help">wrap_help</a></code></li>
 </ul>
