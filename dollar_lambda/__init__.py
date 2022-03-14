@@ -36,7 +36,133 @@ You guessed it:
 pip install dollar-lambda
 ```
 
-# Tutorial
+# Tutorial: `$λ` from the top down
+`$λ` comes with syntactic sugar that came make building parsers completely boilerplate-free.
+However, with more concise syntax comes less flexibility. As we go we will demonstrate the
+building blocks that lie behind the syntactic sugae and which enable users to build much more
+logically complex parsers.
+
+## The `command` decorator
+This syntax is best for simple parsers that take a set of unordered arguments:
+
+>>> @command()
+... def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+...
+>>> main("-h")
+usage:
+    -x X
+    -y Y
+    --verbose
+    --quiet
+
+>>> main("-x", "1", "-y", "2", "--verbose")
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+
+`command` takes arguments that allow you to supply
+help strings and custom types:
+
+>>> @command(types=dict(x=lambda x: int(x) + 1, help=dict(x="A number that gets incremented.")))
+... def main(x: int, y: int, verbose: bool = False, quiet: bool = False):
+...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+...
+>>> main("-h")
+usage:
+    -x X
+    -y Y
+    --verbose
+    --quiet
+>>> main("-x", "1", "-y", "2", "--verbose")
+{'x': 2, 'y': 2, 'verbose': True, 'quiet': False}
+
+Under the syntactic sugar, this is how `$λ` would express this logic:
+
+>>> p = nonpositional(
+...     option("x", type=lambda x: int(x) + 1, help="A number that gets incremented."),
+...     option("y", type=int),
+...     flag("verbose", default=False),
+...     flag("quiet", default=False),
+... ) >> done()
+>>> p.parse_args("-h")
+usage:
+    -x X
+    -y Y
+    --verbose
+    --quiet
+x: A number that gets incremented.
+
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+{'x': 2, 'y': 2, 'verbose': True, 'quiet': False}
+
+As you can see `flag` denotes boolean-valued command-line arguments and `option` denotes command-line
+arguments that take explicit parameters. `nonpositional` allows these parsers to be applied in any order
+-- i.e. it takes command-line arguments nonpositionaly. We'll talk more about `>>` and `done` in a bit.
+For now, you can ignore them.
+
+This logic will cover many common use cases. But let's consider a more complex example:
+What if you want `--verbose` and `--quiet` to be mutually exclusive?
+
+## `|` for alternatives
+In order to force a choice between two parsers, you can use `|`:
+
+>>> p = nonpositional(
+...     option("x", type=lambda x: int(x) + 1, help="A number that gets incremented."),
+...     option("y", type=int),
+...     flag("verbose") | flag("quiet")
+... ) >> done()
+>>> p.parse_args("-h")
+usage: -x X -y Y [--verbose | --quiet]
+x: A number that gets incremented.
+
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+{'x': 2, 'y': 2, 'verbose': True}
+
+This will fail if both `--verbose` and `--quiet` are given:
+>>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--quiet")
+usage: -x X -y Y [--verbose | --quiet]
+x: A number that gets incremented.
+Unrecognized argument: --quiet
+
+It will also fail if neither is given:
+>>> p.parse_args("-x", "1", "-y", "2")
+usage: -x X -y Y [--verbose | --quiet]
+x: A number that gets incremented.
+The following arguments are required: --verbose
+
+# `CommadTree` for dynamic dispatch
+What if we wanted to execute one function if the user gave `--verbose` and another if they gave `--quiet`?
+
+>>> tree = CommandTree()
+...
+>>> @tree.command()
+... def base_function(x: int, y: int):
+...     raise RuntimeError("Does not execute because children are required.")
+...
+>>> @base_function.command()
+... def verbose_function(x: int, y: int, verbose: bool):
+...     print(dict(x=x, y=y, verbose=verbose))
+...
+>>> @base_function.command()
+... def quiet_function(x: int, y: int, quiet: bool):
+...     print(dict(x=x, y=y, quiet=quiet))
+>>> tree("-x", "1", "-y", "2", "--verbose")  # execute verbose_function
+{'x': 1, 'y': 2, 'verbose': True}
+>>> tree("-x", "1", "-y", "2", "--quiet")  # execute quiet_function
+{'x': 1, 'y': 2, 'quiet': True}
+>>> tree("-x", "1", "-y", "2")  # fails
+usage: -x X -y Y [--verbose | --quiet]
+The following arguments are required: --verbose
+
+`CommandTree.command` here takes all the same arguments as `command` in addition to one more: `required`.
+
+
+
+
+
+
+For simple parsers,
+
+
 Here is an example developed in the `argparse` tutorial:
 
 ```
