@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
-from typing import Any, Callable, Dict, Iterator, List, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, cast
 
 from pytypeclass.nonempty_list import NonemptyList
 
@@ -167,46 +167,48 @@ class _FunctionPair(Sequence[A]):
         function = other.function if isinstance(other, _FunctionPair) else self.function
         return _FunctionPair(get=[*self, *other], function=function)
 
-
-def _command_parser(
-    func: Callable,
-    usage: Optional[str] = None,
-    help: Optional[Dict[str, str]] = None,
-) -> Parser[_FunctionPair[A]]:
-    _help = {} if help is None else help
-    return Parser[_FunctionPair[A]](
-        lambda cs: Result.return_(
-            Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
-        ),
-        usage=usage,
-        helps=_help,
-    )
-
-
-def _subcommand_parser(
-    func: Callable,
-    usage: Optional[str] = None,
-    help: Optional[Dict[str, str]] = None,
-) -> Parser[_FunctionPair[KeyValue[str]]]:
-    _help = {} if help is None else help
-
-    # def f(
-    #     _: Sequence[KeyValue[str]],
-    # ) -> Parser[FunctionPair[KeyValue[str]]]:
-    #     return Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
-
-    def g(
-        cs: Sequence[str],
-    ) -> Result[Parse[_FunctionPair[KeyValue[str]]]]:
-        return Result.return_(
-            Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+    @classmethod
+    def command(
+        cls: Type["_FunctionPair[A]"],
+        func: Callable,
+        usage: Optional[str] = None,
+        help: Optional[Dict[str, str]] = None,
+    ) -> Parser["_FunctionPair[A]"]:
+        _help = {} if help is None else help
+        return Parser[_FunctionPair[A]](
+            lambda cs: Result.return_(
+                Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
+            ),
+            usage=usage,
+            helps=_help,
         )
 
-    eq = equals(func.__name__)
-    p = eq >= (
-        lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
-    )
-    return replace(p, usage=eq.usage, helps=eq.helps)
+    @classmethod
+    def subcommand(
+        cls: Type["_FunctionPair[A]"],
+        func: Callable,
+        usage: Optional[str] = None,
+        help: Optional[Dict[str, str]] = None,
+    ) -> Parser["_FunctionPair[KeyValue[str]]"]:
+        _help = {} if help is None else help
+
+        # def f(
+        #     _: Sequence[KeyValue[str]],
+        # ) -> Parser[FunctionPair[KeyValue[str]]]:
+        #     return Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+
+        def g(
+            cs: Sequence[str],
+        ) -> Result[Parse[_FunctionPair[KeyValue[str]]]]:
+            return Result.return_(
+                Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+            )
+
+        eq = equals(func.__name__)
+        p = eq >= (
+            lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+        )
+        return replace(p, usage=eq.usage, helps=eq.helps)
 
 
 @dataclass
@@ -222,9 +224,9 @@ class _Node:
 
     def parser(self, *exclude: str) -> Parser[_FunctionPair[KeyValue[Any]]]:
         p1 = (
-            _subcommand_parser(self.function)
+            _FunctionPair[KeyValue[Any]].subcommand(self.function)
             if self.subcommand
-            else _command_parser(self.function)
+            else _FunctionPair[KeyValue[Any]].command(self.function)
         )
         p2 = _func_to_parser(
             self.function,
