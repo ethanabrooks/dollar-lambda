@@ -1,3 +1,6 @@
+all:
+    @just mypy test readme docs
+
 mypy:
 	mypy --show-error-codes --exclude=readme.py dollar_lambda
 
