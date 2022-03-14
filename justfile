@@ -12,5 +12,5 @@ clean:
 pre-commit:
     @just build
 
-just build:
+build:
     ./build
