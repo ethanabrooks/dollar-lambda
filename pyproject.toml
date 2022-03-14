@@ -13,7 +13,6 @@ pytypeclass = {git = "https://github.com/ethanabrooks/pytypeclass.git", rev = "m
 ipdb = "^0.13.9"
 ipython = "^8.0.1"
 black = "^22.1.0"
-pre-commit = "^2.17.0"
 jupyter = "^1.0.0"
 jupytext = "^1.13.7"
 jupyter-http-over-ws = "^0.0.8"

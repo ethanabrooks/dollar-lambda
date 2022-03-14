@@ -4,3 +4,9 @@
 - write docs
 - improve types
 - add Tap-style convenience class
+- build: mypy
+- Is tutorial.py derived?
+- GitHub action
+- Document Nix setup, using ./build, setting up Git commit hook.
+- Does Git commit hook work when ./build changes files?
+- ./build: Format TOML
