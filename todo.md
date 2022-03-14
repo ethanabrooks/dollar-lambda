@@ -6,7 +6,8 @@
 - add Tap-style convenience class
 - build: mypy
 - Is tutorial.py derived?
-- GitHub action
+- GitHub actions
 - Document Nix setup, using ./build, setting up Git commit hook.
 - Does Git commit hook work when ./build changes files?
-- ./build: Format TOML
+- ./build: Pretiffy TOML
+- Flesh out dev.md. Explain which files are derived.
