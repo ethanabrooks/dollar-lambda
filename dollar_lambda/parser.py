@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
 from typing import Any, Callable, Dict, Generator, Generic, Optional, Type, TypeVar
 
-from pytypeclass import Monad, MonadPlus, Monoid
+from pytypeclass import Monad, MonadPlus
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.error import (
@@ -26,9 +26,6 @@ from dollar_lambda.key_value import KeyValue, KeyValueTuple
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
-Monoid_co = TypeVar("Monoid_co", bound=Monoid, covariant=True)
-Monoid1 = TypeVar("Monoid1", bound=Monoid)
-Monoid2 = TypeVar("Monoid2", bound=Monoid)
 A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
 B = TypeVar("B")
@@ -215,7 +212,7 @@ class Parser(MonadPlus[A_co]):
 
         Now let's use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
-        >>> def f(kvs: Sequence(KeyValue[str])) -> Sequence(KeyValue[str]):
+        >>> def f(kvs: Sequence(KeyValue[str])) -> Parser[Sequence[KeyValue[str]]]:
         ...     [kv] = kvs
         ...     return equals(kv.value)
 
@@ -263,7 +260,7 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
-    def many(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
+    def many(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
         """
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -288,7 +285,7 @@ class Parser(MonadPlus[A_co]):
         p = self.many1() | self.empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
-    def many1(self: Parser[Sequence[Monoid1]]) -> Parser[Sequence[Monoid1]]:
+    def many1(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
         """
         Applies `self` one or more times (like `+` in regexes).
 
@@ -303,12 +300,12 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         """
 
-        def g() -> Generator["Parser[Sequence[Monoid1]]", Sequence[Monoid1], None]:
+        def g() -> Generator["Parser[Sequence[A]]", Sequence[A], None]:
             # noinspection PyTypeChecker
-            r1: Sequence[Monoid1] = yield self
+            r1: Sequence[A] = yield self
             # noinspection PyTypeChecker
-            r2: Sequence[Monoid1] = yield self.many()
-            yield Parser[Sequence[Monoid1]].return_(r1 + r2)
+            r2: Sequence[A] = yield self.many()
+            yield Parser[Sequence[A]].return_(r1 + r2)
 
         @lru_cache()
         def f(cs: tuple):
@@ -428,8 +425,8 @@ class Parser(MonadPlus[A_co]):
 
 
 def apply(
-    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]  # type: ignore[misc]
-) -> Parser[Monoid_co]:
+    f: Callable[[A], Result[B]], parser: Parser[A]  # type: ignore[misc]
+) -> Parser[B]:
     """
     Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
 
@@ -443,15 +440,14 @@ def apply(
     [('hello', True), ('hello', True)]
     """
 
-    def g(a: Monoid1) -> Parser[Monoid_co]:
+    def g(a: A) -> Parser[B]:
         try:
             y = f(a)
         except Exception as e:
             usage = f"An argument {a}: raised exception {e}"
             y = Result(ArgumentError(usage))
         return Parser(
-            lambda unparsed: y
-            >= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            lambda cs: y >= (lambda parsed: Result.return_(Parse(parsed, cs))),
             usage=parser.usage,
             helps=parser.helps,
         )
@@ -460,7 +456,7 @@ def apply(
     return replace(p, usage=parser.usage, helps=parser.helps)
 
 
-def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid_co]:
+def apply_item(f: Callable[[str], B], description: str) -> Parser[B]:
     """
     A shortcut for `apply(f, item(description))`
     and spares `f` the trouble of outputting a `Result` object.
@@ -475,7 +471,7 @@ def apply_item(f: Callable[[str], Monoid_co], description: str) -> Parser[Monoid
     [('bare', 'barf')]
     """
 
-    def g(parsed: Sequence[KeyValue[str]]) -> Result[Monoid_co]:
+    def g(parsed: Sequence[KeyValue[str]]) -> Result[B]:
         [kv] = parsed
         try:
             y = f(kv.value)
@@ -711,10 +707,10 @@ def flag(
     return parser if default is None else parser | defaults(**{dest: default})
 
 
-def help_parser(usage: Optional[str], parsed: Monoid1) -> Parser[Monoid1]:
+def help_parser(usage: Optional[str], parsed: A) -> Parser[A]:
     def f(
         cs: Sequence[str],
-    ) -> Result[Parse[Monoid1]]:
+    ) -> Result[Parse[A]]:
         result = (equals("--help", peak=True) | equals("-h", peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
@@ -970,10 +966,10 @@ def peak(
 
 
 def sat(
-    parser: Parser[Monoid1],
-    predicate: Callable[[Monoid1], bool],
-    on_fail: Callable[[Monoid1], ArgumentError],
-) -> Parser[Monoid1]:
+    parser: Parser[A],
+    predicate: Callable[[A], bool],
+    on_fail: Callable[[A], ArgumentError],
+) -> Parser[A]:
     """
     Applies `parser`, applies a predicate to the result and fails if this returns false.
 
@@ -991,16 +987,16 @@ def sat(
 
     Parameters
     ----------
-    parser : Parser[Monoid1]
+    parser : Parser[A]
         The parser to apply.
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `parser` as an argument.
     """
 
-    def f(x: Monoid1) -> Result[Monoid1]:
+    def f(x: A) -> Result[A]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)
@@ -1023,9 +1019,9 @@ def sat_item(
 
     Parameters
     ----------
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `item`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `item` as an argument.
     name: str
