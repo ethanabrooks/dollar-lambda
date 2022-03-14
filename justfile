@@ -1,7 +1,8 @@
-all:
+pre-commit:
     nixfmt --check flake.nix || nixfmt flake.nix
     prettier --write .
-    black .
+    isort --profile black .
+    flake8 dollar_lambda
     mypy --show-error-codes --exclude=readme.py dollar_lambda
     python -m unittest test.py
     @just readme

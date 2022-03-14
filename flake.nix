@@ -20,6 +20,7 @@
               .venv/bin/pip install --upgrade pip
               .venv/bin/pip install poetry
               .venv/bin/poetry install
+              .venv/bin/pre-commit install
             '';
           };
         });
