@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -eu
+
+# The build script generates a Ninja build script and immediately passes it to
+# ninja over stdin.
+#
+# The build script automatically lints and formats files and generating docs,
+# etc.
+#
+# Ninja works well because it’s quick, avoids rebuilds without depending on
+# seeing which Git files were staged, is automatically parallelelized, and does
+# well at making sure generated files aren’t automatically formatted until after
+# they’re generated.
+#
+# Ninja uses timestamps to decide when files need to be rebuilt, so care is
+# taken with some commands like nixfmt and jupyter to make sure timestamp are
+# only updated if files actually change.
+#
+# This script relies on some commands that can be automatically provided by
+# flake.nix.
+
+# TODO mypy
+
+(
+    # The shellcheck-shfmt rule lints a shellscript with shellcheck, formats it
+    # with shfmt, then touches .tmp/shellcheck-shfmt/$in to record that it was
+    # formatted.
+	echo 'rule shellcheck-shfmt'
+	echo '  command = shellcheck --exclude=SC2016 $in && shfmt -s -w $in && touch $out'
+	echo 'build .tmp/shellcheck-shfmt/build: shellcheck-shfmt build'
+
+    # The nixfmt rule formats a Nix file using nixfmt. It touches
+    # .tmp/nixfmt/$in to record that the file was formatted. nixfmt update the
+    # timestamp even if the file didn’t change, so we first check if it needs to
+    # be formatted with nixfmt --check.
+	echo 'rule nixfmt'
+	echo '  command = (nixfmt --check $in || nixfmt $in) && touch $out'
+	echo 'build .tmp/nixfmt/flake.nix: nixfmt flake.nix'
+
+    # The isort-black rule formats a Python file using isort followed by black.
+    # It touches .tmp/isort-black/$in to record that the file was formatted.
+	echo 'rule isort-black'
+	echo '  command = isort --profile black $in && black --quiet $in && touch $out'
+	git ls-files | grep '\.py$' | while read -r filename; do
+		echo "build .tmp/isort-black/$filename: isort-black $filename"
+	done
+
+    # The flake8 rule lints a Python file with flake8. We don’t lint tutorial.py
+    # and readme.py because they’re automatically generated. It touches
+    # .tmp/flake8/$in to record that the file was linted. For each file we
+    # specify that it needs to be formatted with isort-black first.
+	echo 'rule flake8'
+	echo '  command = flake8 $in && touch $out'
+	git ls-files | grep -v 'tutorial.py' | grep -v 'readme.py' | grep '\.py$' | while read -r filename; do
+		echo "build .tmp/flake8/$filename: flake8 $filename || .tmp/isort-black/$filename"
+	done
+
+    # The prettier rule formats the file with Prettier and touches the file
+    # .tmp/prettier/$in to indicate that the file was formatted.
+	echo 'rule prettier'
+	echo '  command = prettier --loglevel warn --write $in && touch $out'
+	git ls-files | grep '\.html$|\.md$|\.yaml$' | while read -r filename; do
+		echo "build .tmp/prettier/$filename: prettier $filename"
+	done
+
+	# The jupytext rule converts a Python file to an IPython Notebook file.
+	# jupytext always updates the timestamp of the input Python file even if it
+	# doesn’t change, which causes unecessary rebuilds, so this command copies
+	# the input file $in with its timestamp preserved to $in.backup using `cp
+	# --archive`. If the backup file and input file end up remaining identical,
+	# the timestamp of the original Python file is reverted back to match the
+	# backup file using `touch --reference`.
+	echo 'rule jupytext'
+	echo '  command = (cp --archive $in $in.backup && jupytext --to notebook $in && diff $in $in.backup && touch --reference=$in.backup $in); rm -f $in.backup'
+	echo 'build readme.ipynb: jupytext readme.py'
+
+	# The jupyter-markdown rule converts an IPython Notebook file to a Markdown
+	# file.
+	echo 'rule jupyter-markdown'
+	echo '  command = DOLLAR_LAMBDA_TESTING=1 jupyter nbconvert --to markdown --execute $in'
+	echo 'build readme.md: jupyter-markdown readme.ipynb'
+	echo "build .tmp/prettier/readme.md: prettier readme.md"
+
+	# The docs rule generates the docs/ directory from dollar_lambda/ using
+	# pdoc3. pdoc3 always emits the results into html/dollar_lambda/, so we copy
+	# it to docs/ then delete the original html/ directory.
+	echo 'rule docs'
+	echo '  command = (pdoc3 --html dollar_lambda && rsync --delete --recursive html/dollar_lambda/ docs/); rm -rf html'
+	git ls-files docs/ | xargs echo 'build docs: docs |'
+) | ninja -f /dev/stdin "$@"

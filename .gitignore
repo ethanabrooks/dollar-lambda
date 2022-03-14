@@ -8,3 +8,5 @@ readme.ipynb
 .DS_Store
 .venv
 ignore.py
+.ninja_log
+.tmp/
