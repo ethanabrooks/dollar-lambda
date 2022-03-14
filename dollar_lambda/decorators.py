@@ -270,7 +270,7 @@ class CommandTree:
 
     At this point tree is just a parser that takes a single option `-a`:
 
-    >>> tree.main("-h")
+    >>> tree("-h")
     usage: -a A
 
     Now let's add a second child function:
@@ -279,18 +279,18 @@ class CommandTree:
     ... def f2(b: bool):
     ...     return dict(f2=dict(b=b))
     ...
-    >>> tree.main("-h")
+    >>> tree("-h")
     usage: [-a A | -b]
 
-    `tree.main` will execute either `f1` or `f2` based on which of the parsers succeeds:
+    `tree` will execute either `f1` or `f2` based on which of the parsers succeeds:
 
-    >>> tree.main("-a", "1")  # this will execute f1
+    >>> tree("-a", "1")  # this will execute f1
     {'f1': {'a': 1}}
 
-    >>> tree.main("-b")  # this will execute f2
+    >>> tree("-b")  # this will execute f2
     {'f2': {'b': True}}
 
-    >>> tree.main()  # fails
+    >>> tree()  # fails
     usage: [-a A | -b]
     The following arguments are required: -a
 
@@ -312,7 +312,7 @@ class CommandTree:
 
     Now this sequences the arguments of f1 and f2:
 
-    >>> tree.main("-h")
+    >>> tree("-h")
     usage: -a A -b
 
     As before we can define an additional child function to induce alternative
@@ -323,15 +323,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Note that our usage message shows `-a A` preceding the brackets:
-    >>> tree.main("-h")
+    >>> tree("-h")
     usage: -a A [-b | -c C]
 
     To execute f2, we give the `-b` flag:
-    >>> tree.main("-a", "1", "-b")
+    >>> tree("-a", "1", "-b")
     {'f2': {'b': True}}
 
     To execute f3, we give the `-c` flag:
-    >>> tree.main("-a", "1", "-c", "foo")
+    >>> tree("-a", "1", "-c", "foo")
     {'f3': {'c': 'foo'}}
 
     Often we want to explicity specify which function to execute by naming it on the command line.
@@ -355,15 +355,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Now the usage message indicates the `f2` and `f3` are required arguments:
-    >>> tree.main("-h")
+    >>> tree("-h")
     usage: -a A [f2 -b | f3 -c C]
 
     Now we would select f2 as follows:
-    >>> tree.main("-a", "1", "f2", "-b")
+    >>> tree("-a", "1", "f2", "-b")
     {'f2': {'b': True}}
 
     And f3 as follows:
-    >>> tree.main("-a", "1", "f3", "-c", "foo")
+    >>> tree("-a", "1", "f3", "-c", "foo")
     {'f3': {'c': 'foo'}}
     """
 
@@ -409,7 +409,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        >>> tree.main("-h")
+        >>> tree("-h")
         usage: --no-b
         b: (default: True)
 
@@ -421,7 +421,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        >>> tree.main("-h")
+        >>> tree("-h")
         usage: -b
         b: (default: True)
 
@@ -443,8 +443,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        >>> tree.main("-a", "1")
+        Now we invoke `tree` without calling `f2` or `f3`:
+        >>> tree("-a", "1")
         {'f1': {'a': 1}}
         """
         return self._decorator(
@@ -483,7 +483,7 @@ class CommandTree:
 
         return wrap_help(reduce(operator.or_, get_alternatives()))
 
-    def main(self, *args: str) -> Any:
+    def __call__(self, *args: str) -> Any:
         """
         Run the parser associated with this tree and execute the
         function associated with a succeeding parser.
@@ -544,7 +544,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        >>> tree.main("-h")
+        >>> tree("-h")
         usage: f1 --no-b
         b: (default: True)
 
@@ -556,7 +556,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        >>> tree.main("-h")
+        >>> tree("-h")
         usage: f1 -b
         b: (default: True)
 
@@ -578,8 +578,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        >>> tree.main("-a", "1")
+        Now we invoke `tree` without calling `f2` or `f3`:
+        >>> tree("-a", "1")
         {'f1': {'a': 1}}
         """
         return self._decorator(

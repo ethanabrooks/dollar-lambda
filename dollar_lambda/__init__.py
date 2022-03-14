@@ -317,16 +317,16 @@ And we make `quiet_function` a second branch:
 ...     print(dict(x=x, y=y, quiet=quiet))
 
 Again we include all arguments from `base_function`.
-Now we can invoke `tree.main` to dynamically dispatch the parsed arguments to the function
+Now we can invoke `tree` to dynamically dispatch the parsed arguments to the function
 whose corresponding parser succeeds first:
 
->>> tree.main("-x", "1", "-y", "2", "--verbose")  # this will dispatch to verbose_function
+>>> tree("-x", "1", "-y", "2", "--verbose")  # this will dispatch to verbose_function
 {'x': 1, 'y': 2, 'verbose': True}
->>> tree.main("-x", "1", "-y", "2", "--quiet")  # this will dispatch to quiet_function
+>>> tree("-x", "1", "-y", "2", "--quiet")  # this will dispatch to quiet_function
 {'x': 1, 'y': 2, 'quiet': True}
->>> tree.main("-x", "1", "-y", "2")  # this will dispatch to base_function
+>>> tree("-x", "1", "-y", "2")  # this will dispatch to base_function
 {'x': 1, 'y': 2}
->>> tree.main("-x", "1", "-y", "2", "--verbose", "--verbose")  # this will fail
+>>> tree("-x", "1", "-y", "2", "--verbose", "--verbose")  # this will fail
 usage: -x X -y Y [--verbose | --quiet]
 x: the base
 y: the exponent
@@ -348,9 +348,9 @@ decorated functions will fail:
 >>> @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
->>> tree.main("-x", "1", "-y", "2", "--verbose")  # succeeds
+>>> tree("-x", "1", "-y", "2", "--verbose")  # succeeds
 {'x': 1, 'y': 2, 'verbose': True}
->>> tree.main("-x", "1", "-y", "2")  # fails
+>>> tree("-x", "1", "-y", "2")  # fails
 usage: -x X -y Y [--verbose | --quiet]
 x: the base
 y: the exponent
@@ -454,7 +454,7 @@ This is also a case where you might want to use `CommandTree`:
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     print(dict(x=x, y=y, quiet=quiet))
 ...
->>> tree.main("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
+>>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
 ### `Parser.many`
