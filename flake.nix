@@ -25,12 +25,8 @@
           # someone to use Poetry to install this Python environment without
           # using Nix and simultaneously take advantage of the benefits of both
           # Nix and Poetry.
-          # TODO fix versions for pip, virtualenv, and poetry.
           shellHook = ''
-            # [ -d .venv ] || python -m venv .venv
-            # .venv/bin/pip install --upgrade pip
-            # .venv/bin/pip install poetry
-            # .venv/bin/poetry install
+            just init-poetry
           '';
         };
       });
