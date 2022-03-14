@@ -13,7 +13,12 @@ init-poetry:
 clean:
     rm -rf .venv .mypy_cache .flake8 .tmp
 
+install-git-hooks:
+    # TODO
+
 pre-commit:
+    # TODO Does this need to automatically run `git add` or something if files
+    #      changed?
     @just build
 
 build:
