@@ -1,5 +1,3 @@
-default:
-
 init-poetry:
     # TODO fix installed Python package versions.
     # TODO can this be any faster?
