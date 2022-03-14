@@ -5,9 +5,7 @@
     (let systems = [ "x86_64-darwin" ];
     in {
       packages = nixpkgs.lib.genAttrs systems (system:
-        let
-          pkgs = (nixpkgs.lib.genAttrs systems
-            (system: import nixpkgs { inherit system; })).${system};
+        let pkgs = import nixpkgs { inherit system; };
         in {
           devShell = pkgs.mkShell {
             buildInputs = [ pkgs.gnumake pkgs.nixfmt pkgs.python310 ];
