@@ -1,454 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, minimum-scale=1"
-    />
-    <meta name="generator" content="pdoc 0.10.0" />
-    <title>dollar_lambda.parser API documentation</title>
-    <meta
-      name="description"
-      content="Defines parsing functions and the `Parser` class that they instantiate."
-    />
-    <link
-      rel="preload stylesheet"
-      as="style"
-      href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css"
-      integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs="
-      crossorigin
-    />
-    <link
-      rel="preload stylesheet"
-      as="style"
-      href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css"
-      integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg="
-      crossorigin
-    />
-    <link
-      rel="stylesheet preload"
-      as="style"
-      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css"
-      crossorigin
-    />
-    <style>
-      :root {
-        --highlight-color: #fe9;
-      }
-      .flex {
-        display: flex !important;
-      }
-      body {
-        line-height: 1.5em;
-      }
-      #content {
-        padding: 20px;
-      }
-      #sidebar {
-        padding: 30px;
-        overflow: hidden;
-      }
-      #sidebar > *:last-child {
-        margin-bottom: 2cm;
-      }
-      .http-server-breadcrumbs {
-        font-size: 130%;
-        margin: 0 0 15px 0;
-      }
-      #footer {
-        font-size: 0.75em;
-        padding: 5px 30px;
-        border-top: 1px solid #ddd;
-        text-align: right;
-      }
-      #footer p {
-        margin: 0 0 0 1em;
-        display: inline-block;
-      }
-      #footer p:last-child {
-        margin-right: 30px;
-      }
-      h1,
-      h2,
-      h3,
-      h4,
-      h5 {
-        font-weight: 300;
-      }
-      h1 {
-        font-size: 2.5em;
-        line-height: 1.1em;
-      }
-      h2 {
-        font-size: 1.75em;
-        margin: 1em 0 0.5em 0;
-      }
-      h3 {
-        font-size: 1.4em;
-        margin: 25px 0 10px 0;
-      }
-      h4 {
-        margin: 0;
-        font-size: 105%;
-      }
-      h1:target,
-      h2:target,
-      h3:target,
-      h4:target,
-      h5:target,
-      h6:target {
-        background: var(--highlight-color);
-        padding: 0.2em 0;
-      }
-      a {
-        color: #058;
-        text-decoration: none;
-        transition: color 0.3s ease-in-out;
-      }
-      a:hover {
-        color: #e82;
-      }
-      .title code {
-        font-weight: bold;
-      }
-      h2[id^="header-"] {
-        margin-top: 2em;
-      }
-      .ident {
-        color: #900;
-      }
-      pre code {
-        background: #f8f8f8;
-        font-size: 0.8em;
-        line-height: 1.4em;
-      }
-      code {
-        background: #f2f2f1;
-        padding: 1px 4px;
-        overflow-wrap: break-word;
-      }
-      h1 code {
-        background: transparent;
-      }
-      pre {
-        background: #f8f8f8;
-        border: 0;
-        border-top: 1px solid #ccc;
-        border-bottom: 1px solid #ccc;
-        margin: 1em 0;
-        padding: 1ex;
-      }
-      #http-server-module-list {
-        display: flex;
-        flex-flow: column;
-      }
-      #http-server-module-list div {
-        display: flex;
-      }
-      #http-server-module-list dt {
-        min-width: 10%;
-      }
-      #http-server-module-list p {
-        margin-top: 0;
-      }
-      .toc ul,
-      #index {
-        list-style-type: none;
-        margin: 0;
-        padding: 0;
-      }
-      #index code {
-        background: transparent;
-      }
-      #index h3 {
-        border-bottom: 1px solid #ddd;
-      }
-      #index ul {
-        padding: 0;
-      }
-      #index h4 {
-        margin-top: 0.6em;
-        font-weight: bold;
-      }
-      @media (min-width: 200ex) {
-        #index .two-column {
-          column-count: 2;
-        }
-      }
-      @media (min-width: 300ex) {
-        #index .two-column {
-          column-count: 3;
-        }
-      }
-      dl {
-        margin-bottom: 2em;
-      }
-      dl dl:last-child {
-        margin-bottom: 4em;
-      }
-      dd {
-        margin: 0 0 1em 3em;
-      }
-      #header-classes + dl > dd {
-        margin-bottom: 3em;
-      }
-      dd dd {
-        margin-left: 2em;
-      }
-      dd p {
-        margin: 10px 0;
-      }
-      .name {
-        background: #eee;
-        font-weight: bold;
-        font-size: 0.85em;
-        padding: 5px 10px;
-        display: inline-block;
-        min-width: 40%;
-      }
-      .name:hover {
-        background: #e0e0e0;
-      }
-      dt:target .name {
-        background: var(--highlight-color);
-      }
-      .name > span:first-child {
-        white-space: nowrap;
-      }
-      .name.class > span:nth-child(2) {
-        margin-left: 0.4em;
-      }
-      .inherited {
-        color: #999;
-        border-left: 5px solid #eee;
-        padding-left: 1em;
-      }
-      .inheritance em {
-        font-style: normal;
-        font-weight: bold;
-      }
-      .desc h2 {
-        font-weight: 400;
-        font-size: 1.25em;
-      }
-      .desc h3 {
-        font-size: 1em;
-      }
-      .desc dt code {
-        background: inherit;
-      }
-      .source summary,
-      .git-link-div {
-        color: #666;
-        text-align: right;
-        font-weight: 400;
-        font-size: 0.8em;
-        text-transform: uppercase;
-      }
-      .source summary > * {
-        white-space: nowrap;
-        cursor: pointer;
-      }
-      .git-link {
-        color: inherit;
-        margin-left: 1em;
-      }
-      .source pre {
-        max-height: 500px;
-        overflow: auto;
-        margin: 0;
-      }
-      .source pre code {
-        font-size: 12px;
-        overflow: visible;
-      }
-      .hlist {
-        list-style: none;
-      }
-      .hlist li {
-        display: inline;
-      }
-      .hlist li:after {
-        content: ",\2002";
-      }
-      .hlist li:last-child:after {
-        content: none;
-      }
-      .hlist .hlist {
-        display: inline;
-        padding-left: 1em;
-      }
-      img {
-        max-width: 100%;
-      }
-      td {
-        padding: 0 0.5em;
-      }
-      .admonition {
-        padding: 0.1em 0.5em;
-        margin-bottom: 1em;
-      }
-      .admonition-title {
-        font-weight: bold;
-      }
-      .admonition.note,
-      .admonition.info,
-      .admonition.important {
-        background: #aef;
-      }
-      .admonition.todo,
-      .admonition.versionadded,
-      .admonition.tip,
-      .admonition.hint {
-        background: #dfd;
-      }
-      .admonition.warning,
-      .admonition.versionchanged,
-      .admonition.deprecated {
-        background: #fd4;
-      }
-      .admonition.error,
-      .admonition.danger,
-      .admonition.caution {
-        background: lightpink;
-      }
-    </style>
-    <style media="screen and (min-width: 700px)">
-      @media screen and (min-width: 700px) {
-        #sidebar {
-          width: 30%;
-          height: 100vh;
-          overflow: auto;
-          position: sticky;
-          top: 0;
-        }
-        #content {
-          width: 70%;
-          max-width: 100ch;
-          padding: 3em 4em;
-          border-left: 1px solid #ddd;
-        }
-        pre code {
-          font-size: 1em;
-        }
-        .item .name {
-          font-size: 1em;
-        }
-        main {
-          display: flex;
-          flex-direction: row-reverse;
-          justify-content: flex-end;
-        }
-        .toc ul ul,
-        #index ul {
-          padding-left: 1.5em;
-        }
-        .toc > ul > li {
-          margin-top: 0.5em;
-        }
-      }
-    </style>
-    <style media="print">
-      @media print {
-        #sidebar h1 {
-          page-break-before: always;
-        }
-        .source {
-          display: none;
-        }
-      }
-      @media print {
-        * {
-          background: transparent !important;
-          color: #000 !important;
-          box-shadow: none !important;
-          text-shadow: none !important;
-        }
-        a[href]:after {
-          content: " (" attr(href) ")";
-          font-size: 90%;
-        }
-        a[href][title]:after {
-          content: none;
-        }
-        abbr[title]:after {
-          content: " (" attr(title) ")";
-        }
-        .ir a:after,
-        a[href^="javascript:"]:after,
-        a[href^="#"]:after {
-          content: "";
-        }
-        pre,
-        blockquote {
-          border: 1px solid #999;
-          page-break-inside: avoid;
-        }
-        thead {
-          display: table-header-group;
-        }
-        tr,
-        img {
-          page-break-inside: avoid;
-        }
-        img {
-          max-width: 100% !important;
-        }
-        @page {
-          margin: 0.5cm;
-        }
-        p,
-        h2,
-        h3 {
-          orphans: 3;
-          widows: 3;
-        }
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-          page-break-after: avoid;
-        }
-      }
-    </style>
-    <script
-      defer
-      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"
-      integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8="
-      crossorigin
-    ></script>
-    <script>
-      window.addEventListener("DOMContentLoaded", () =>
-        hljs.initHighlighting()
-      );
-    </script>
-  </head>
-  <body>
-    <main>
-      <article id="content">
-        <header>
-          <h1 class="title">Module <code>dollar_lambda.parser</code></h1>
-        </header>
-        <section id="section-intro">
-          <p>
-            Defines parsing functions and the
-            <code
-              ><a
-                title="dollar_lambda.parser.Parser"
-                href="#dollar_lambda.parser.Parser"
-                >Parser</a
-              ></code
-            >
-            class that they instantiate.
-          </p>
-          <details class="source">
-            <summary>
-              <span>Expand source code</span>
-            </summary>
-            <pre><code class="python">&#34;&#34;&#34;
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>dollar_lambda.parser API documentation</title>
+<meta name="description" content="Defines parsing functions and the `Parser` class that they instantiate." />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>dollar_lambda.parser</code></h1>
+</header>
+<section id="section-intro">
+<p>Defines parsing functions and the <code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code> class that they instantiate.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
 Defines parsing functions and the `Parser` class that they instantiate.
 &#34;&#34;&#34;
 # pyright: reportGeneralTypeIssues=false
@@ -1530,51 +1109,34 @@ def type_(
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>
-          </details>
-        </section>
-        <section></section>
-        <section></section>
-        <section>
-          <h2 class="section-title" id="header-functions">Functions</h2>
-          <dl>
-            <dt id="dollar_lambda.parser.apply">
-              <code class="name flex">
-                <span>def <span class="ident">apply</span></span
-                >(<span
-                  >f: Callable[[A], Result[B]], parser: <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[A]) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[~B]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Takes the output of <code>parser</code> and applies
-                  <code>f</code> to it. Convert any errors that arise into
-                  <code>ArgumentError</code>.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;hello&quot;)
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dollar_lambda.parser.apply"><code class="name flex">
+<span>def <span class="ident">apply</span></span>(<span>f: Callable[[A], Result[B]], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Takes the output of <code>parser</code> and applies <code>f</code> to it. Convert any errors that arise into <code>ArgumentError</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;hello&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;--hello&quot;, return_dict=False)
 [('hello', True)]
 </code></pre>
-                <p>This will double <code>p1</code>'s output:</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
+<p>This will double <code>p1</code>'s output:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply(lambda kv: Result.return_(kv + kv), p1)
 &gt;&gt;&gt; p2.parse_args(&quot;--hello&quot;, return_dict=False)
 [('hello', True), ('hello', True)]
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def apply(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply(
     f: Callable[[A], Result[B]], parser: Parser[A]  # type: ignore[misc]
 ) -&gt; Parser[B]:
     &#34;&#34;&#34;
@@ -1604,64 +1166,28 @@ def type_(
 
     p = parser &gt;= g
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.apply_item">
-              <code class="name flex">
-                <span>def <span class="ident">apply_item</span></span
-                >(<span
-                  >f: Callable[[str], B], description: str) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[~B]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  A shortcut for
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.apply"
-                      href="#dollar_lambda.parser.apply"
-                      >apply()</a
-                    >(f,
-                    <a
-                      title="dollar_lambda.parser.item"
-                      href="#dollar_lambda.parser.item"
-                      >item()</a
-                    >(description))</code
-                  >
-                  and spares <code>f</code> the trouble of outputting a
-                  <code>Result</code> object.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;foo&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.apply_item"><code class="name flex">
+<span>def <span class="ident">apply_item</span></span>(<span>f: Callable[[str], B], description: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A shortcut for <code><a title="dollar_lambda.parser.apply" href="#dollar_lambda.parser.apply">apply()</a>(f, <a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a>(description))</code>
+and spares <code>f</code> the trouble of outputting a <code>Result</code> object.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;foo&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;bar&quot;, return_dict=False)
 [('foo', 'bar')]
 </code></pre>
-                <p>
-                  Here we use <code>f</code> to directly manipulate the binding
-                  generated by
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.item"
-                      href="#dollar_lambda.parser.item"
-                      >item()</a
-                    ></code
-                  >:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply_item(lambda bar: [KeyValue(bar + &quot;e&quot;, bar + &quot;f&quot;)], description=&quot;baz&quot;)
+<p>Here we use <code>f</code> to directly manipulate the binding generated by <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p2 = apply_item(lambda bar: [KeyValue(bar + &quot;e&quot;, bar + &quot;f&quot;)], description=&quot;baz&quot;)
 &gt;&gt;&gt; p2.parse_args(&quot;bar&quot;, return_dict=False)
 [('bare', 'barf')]
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def apply_item(f: Callable[[str], B], description: str) -&gt; Parser[B]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_item(f: Callable[[str], B], description: str) -&gt; Parser[B]:
     &#34;&#34;&#34;
     A shortcut for `apply(f, item(description))`
     and spares `f` the trouble of outputting a `Result` object.
@@ -1686,46 +1212,25 @@ def type_(
         return Result.return_(y)
 
     return apply(g, item(description))</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.argument">
-              <code class="name flex">
-                <span>def <span class="ident">argument</span></span
-                >(<span
-                  >dest: str) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Parses a single word and binds it to <code>dest</code>. Useful
-                  for positional arguments.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;name&quot;).parse_args(&quot;Alice&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.argument"><code class="name flex">
+<span>def <span class="ident">argument</span></span>(<span>dest: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parses a single word and binds it to <code>dest</code>.
+Useful for positional arguments.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;name&quot;).parse_args(&quot;Alice&quot;)
 {'name': 'Alice'}
 &gt;&gt;&gt; argument(&quot;name&quot;).parse_args()
 usage: name
 The following arguments are required: name
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def argument(dest: str) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
     Parses a single word and binds it to `dest`.
     Useful for positional arguments.
@@ -1737,28 +1242,18 @@ The following arguments are required: name
     The following arguments are required: name
     &#34;&#34;&#34;
     return item(dest)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.binary_usage">
-              <code class="name flex">
-                <span>def <span class="ident">binary_usage</span></span
-                >(<span
-                  >a: Optional[str], op: str, b: Optional[str],
-                  add_brackets=True)</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Utility for generating usage strings for binary operators.
-                </p>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
+</details>
+</dd>
+<dt id="dollar_lambda.parser.binary_usage"><code class="name flex">
+<span>def <span class="ident">binary_usage</span></span>(<span>a: Optional[str], op: str, b: Optional[str], add_brackets=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Utility for generating usage strings for binary operators.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
     &#34;&#34;&#34;
     Utility for generating usage strings for binary operators.
     &#34;&#34;&#34;
@@ -1767,50 +1262,22 @@ The following arguments are required: name
     if len(no_nones) &gt; 1 and add_brackets:
         usage = f&#34;[{usage}]&#34;
     return usage or None</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.defaults">
-              <code class="name flex">
-                <span>def <span class="ident">defaults</span></span
-                >(<span
-                  >**kwargs: Any) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[typing.Any]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Useful for assigning default values to arguments. It ignore
-                  the input and always returns <code>kwargs</code> converted
-                  into <code>Sequence[KeyValue]</code>.
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.defaults"
-                      href="#dollar_lambda.parser.defaults"
-                      >defaults()</a
-                    ></code
-                  >
-                  never fails.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; defaults(a=1, b=2).parse_args()
+</details>
+</dd>
+<dt id="dollar_lambda.parser.defaults"><code class="name flex">
+<span>def <span class="ident">defaults</span></span>(<span>**kwargs: Any) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Useful for assigning default values to arguments.
+It ignore the input and always returns <code>kwargs</code> converted into <code>Sequence[KeyValue]</code>.
+<code><a title="dollar_lambda.parser.defaults" href="#dollar_lambda.parser.defaults">defaults()</a></code> never fails.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; defaults(a=1, b=2).parse_args()
 {'a': 1, 'b': 2}
 &gt;&gt;&gt; (flag(&quot;fails&quot;) | defaults(fails=&quot;succeeds&quot;)).parse_args()
 {'fails': 'succeeds'}
 </code></pre>
-                <p>Here's a more complex example derived from the tutorial:</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
+<p>Here's a more complex example derived from the tutorial:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(
 ...     (
 ...         flag(&quot;verbose&quot;) + defaults(quiet=False)  # either --verbose and default &quot;quiet&quot; to False
 ...         | flag(&quot;quiet&quot;) + defaults(verbose=False)  # or --quiet and default &quot;verbose&quot; to False
@@ -1819,15 +1286,14 @@ The following arguments are required: name
 ...     option(&quot;y&quot;, type=int, help=&quot;the exponent&quot;),
 ... ) &gt;&gt; done()
 </code></pre>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
     Useful for assigning default values to arguments.
     It ignore the input and always returns `kwargs` converted into `Sequence[KeyValue]`.
@@ -1853,103 +1319,35 @@ The following arguments are required: name
     &#34;&#34;&#34;
     p = Parser.return_(Sequence([KeyValue(k, v) for k, v in kwargs.items()]))
     return replace(p, usage=None)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.done">
-              <code class="name flex">
-                <span>def <span class="ident">done</span></span
-                >(<span
-                  >) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[~A]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >
-                  succeds on the end of input and fails on everything else.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; done().parse_args()
+</details>
+</dd>
+<dt id="dollar_lambda.parser.done"><code class="name flex">
+<span>def <span class="ident">done</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p><code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> succeds on the end of input and fails on everything else.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; done().parse_args()
 {}
 &gt;&gt;&gt; done().parse_args(&quot;arg&quot;)
 Unrecognized argument: arg
 </code></pre>
-                <p>
-                  Without
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >
-                  the parser will not complain about leftover (unparsed) input:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
+<p>Without <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> the parser will not complain about leftover (unparsed) input:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 {'verbose': True}
 </code></pre>
-                <p>
-                  <code>--quiet</code> is not parsed here but this does not
-                  cause the parser to fail. If we want to prevent leftover
-                  inputs, we can use
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
+<p><code>--quiet</code> is not parsed here but this does not cause the parser to fail.
+If we want to prevent leftover inputs, we can use <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 usage: --verbose
 Unrecognized argument: --quiet
 </code></pre>
-                <p>
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >
-                  is usually necessary to get
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >
-                  to behave in the way that you expect. See
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >
-                  API docs for details.
-                </p>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def done() -&gt; Parser[Sequence[A]]:
+<p><code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> is usually necessary to get <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> to behave in the way that you expect.
+See <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> API docs for details.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     `done` succeds on the end of input and fails on everything else.
     &gt;&gt;&gt; done().parse_args()
@@ -1982,127 +1380,70 @@ Unrecognized argument: --quiet
         return Result(NonemptyList(Parse(parsed=Sequence([]), unparsed=cs)))
 
     return Parser(f, usage=None, helps={})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.empty">
-              <code class="name flex">
-                <span>def <span class="ident">empty</span></span
-                >(<span
-                  >) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Always returns {}, no matter the input. Mostly useful for use
-                  in
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.empty"><code class="name flex">
+<span>def <span class="ident">empty</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Always returns {}, no matter the input. Mostly useful for use in <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
 {}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def empty() -&gt; Parser[Sequence]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def empty() -&gt; Parser[Sequence]:
     &#34;&#34;&#34;
     Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
     &gt;&gt;&gt; empty().parse_args(&#34;any&#34;, &#34;arguments&#34;)
     {}
     &#34;&#34;&#34;
     return Parser[Sequence[A]].empty()</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.equals">
-              <code class="name flex">
-                <span>def <span class="ident">equals</span></span
-                >(<span
-                  >s: str, peak=False) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>Checks if the next word is <code>s</code>.</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;hello&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.equals"><code class="name flex">
+<span>def <span class="ident">equals</span></span>(<span>s: str, peak=False) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Checks if the next word is <code>s</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;hello&quot;)
 {'hello': 'hello'}
 &gt;&gt;&gt; equals(&quot;hello&quot;).parse_args(&quot;goodbye&quot;)
 usage: hello
 Expected 'hello'. Got 'goodbye'
 </code></pre>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>s</code></strong> :&ensp;<code>str</code>
-                  </dt>
-                  <dd>
-                    The word to that input will be checked against for equality.
-                  </dd>
-                  <dt>
-                    <strong><code>peak</code></strong> :&ensp;<code>bool</code>
-                  </dt>
-                  <dd>
-                    If <code>False</code>, then the parser will consume the word
-                    and return the remaining words as <code>unparsed</code>. If
-                    <code>True</code>, then the parser leaves the
-                    <code>unparsed</code> component unchanged.
-                  </dd>
-                </dl>
-                <h2 id="examples">Examples</h2>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>s</code></strong> :&ensp;<code>str</code></dt>
+<dd>The word to that input will be checked against for equality.</dd>
+<dt><strong><code>peak</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If <code>False</code>, then the parser will consume the word and return the remaining words as <code>unparsed</code>.
+If <code>True</code>, then the parser leaves the <code>unparsed</code> component unchanged.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
 </code></pre>
-                <p>Look what happens when <code>peak=True</code>:</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
+<p>Look what happens when <code>peak=True</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 usage: hello goodbye
 Expected 'goodbye'. Got 'hello'
 </code></pre>
-                <p>
-                  The first parser didn't consume the word and so "hello" got
-                  passed on to <code>equals("goodbye")</code>. But this would
-                  work:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
+<p>The first parser didn't consume the word and so "hello" got passed on to <code>equals("goodbye")</code>.
+But this would work:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = equals(&quot;hello&quot;, peak=True) &gt;&gt; equals(&quot;hello&quot;) &gt;&gt;equals(&quot;goodbye&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;hello&quot;, &quot;goodbye&quot;)
 {'hello': 'hello', 'goodbye': 'goodbye'}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def equals(s: str, peak=False) -&gt; Parser[Sequence[KeyValue[str]]]:
     &#34;&#34;&#34;
     Checks if the next word is `s`.
 
@@ -2155,124 +1496,65 @@ Expected 'goodbye'. Got 'hello'
             ),
             name=s,
         )</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.flag">
-              <code class="name flex">
-                <span>def <span class="ident">flag</span></span
-                >(<span
-                  >dest: str, default: Optional[bool] = None,
-                  help: Optional[str] = None, short: bool = True,
-                  string: Optional[str] = None) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[bool]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>Binds a boolean value to a variable.</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.flag"><code class="name flex">
+<span>def <span class="ident">flag</span></span>(<span>dest: str, default: Optional[bool] = None, help: Optional[str] = None, short: bool = True, string: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[bool]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Binds a boolean value to a variable.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
 </code></pre>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>dest</code></strong> :&ensp;<code>str</code>
-                  </dt>
-                  <dd>The variable to which the value will be bound.</dd>
-                  <dt>
-                    <strong><code>default</code></strong> :&ensp;<code
-                      >Optional[bool]</code
-                    >
-                  </dt>
-                  <dd>An optional default value.</dd>
-                  <dt>
-                    <strong><code>help</code></strong> :&ensp;<code
-                      >Optional[str]</code
-                    >
-                  </dt>
-                  <dd>An optional help string.</dd>
-                  <dt>
-                    <strong><code>short</code></strong> :&ensp;<code>bool</code>
-                  </dt>
-                  <dd>
-                    Whether to check for the short form of the flag, which uses
-                    a single dash and the first character of <code>dest</code>,
-                    e.g. <code>-f</code> for <code>foo</code>.
-                  </dd>
-                  <dt>
-                    <strong><code>string</code></strong> :&ensp;<code
-                      >Optional[str]</code
-                    >
-                  </dt>
-                  <dd>
-                    A custom string to use for the flag. Defaults to
-                    <code>--{dest}</code>.
-                  </dd>
-                </dl>
-                <h2 id="examples">Examples</h2>
-                <p>
-                  Here is an example using the <code>default</code> parameter:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
+<dd>The variable to which the value will be bound.</dd>
+<dt><strong><code>default</code></strong> :&ensp;<code>Optional[bool]</code></dt>
+<dd>An optional default value.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>An optional help string.</dd>
+<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to check for the short form of the flag, which
+uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
+<dt><strong><code>string</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>A custom string to use for the flag. Defaults to <code>--{dest}</code>.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<p>Here is an example using the <code>default</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, default=False)
 &gt;&gt;&gt; p.parse_args()
 {'verbose': False}
 </code></pre>
-                <p>
-                  By default
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.flag"
-                      href="#dollar_lambda.parser.flag"
-                      >flag()</a
-                    ></code
-                  >
-                  fails when it does not receive expected input:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
+<p>By default <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> fails when it does not receive expected input:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args()
 usage: --verbose
 The following arguments are required: --verbose
 </code></pre>
-                <p>Here is an example using the <code>help</code> parameter:</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, help=&quot;Turn on verbose output.&quot;)
+<p>Here is an example using the <code>help</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;, help=&quot;Turn on verbose output.&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
 usage: --verbose
 verbose: Turn on verbose output.
 </code></pre>
-                <p>
-                  Here is an example using the <code>short</code> parameter:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, short=True).parse_args(&quot;-v&quot;)  # this is the default
+<p>Here is an example using the <code>short</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;verbose&quot;, short=True).parse_args(&quot;-v&quot;)  # this is the default
 {'verbose': True}
 &gt;&gt;&gt; flag(&quot;verbose&quot;, short=False).parse_args(&quot;-v&quot;)  # fails
 usage: --verbose
 Expected '--verbose'. Got '-v'
 </code></pre>
-                <p>
-                  Here is an example using the <code>string</code> parameter:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;value&quot;, string=&quot;v&quot;).parse_args(&quot;v&quot;)  # note that string does not have to start with -
+<p>Here is an example using the <code>string</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flag(&quot;value&quot;, string=&quot;v&quot;).parse_args(&quot;v&quot;)  # note that string does not have to start with -
 {'value': True}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def flag(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flag(
     dest: str,
     default: Optional[bool] = None,
     help: Optional[str] = None,
@@ -2362,27 +1644,18 @@ Expected '--verbose'. Got '-v'
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=_string, helps=helps)
     return parser if default is None else parser | defaults(**{dest: default})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.help_parser">
-              <code class="name flex">
-                <span>def <span class="ident">help_parser</span></span
-                >(<span
-                  >usage: Optional[str], parsed: A) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[~A]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc"></div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def help_parser(usage: Optional[str], parsed: A) -&gt; Parser[A]:
+</details>
+</dd>
+<dt id="dollar_lambda.parser.help_parser"><code class="name flex">
+<span>def <span class="ident">help_parser</span></span>(<span>usage: Optional[str], parsed: A) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def help_parser(usage: Optional[str], parsed: A) -&gt; Parser[A]:
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[A]]:
@@ -2392,57 +1665,32 @@ Expected '--verbose'. Got '-v'
         return Result(HelpError(usage=usage or &#34;Usage not provided.&#34;))
 
     return Parser(f, usage=None, helps={})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.item">
-              <code class="name flex">
-                <span>def <span class="ident">item</span></span
-                >(<span
-                  >name: str, help_name: Optional[str] = None) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Parses a single word and binds it to <code>dest</code>. One of
-                  the lowest level building blocks for parsers.
-                </p>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>help_name</code></strong> :&ensp;<code
-                      >Optional[str]</code
-                    >
-                  </dt>
-                  <dd>Used for generating help text</dd>
-                </dl>
-                <h2 id="examples">Examples</h2>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = item(&quot;name&quot;, help_name=&quot;Your first name&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.item"><code class="name flex">
+<span>def <span class="ident">item</span></span>(<span>name: str, help_name: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parses a single word and binds it to <code>dest</code>.
+One of the lowest level building blocks for parsers.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>help_name</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>Used for generating help text</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = item(&quot;name&quot;, help_name=&quot;Your first name&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;Alice&quot;)
 {'name': 'Alice'}
 &gt;&gt;&gt; p.parse_args()
 usage: name
 The following arguments are required: Your first name
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def item(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def item(
     name: str,
     help_name: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[str]]]:
@@ -2487,132 +1735,48 @@ The following arguments are required: Your first name
         )
 
     return Parser(f, usage=name, helps={})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.nonpositional">
-              <code class="name flex">
-                <span>def <span class="ident">nonpositional</span></span
-                >(<span
-                  >*parsers: "'<a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[Sequence[A]]'") ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[~A]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >
-                  takes a sequence of parsers as arguments and attempts all
-                  permutations of them, returning the first permutations that is
-                  successful:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;), flag(&quot;quiet&quot;))
+</details>
+</dd>
+<dt id="dollar_lambda.parser.nonpositional"><code class="name flex">
+<span>def <span class="ident">nonpositional</span></span>(<span>*parsers: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]'") ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p><code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> takes a sequence of parsers as arguments and attempts all permutations of them,
+returning the first permutations that is successful:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;), flag(&quot;quiet&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;)
 {'verbose': True, 'quiet': True}
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # reverse order also works
 {'quiet': True, 'verbose': True}
 </code></pre>
-                <p>
-                  If alternatives or defaults appear among the arguments to
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >, you will probably want to add
-                  <code>&gt;&gt;</code> followed by
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >
-                  (or another parser) after
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >. Otherwise, the parser will not behave as expected:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;))
+<p>If alternatives or defaults appear among the arguments to <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>, you will probably want
+to add <code>&gt;&gt;</code> followed by <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> (or another parser) after <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>. Otherwise,
+the parser will not behave as expected:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)  # you expect this to set verbose to True, but it doesn't
 {'verbose': False, 'quiet': True}
 </code></pre>
-                <p>Why is happening? There are two permutions:</p>
-                <ul>
-                  <li>
-                    <code
-                      >flag("verbose", default=False) &gt;&gt;
-                      flag("quiet")</code
-                    >
-                    and
-                  </li>
-                  <li>
-                    <code
-                      >flag("quiet") &gt;&gt; flag("verbose",
-                      default=False)</code
-                    >
-                  </li>
-                </ul>
-                <p>
-                  In our example, both permutations are actually succeeding.
-                  This first succeeds by falling back to the default, and
-                  leaving the last word of the input, <code>--verbose</code>,
-                  unparsed. Either interpretation is valid, and
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.nonpositional"
-                      href="#dollar_lambda.parser.nonpositional"
-                      >nonpositional()</a
-                    ></code
-                  >
-                  returns one arbitrarily &ndash; just not the one we expected.
-                </p>
-                <p>Now let's add <code>&gt;&gt; done()</code> to the end:</p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;)) &gt;&gt; done()
+<p>Why is happening? There are two permutions:</p>
+<ul>
+<li><code>flag("verbose", default=False) &gt;&gt; flag("quiet")</code> and</li>
+<li><code>flag("quiet") &gt;&gt; flag("verbose", default=False)</code></li>
+</ul>
+<p>In our example, both permutations are actually succeeding. This first succeeds by falling
+back to the default, and leaving the last word of the input, <code>--verbose</code>, unparsed.
+Either interpretation is valid, and <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> returns one arbitrarily &ndash; just not the one we expected.</p>
+<p>Now let's add <code>&gt;&gt; done()</code> to the end:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;verbose&quot;, default=False), flag(&quot;quiet&quot;)) &gt;&gt; done()
 </code></pre>
-                <p>
-                  This ensures that the first permutation will fail because the
-                  leftover <code>--verbose</code> input will cause the
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.done"
-                      href="#dollar_lambda.parser.done"
-                      >done()</a
-                    ></code
-                  >
-                  parser to fail:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)
+<p>This ensures that the first permutation will fail because the leftover <code>--verbose</code> input will
+cause the <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> parser to fail:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--quiet&quot;, &quot;--verbose&quot;)
 {'quiet': True, 'verbose': True}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def nonpositional(*parsers: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Sequence[A]]&#34;:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def nonpositional(*parsers: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Sequence[A]]&#34;:
     &#34;&#34;&#34;
     `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
     returning the first permutations that is successful:
@@ -2659,142 +1823,67 @@ The following arguments are required: Your first name
     parser = reduce(operator.or_, get_alternatives())
     sep = &#34; &#34; if len(parsers) &lt;= 3 else &#34;\n&#34;
     return replace(parser, usage=sep.join([p.usage or &#34;&#34; for p in parsers]))</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.option">
-              <code class="name flex">
-                <span>def <span class="ident">option</span></span
-                >(<span
-                  >dest: str, flag: Optional[str] = None, default: Any = None,
-                  help: Optional[str] = None, short: bool = True,
-                  type: Callable[[str], Any] = builtins.str) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>Parses two words, binding the second to the first.</p>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>dest</code></strong> :&ensp;<code>str</code>
-                  </dt>
-                  <dd>The name of variable to bind to:</dd>
-                  <dt>
-                    <strong><code>flag</code></strong> :&ensp;<code
-                      >Optional[str]</code
-                    >
-                  </dt>
-                  <dd>
-                    The flag to use for the option. If not provided, defaults to
-                    <code>--{dest}</code>.
-                  </dd>
-                  <dt>
-                    <strong><code>default</code></strong> :&ensp;<code
-                      >Optional[Any]</code
-                    >
-                  </dt>
-                  <dd>The default value to bind on failure:</dd>
-                  <dt>
-                    <strong><code>help</code></strong> :&ensp;<code
-                      >Optional[str]</code
-                    >
-                  </dt>
-                  <dd>The help message to display for the option:</dd>
-                  <dt>
-                    <strong><code>short</code></strong> :&ensp;<code>bool</code>
-                  </dt>
-                  <dd>
-                    Whether to check for the short form of the flag, which uses
-                    a single dash and the first character of <code>dest</code>,
-                    e.g. <code>-c</code> for <code>count</code>.
-                  </dd>
-                  <dt>
-                    <strong><code>type</code></strong> :&ensp;<code
-                      >Callable[[str], Any]</code
-                    >
-                  </dt>
-                  <dd>
-                    Use the <code>type</code> argument to convert the input to a
-                    different type:
-                  </dd>
-                </dl>
-                <h2 id="examples">Examples</h2>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.option"><code class="name flex">
+<span>def <span class="ident">option</span></span>(<span>dest: str, flag: Optional[str] = None, default: Any = None, help: Optional[str] = None, short: bool = True, type: Callable[[str], Any] = builtins.str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parses two words, binding the second to the first.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
+<dd>The name of variable to bind to:</dd>
+<dt><strong><code>flag</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>The flag to use for the option. If not provided, defaults to <code>--{dest}</code>.</dd>
+<dt><strong><code>default</code></strong> :&ensp;<code>Optional[Any]</code></dt>
+<dd>The default value to bind on failure:</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>The help message to display for the option:</dd>
+<dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to check for the short form of the flag, which
+uses a single dash and the first character of <code>dest</code>, e.g. <code>-c</code> for <code>count</code>.</dd>
+<dt><strong><code>type</code></strong> :&ensp;<code>Callable[[str], Any]</code></dt>
+<dd>Use the <code>type</code> argument to convert the input to a different type:</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;).parse_args(&quot;--count&quot;, &quot;1&quot;)
 {'count': '1'}
 </code></pre>
-                <p>
-                  In this example, you can see that the
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.flag"
-                      href="#dollar_lambda.parser.flag"
-                      >flag()</a
-                    ></code
-                  >
-                  parameter allows the user to specify an arbitrary lead string,
-                  including one that doesn't start with a dash.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)
+<p>In this example, you can see that the <code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag()</a></code> parameter allows the user to
+specify an arbitrary lead string, including one that doesn't start with a dash.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, flag=&quot;ct&quot;).parse_args(&quot;ct&quot;, &quot;1&quot;)
 {'count': '1'}
 </code></pre>
-                <p>
-                  This example demonstrates the use of the
-                  <code>default</code> parameter:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()
+<p>This example demonstrates the use of the <code>default</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, default=2).parse_args()
 {'count': 2}
 </code></pre>
-                <p>
-                  Here we specify a help-string using the
-                  <code>help</code> parameter:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
+<p>Here we specify a help-string using the <code>help</code> parameter:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, help=&quot;The number we should count to&quot;).parse_args(&quot;-h&quot;)
 usage: --count COUNT
 count: The number we should count to
 </code></pre>
-                <p>
-                  This example demonstrates the difference between
-                  <code>short=True</code> and <code>short=False</code>:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
+<p>This example demonstrates the difference between <code>short=True</code> and <code>short=False</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;count&quot;, short=True).parse_args(&quot;-c&quot;, &quot;1&quot;)
 {'count': '1'}
 &gt;&gt;&gt; option(&quot;count&quot;, short=False).parse_args(&quot;-c&quot;, &quot;1&quot;)
 usage: --count COUNT
 Expected '--count'. Got '-c'
 </code></pre>
-                <p>
-                  As with
-                  <a
-                    href="https://docs.python.org/3/library/argparse.html#argument-parsing"
-                    >argparse</a
-                  >, the <code>type</code> argument allows you to convert the
-                  input to a different type using a function that takes a single
-                  string argument:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;, type=int).parse_args(&quot;-x&quot;, &quot;1&quot;)  # converts &quot;1&quot; to an int
+<p>As with <a href="https://docs.python.org/3/library/argparse.html#argument-parsing">argparse</a>,
+the <code>type</code> argument allows you to convert the input to a different type using a
+function that takes a single string argument:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; option(&quot;x&quot;, type=int).parse_args(&quot;-x&quot;, &quot;1&quot;)  # converts &quot;1&quot; to an int
 {'x': 1}
 &gt;&gt;&gt; option(&quot;x&quot;, type=lambda x: int(x) + 1).parse_args(&quot;-x&quot;, &quot;1&quot;)
 {'x': 2}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def option(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def option(
     dest: str,
     flag: Optional[str] = None,
     default: Any = None,
@@ -2887,35 +1976,18 @@ Expected '--count'. Got '-c'
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=f&#34;{_flag} {dest.upper()}&#34;, helps=helps)
     return parser if default is None else parser | defaults(**{dest: default})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.peak">
-              <code class="name flex">
-                <span>def <span class="ident">peak</span></span
-                >(<span
-                  >name: str, description: Optional[str] = None) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc"></div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def peak(
+</details>
+</dd>
+<dt id="dollar_lambda.parser.peak"><code class="name flex">
+<span>def <span class="ident">peak</span></span>(<span>name: str, description: Optional[str] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def peak(
     name: str,
     description: Optional[str] = None,
 ) -&gt; Parser[Sequence[KeyValue[str]]]:
@@ -2940,32 +2012,14 @@ Expected '--count'. Got '-c'
         )
 
     return Parser(f, usage=name, helps={})</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.sat">
-              <code class="name flex">
-                <span>def <span class="ident">sat</span></span
-                >(<span
-                  >parser: <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[A], predicate: Callable[[A], bool],
-                  on_fail: Callable[[A], ArgumentError]) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[~A]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  Applies <code>parser</code>, applies a predicate to the result
-                  and fails if this returns false.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = sat(
+</details>
+</dd>
+<dt id="dollar_lambda.parser.sat"><code class="name flex">
+<span>def <span class="ident">sat</span></span>(<span>parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A], predicate: Callable[[A], bool], on_fail: Callable[[A], ArgumentError]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies <code>parser</code>, applies a predicate to the result and fails if this returns false.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = sat(
 ...     option(&quot;x&quot;, type=int).many(),
 ...     lambda kvs: sum([kv.value for kv in kvs]) &gt; 0,
 ...     lambda x: ArgumentError(f&quot;The values in {list(x)} must sum to more than 0.&quot;),
@@ -2974,54 +2028,24 @@ Expected '--count'. Got '-c'
 usage: [-x X ...]
 The values in [KeyValue(key='x', value=-1), KeyValue(key='x', value=1)] must sum to more than 0.
 </code></pre>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;-1&quot;, &quot;-x&quot;, &quot;2&quot;)  # succeeds
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;-1&quot;, &quot;-x&quot;, &quot;2&quot;)  # succeeds
 {'x': 2}
 </code></pre>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>parser</code></strong> :&ensp;<code
-                      ><a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[A]</code
-                    >
-                  </dt>
-                  <dd>The parser to apply.</dd>
-                  <dt>
-                    <strong><code>predicate</code></strong> :&ensp;<code
-                      >Callable[[A], bool]</code
-                    >
-                  </dt>
-                  <dd>
-                    The predicate to apply to the result of <code>parser</code>.
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.sat"
-                        href="#dollar_lambda.parser.sat"
-                        >sat()</a
-                      ></code
-                    >
-                    fails if this predicate returns false.
-                  </dd>
-                  <dt>
-                    <strong><code>on_fail</code></strong> :&ensp;<code
-                      >Callable[[A], ArgumentError]</code
-                    >
-                  </dt>
-                  <dd>
-                    A function producing an ArgumentError to return if the
-                    predicate fails. Takes the output of <code>parser</code> as
-                    an argument.
-                  </dd>
-                </dl>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def sat(
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>parser</code></strong> :&ensp;<code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A]</code></dt>
+<dd>The parser to apply.</dd>
+<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[A], bool]</code></dt>
+<dd>The predicate to apply to the result of <code>parser</code>. <code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat()</a></code> fails if this predicate returns false.</dd>
+<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[A], ArgumentError]</code></dt>
+<dd>A function producing an ArgumentError to return if the predicate fails.
+Takes the output of <code>parser</code> as an argument.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat(
     parser: Parser[A],
     predicate: Callable[[A], bool],
     on_fail: Callable[[A], ArgumentError],
@@ -3056,118 +2080,35 @@ The values in [KeyValue(key='x', value=-1), KeyValue(key='x', value=1)] must sum
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.sat_item">
-              <code class="name flex">
-                <span>def <span class="ident">sat_item</span></span
-                >(<span
-                  >predicate: Callable[[str], bool],
-                  on_fail: Callable[[str], ArgumentError], name: str) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  A wrapper around
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.sat"
-                      href="#dollar_lambda.parser.sat"
-                      >sat()</a
-                    ></code
-                  >
-                  that uses
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.item"
-                      href="#dollar_lambda.parser.item"
-                      >item()</a
-                    ></code
-                  >
-                  to parse the argument and just applies
-                  <code>predicate</code> to the value output by
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.item"
-                      href="#dollar_lambda.parser.item"
-                      >item()</a
-                    ></code
-                  >.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = sat_item(lambda x: len(x) == 1, lambda x: ArgumentError(f&quot;'{x}' must have exactly one character.&quot;), &quot;x&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.sat_item"><code class="name flex">
+<span>def <span class="ident">sat_item</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A wrapper around <code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat()</a></code> that uses <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code> to parse the argument and just applies <code>predicate</code> to the value output by <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = sat_item(lambda x: len(x) == 1, lambda x: ArgumentError(f&quot;'{x}' must have exactly one character.&quot;), &quot;x&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;a&quot;)  # succeeds
 {'x': 'a'}
 &gt;&gt;&gt; p.parse_args(&quot;aa&quot;)  # fails
 usage: x
 'aa' must have exactly one character.
 </code></pre>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>predicate</code></strong> :&ensp;<code
-                      >Callable[[A], bool]</code
-                    >
-                  </dt>
-                  <dd>
-                    The predicate to apply to the result of
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.item"
-                        href="#dollar_lambda.parser.item"
-                        >item()</a
-                      ></code
-                    >.
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.sat"
-                        href="#dollar_lambda.parser.sat"
-                        >sat()</a
-                      ></code
-                    >
-                    fails if this predicate returns false.
-                  </dd>
-                  <dt>
-                    <strong><code>on_fail</code></strong> :&ensp;<code
-                      >Callable[[A], ArgumentError]</code
-                    >
-                  </dt>
-                  <dd>
-                    A function producing an ArgumentError to return if the
-                    predicate fails. Takes the output of
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.item"
-                        href="#dollar_lambda.parser.item"
-                        >item()</a
-                      ></code
-                    >
-                    as an argument.
-                  </dd>
-                  <dt>
-                    <strong><code>name</code></strong> :&ensp;<code>str</code>
-                  </dt>
-                  <dd>The value to bind the result to.</dd>
-                </dl>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def sat_item(
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[A], bool]</code></dt>
+<dd>The predicate to apply to the result of <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code>. <code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat()</a></code> fails if this predicate returns false.</dd>
+<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[A], ArgumentError]</code></dt>
+<dd>A function producing an ArgumentError to return if the predicate fails.
+Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code> as an argument.</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>The value to bind the result to.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat_item(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
@@ -3202,36 +2143,18 @@ usage: x
         return on_fail(kv.value)
 
     return sat(item(name), _predicate, _on_fail)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.sat_peak">
-              <code class="name flex">
-                <span>def <span class="ident">sat_peak</span></span
-                >(<span
-                  >predicate: Callable[[str], bool],
-                  on_fail: Callable[[str], ArgumentError], name: str) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[str]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc"></div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def sat_peak(
+</details>
+</dd>
+<dt id="dollar_lambda.parser.sat_peak"><code class="name flex">
+<span>def <span class="ident">sat_peak</span></span>(<span>predicate: Callable[[str], bool], on_fail: Callable[[str], ArgumentError], name: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[str]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sat_peak(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
@@ -3245,57 +2168,23 @@ usage: x
         return on_fail(kv.value)
 
     return sat(peak(name), _predicate, _on_fail)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.type_">
-              <code class="name flex">
-                <span>def <span class="ident">type_</span></span
-                >(<span
-                  >f: Callable[[str], Any], parser: <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[Sequence[KeyValue[str]]]) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[<a
-                    title="dollar_lambda.sequence.Sequence"
-                    href="sequence.html#dollar_lambda.sequence.Sequence"
-                    >Sequence</a
-                  >[<a
-                    title="dollar_lambda.key_value.KeyValue"
-                    href="key_value.html#dollar_lambda.key_value.KeyValue"
-                    >KeyValue</a
-                  >[typing.Any]]]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  A wrapper around
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.apply"
-                      href="#dollar_lambda.parser.apply"
-                      >apply()</a
-                    ></code
-                  >
-                  that simply applies <code>f</code> to the value of the most
-                  recently parsed input.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = option(&quot;x&quot;) &gt;&gt; option(&quot;y&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.type_"><code class="name flex">
+<span>def <span class="ident">type_</span></span>(<span>f: Callable[[str], Any], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[KeyValue[str]]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A wrapper around <code><a title="dollar_lambda.parser.apply" href="#dollar_lambda.parser.apply">apply()</a></code> that simply applies <code>f</code> to the value of the most recently parsed input.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = option(&quot;x&quot;) &gt;&gt; option(&quot;y&quot;)
 &gt;&gt;&gt; p = type_(int, p1)
 &gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;)  # converts &quot;1&quot; but not &quot;2&quot;
 {'y': '2', 'x': 1}
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def type_(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def type_(
     f: Callable[[str], Any], parser: Parser[Sequence[KeyValue[str]]]
 ) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
@@ -3320,33 +2209,15 @@ usage: x
 
     p = apply(g, parser)
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>
-              </details>
-            </dd>
-            <dt id="dollar_lambda.parser.wrap_help">
-              <code class="name flex">
-                <span>def <span class="ident">wrap_help</span></span
-                >(<span
-                  >parser: <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[A]) ‑> <a
-                    title="dollar_lambda.parser.Parser"
-                    href="#dollar_lambda.parser.Parser"
-                    >Parser</a
-                  >[~A]</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  This checks for the <code>--help</code> or
-                  <code>-h</code> flag before applying <code>parser</code>. If
-                  either of the flags is present, returns the usage message for
-                  <code>parser</code>.
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; p = wrap_help(flag(&quot;help&quot;, help=&quot;Print this help message.&quot;))
+</details>
+</dd>
+<dt id="dollar_lambda.parser.wrap_help"><code class="name flex">
+<span>def <span class="ident">wrap_help</span></span>(<span>parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This checks for the <code>--help</code> or <code>-h</code> flag before applying <code>parser</code>.
+If either of the flags is present, returns the usage message for <code>parser</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = wrap_help(flag(&quot;help&quot;, help=&quot;Print this help message.&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;--help&quot;)
 usage: --help
 help: Print this help message.
@@ -3354,31 +2225,20 @@ help: Print this help message.
 usage: --help
 help: Print this help message.
 </code></pre>
-                <p>
-                  We can use
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.wrap_help"
-                      href="#dollar_lambda.parser.wrap_help"
-                      >wrap_help()</a
-                    ></code
-                  >
-                  to print partial usage messages, e.g. for subcommands:
-                </p>
-                <pre><code class="language-python-repl">&gt;&gt;&gt; subcommand1 = equals(&quot;subcommand1&quot;) &gt;&gt; wrap_help(option(&quot;option1&quot;))
+<p>We can use <code><a title="dollar_lambda.parser.wrap_help" href="#dollar_lambda.parser.wrap_help">wrap_help()</a></code> to print partial usage messages, e.g. for subcommands:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; subcommand1 = equals(&quot;subcommand1&quot;) &gt;&gt; wrap_help(option(&quot;option1&quot;))
 &gt;&gt;&gt; subcommand2 = equals(&quot;subcommand2&quot;) &gt;&gt; wrap_help(option(&quot;option2&quot;))
 &gt;&gt;&gt; p = subcommand1 | subcommand2
 &gt;&gt;&gt; p.parse_args(&quot;subcommand1&quot;, &quot;-h&quot;)
 usage: --option1 OPTION1
 &gt;&gt;&gt; p.parse_args(&quot;subcommand2&quot;, &quot;-h&quot;)
 usage: --option2 OPTION2
-</code></pre>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">def wrap_help(parser: Parser[A]) -&gt; Parser[A]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wrap_help(parser: Parser[A]) -&gt; Parser[A]:
     &#34;&#34;&#34;
     This checks for the `--help` or `-h` flag before applying `parser`.
     If either of the flags is present, returns the usage message for `parser`.
@@ -3404,52 +2264,31 @@ usage: --option2 OPTION2
 
     p = _help_parser &gt;= (lambda _: parser)
     return replace(p, usage=parser.usage, helps=parser.helps)</code></pre>
-              </details>
-            </dd>
-          </dl>
-        </section>
-        <section>
-          <h2 class="section-title" id="header-classes">Classes</h2>
-          <dl>
-            <dt id="dollar_lambda.parser.Parse">
-              <code class="flex name class">
-                <span>class <span class="ident">Parse</span></span>
-                <span>(</span
-                ><span>parsed: A_co, unparsed: Sequence[str])</span>
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>
-                  A
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.Parse"
-                      href="#dollar_lambda.parser.Parse"
-                      >Parse</a
-                    ></code
-                  >
-                  is the output of parsing.
-                </p>
-                <h2 id="parameters">Parameters</h2>
-                <dl>
-                  <dt>
-                    <strong><code>parsed</code></strong> :&ensp;<code>A</code>
-                  </dt>
-                  <dd>Component parsed by the parsed</dd>
-                  <dt>
-                    <strong><code>unparsed</code></strong> :&ensp;<code
-                      >Sequence[str]</code
-                    >
-                  </dt>
-                  <dd>Component yet to be parsed</dd>
-                </dl>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">@dataclass
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="dollar_lambda.parser.Parse"><code class="flex name class">
+<span>class <span class="ident">Parse</span></span>
+<span>(</span><span>parsed: A_co, unparsed: Sequence[str])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A <code><a title="dollar_lambda.parser.Parse" href="#dollar_lambda.parser.Parse">Parse</a></code> is the output of parsing.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>parsed</code></strong> :&ensp;<code>A</code></dt>
+<dd>Component parsed by the parsed</dd>
+<dt><strong><code>unparsed</code></strong> :&ensp;<code>Sequence[str]</code></dt>
+<dd>Component yet to be parsed</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
 class Parse(Generic[A_co]):
     &#34;&#34;&#34;
     A `Parse` is the output of parsing.
@@ -3464,57 +2303,34 @@ class Parse(Generic[A_co]):
 
     parsed: A_co
     unparsed: Sequence[str]</code></pre>
-              </details>
-              <h3>Ancestors</h3>
-              <ul class="hlist">
-                <li>typing.Generic</li>
-              </ul>
-              <h3>Class variables</h3>
-              <dl>
-                <dt id="dollar_lambda.parser.Parse.parsed">
-                  <code class="name"
-                    >var <span class="ident">parsed</span> : +A_co</code
-                  >
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                </dd>
-                <dt id="dollar_lambda.parser.Parse.unparsed">
-                  <code class="name"
-                    >var <span class="ident">unparsed</span> : <a
-                      title="dollar_lambda.sequence.Sequence"
-                      href="sequence.html#dollar_lambda.sequence.Sequence"
-                      >Sequence</a
-                    >[str]</code
-                  >
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                </dd>
-              </dl>
-            </dd>
-            <dt id="dollar_lambda.parser.Parser">
-              <code class="flex name class">
-                <span>class <span class="ident">Parser</span></span>
-                <span>(</span
-                ><span
-                  >f: Callable[[Sequence[str]], Result[<a
-                    title="dollar_lambda.parser.Parse"
-                    href="#dollar_lambda.parser.Parse"
-                    >Parse</a
-                  >[A_co]]], usage: Optional[str], helps: Dict[str, str])</span
-                >
-              </code>
-            </dt>
-            <dd>
-              <div class="desc">
-                <p>Main class powering the argument parser.</p>
-              </div>
-              <details class="source">
-                <summary>
-                  <span>Expand source code</span>
-                </summary>
-                <pre><code class="python">@dataclass
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="dollar_lambda.parser.Parse.parsed"><code class="name">var <span class="ident">parsed</span> : +A_co</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.parser.Parse.unparsed"><code class="name">var <span class="ident">unparsed</span> : <a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="dollar_lambda.parser.Parser"><code class="flex name class">
+<span>class <span class="ident">Parser</span></span>
+<span>(</span><span>f: Callable[[Sequence[str]], Result[<a title="dollar_lambda.parser.Parse" href="#dollar_lambda.parser.Parse">Parse</a>[A_co]]], usage: Optional[str], helps: Dict[str, str])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Main class powering the argument parser.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
 class Parser(MonadPlus[A_co]):
     &#34;&#34;&#34;
     Main class powering the argument parser.
@@ -3862,94 +2678,45 @@ class Parser(MonadPlus[A_co]):
         This is a test.
         &#34;&#34;&#34;
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})</code></pre>
-              </details>
-              <h3>Ancestors</h3>
-              <ul class="hlist">
-                <li>pytypeclass.monoid.MonadPlus</li>
-                <li>pytypeclass.monad.Monad</li>
-                <li>pytypeclass.monoid.Monoid</li>
-                <li>typing.Protocol</li>
-                <li>typing.Generic</li>
-              </ul>
-              <h3>Class variables</h3>
-              <dl>
-                <dt id="dollar_lambda.parser.Parser.f">
-                  <code class="name"
-                    >var <span class="ident">f</span> : Callable[[<a
-                      title="dollar_lambda.sequence.Sequence"
-                      href="sequence.html#dollar_lambda.sequence.Sequence"
-                      >Sequence</a
-                    >[str]], <a
-                      title="dollar_lambda.result.Result"
-                      href="result.html#dollar_lambda.result.Result"
-                      >Result</a
-                    >[<a
-                      title="dollar_lambda.parser.Parse"
-                      href="#dollar_lambda.parser.Parse"
-                      >Parse</a
-                    >[+A_co]]]</code
-                  >
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.helps">
-                  <code class="name"
-                    >var <span class="ident">helps</span> : Dict[str, str]</code
-                  >
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.usage">
-                  <code class="name"
-                    >var <span class="ident">usage</span> : Optional[str]</code
-                  >
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                </dd>
-              </dl>
-              <h3>Static methods</h3>
-              <dl>
-                <dt id="dollar_lambda.parser.Parser.empty">
-                  <code class="name flex">
-                    <span>def <span class="ident">empty</span></span
-                    >(<span
-                      >) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[~A]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      Always returns {}, no matter the input. Mostly useful for
-                      use in
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.nonpositional"
-                          href="#dollar_lambda.parser.nonpositional"
-                          >nonpositional()</a
-                        ></code
-                      >.
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pytypeclass.monoid.MonadPlus</li>
+<li>pytypeclass.monad.Monad</li>
+<li>pytypeclass.monoid.Monoid</li>
+<li>typing.Protocol</li>
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="dollar_lambda.parser.Parser.f"><code class="name">var <span class="ident">f</span> : Callable[[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[str]], <a title="dollar_lambda.result.Result" href="result.html#dollar_lambda.result.Result">Result</a>[<a title="dollar_lambda.parser.Parse" href="#dollar_lambda.parser.Parse">Parse</a>[+A_co]]]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.parser.Parser.helps"><code class="name">var <span class="ident">helps</span> : Dict[str, str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.parser.Parser.usage"><code class="name">var <span class="ident">usage</span> : Optional[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="dollar_lambda.parser.Parser.empty"><code class="name flex">
+<span>def <span class="ident">empty</span></span>(<span>) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Always returns {}, no matter the input. Mostly useful for use in <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; empty().parse_args(&quot;any&quot;, &quot;arguments&quot;)
 {}
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">@classmethod
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
 def empty(cls: Type[Parser[Sequence[A]]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
@@ -3957,49 +2724,24 @@ def empty(cls: Type[Parser[Sequence[A]]]) -&gt; Parser[Sequence[A]]:
     {}
     &#34;&#34;&#34;
     return cls.return_(Sequence([]))</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.return_">
-                  <code class="name flex">
-                    <span>def <span class="ident">return_</span></span
-                    >(<span
-                      >a: A_co) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[+A_co]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      This method is required to make
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.Parser"
-                          href="#dollar_lambda.parser.Parser"
-                          >Parser</a
-                        ></code
-                      >
-                      a
-                      <a
-                        href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16"
-                        ><code>Monad</code></a
-                      >. It consumes none of the input and always returns
-                      <code>a</code> as the result. For the most part, the user
-                      will not use this method unless building custom parsers.
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda.key_value import KeyValue
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.return_"><code class="name flex">
+<span>def <span class="ident">return_</span></span>(<span>a: A_co) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+A_co]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This method is required to make <code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code> a <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16"><code>Monad</code></a>. It consumes none of the input
+and always returns <code>a</code> as the result. For the most part, the user will not use
+this method unless building custom parsers.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda.key_value import KeyValue
 &gt;&gt;&gt; Parser.return_(([KeyValue(&quot;some-key&quot;, &quot;some-value&quot;)])).parse_args()
 {'some-key': 'some-value'}
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">@classmethod
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
 def return_(cls, a: A_co) -&gt; Parser[A_co]:  # type: ignore[misc]
     # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
     &#34;&#34;&#34;
@@ -4016,49 +2758,19 @@ def return_(cls, a: A_co) -&gt; Parser[A_co]:  # type: ignore[misc]
         return Result.return_(Parse(a, cs))
 
     return Parser(f, usage=None, helps={})</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.zero">
-                  <code class="name flex">
-                    <span>def <span class="ident">zero</span></span
-                    >(<span
-                      >error: Optional[ArgumentError] = None) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[+A_co]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      This parser always fails. This method is necessary to make
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.Parser"
-                          href="#dollar_lambda.parser.Parser"
-                          >Parser</a
-                        ></code
-                      >
-                      a
-                      <a
-                        href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13"
-                        ><code>Monoid</code></a
-                      >.
-                    </p>
-                    <h2 id="parameters">Parameters</h2>
-                    <dl>
-                      <dt>
-                        <strong><code>error</code></strong> :&ensp;<code
-                          >Optional[ArgumentError]</code
-                        >
-                      </dt>
-                      <dd>
-                        Customize the error returned by <code>zero</code>.
-                      </dd>
-                    </dl>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; Parser.zero().parse_args()
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>error: Optional[ArgumentError] = None) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+A_co]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This parser always fails. This method is necessary to make <code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code> a <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13"><code>Monoid</code></a>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>error</code></strong> :&ensp;<code>Optional[ArgumentError]</code></dt>
+<dd>Customize the error returned by <code>zero</code>.</dd>
+</dl>
+<pre><code class="language-python-repl">&gt;&gt;&gt; Parser.zero().parse_args()
 **```zero```**
 :   &amp;nbsp;
 
@@ -4070,13 +2782,12 @@ def return_(cls, a: A_co) -&gt; Parser[A_co]:  # type: ignore[misc]
 
 &gt;&gt;&gt; Parser.zero(error=ArgumentError(&quot;This is a test.&quot;)).parse_args(&quot;a&quot;)
 This is a test.
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">@classmethod
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
 def zero(cls, error: Optional[ArgumentError] = None) -&gt; Parser[A_co]:
     &#34;&#34;&#34;
     This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
@@ -4094,39 +2805,17 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; Parser[A_co]:
     This is a test.
     &#34;&#34;&#34;
     return Parser(lambda _: Result.zero(error=error), usage=None, helps={})</code></pre>
-                  </details>
-                </dd>
-              </dl>
-              <h3>Methods</h3>
-              <dl>
-                <dt id="dollar_lambda.parser.Parser.__add__">
-                  <code class="name flex">
-                    <span>def <span class="ident">__add__</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[A]], other: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[B]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[typing.Union[~A, ~B]]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>Parse two arguments in either order.</p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) + flag(&quot;debug&quot;)
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="dollar_lambda.parser.Parser.__add__"><code class="name flex">
+<span>def <span class="ident">__add__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]], other: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[typing.Union[~A, ~B]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Parse two arguments in either order.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) + flag(&quot;debug&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--debug&quot;)
 {'verbose': True, 'debug': True}
 &gt;&gt;&gt; p.parse_args(&quot;--debug&quot;, &quot;--verbose&quot;)
@@ -4135,43 +2824,27 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; Parser[A_co]:
 usage: --verbose --debug
 Expected '--verbose'. Got '--debug'
 </code></pre>
-                    <p>
-                      Note that if more than two arguments are chained together
-                      with <code>+</code>, some combinations will not parse:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;a&quot;) + flag(&quot;b&quot;) + flag(&quot;c&quot;)
+<p>Note that if more than two arguments are chained together with <code>+</code>, some combinations will not parse:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;a&quot;) + flag(&quot;b&quot;) + flag(&quot;c&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;-c&quot;, &quot;-a&quot;, &quot;-b&quot;)   # this works
 {'c': True, 'a': True, 'b': True}
 &gt;&gt;&gt; p.parse_args(&quot;-a&quot;, &quot;-c&quot;, &quot;-b&quot;)   # this doesn't
 usage: -a -b -c
 Expected '-b'. Got '-c'
 </code></pre>
-                    <p>
-                      This makes more sense when one supplies the implicit
-                      parentheses:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = (flag(&quot;a&quot;) + flag(&quot;b&quot;)) + flag(&quot;c&quot;)
+<p>This makes more sense when one supplies the implicit parentheses:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = (flag(&quot;a&quot;) + flag(&quot;b&quot;)) + flag(&quot;c&quot;)
 </code></pre>
-                    <p>
-                      In order to chain together more than two arguments, use
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.nonpositional"
-                          href="#dollar_lambda.parser.nonpositional"
-                          >nonpositional()</a
-                        ></code
-                      >:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;a&quot;), flag(&quot;b&quot;), flag(&quot;c&quot;))
+<p>In order to chain together more than two arguments, use <code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = nonpositional(flag(&quot;a&quot;), flag(&quot;b&quot;), flag(&quot;c&quot;))
 &gt;&gt;&gt; p.parse_args(&quot;-a&quot;, &quot;-c&quot;, &quot;-b&quot;)
 {'a': True, 'c': True, 'b': True}
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def __add__(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __add__(
     self: Parser[Sequence[A]], other: Parser[Sequence[B]]
 ) -&gt; Parser[Sequence[A | B]]:
     &#34;&#34;&#34;
@@ -4204,99 +2877,49 @@ Expected '-b'. Got '-c'
     p = (self &gt;&gt; other) | (other &gt;&gt; self)
     usage = binary_usage(self.usage, &#34; &#34;, other.usage, add_brackets=False)
     return replace(p, usage=usage)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.__ge__">
-                  <code class="name flex">
-                    <span>def <span class="ident">__ge__</span></span
-                    >(<span
-                      >self, f: Callable[[A_co], Monad[B]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[~B]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc"><p>Return self&gt;=value.</p></div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.__ge__"><code class="name flex">
+<span>def <span class="ident">__ge__</span></span>(<span>self, f: Callable[[A_co], Monad[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return self&gt;=value.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
     return self.bind(f)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.__or__">
-                  <code class="name flex">
-                    <span>def <span class="ident">__or__</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[A_co], other: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[B]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[typing.Union[+A_co, ~B]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      Tries apply the first parser. If it fails, tries the
-                      second. If that fails, the parser fails.
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, option, done, flag
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.__or__"><code class="name flex">
+<span>def <span class="ident">__or__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A_co], other: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[B]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[typing.Union[+A_co, ~B]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, option, done, flag
 &gt;&gt;&gt; p = option(&quot;option&quot;) | flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--option&quot;, &quot;x&quot;)
 {'option': 'x'}
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
 {'verbose': True}
 </code></pre>
-                    <p>
-                      Note that when both arguments are supplied, this will only
-                      parse the first:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--option&quot;, &quot;x&quot;)
+<p>Note that when both arguments are supplied, this will only parse the first:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--option&quot;, &quot;x&quot;)
 {'verbose': True}
 </code></pre>
-                    <p>
-                      If you want this to fail, use <code>&gt;&gt;</code> (<code
-                        ><a
-                          title="dollar_lambda.parser.Parser.__rshift__"
-                          href="#dollar_lambda.parser.Parser.__rshift__"
-                          >Parser.__rshift__()</a
-                        ></code
-                      >) with
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.done"
-                          href="#dollar_lambda.parser.done"
-                          >done()</a
-                        ></code
-                      >
-                      or another parser:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; (p &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--option&quot;, &quot;x&quot;)
+<p>If you want this to fail, use <code>&gt;&gt;</code> (<code><a title="dollar_lambda.parser.Parser.__rshift__" href="#dollar_lambda.parser.Parser.__rshift__">Parser.__rshift__()</a></code>) with <code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done()</a></code> or another parser:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; (p &gt;&gt; done()).parse_args(&quot;--verbose&quot;, &quot;--option&quot;, &quot;x&quot;)
 usage: [--option OPTION | --verbose]
 Unrecognized argument: --option
 &gt;&gt;&gt; p.parse_args(&quot;--option&quot;, &quot;x&quot;)
 {'option': 'x'}
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def __or__(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __or__(
     self: Parser[A_co],
     other: Parser[B],
 ) -&gt; Parser[A_co | B]:
@@ -4330,41 +2953,15 @@ Unrecognized argument: --option
         usage=binary_usage(self.usage, &#34; | &#34;, other.usage),
         helps={**self.helps, **other.helps},
     )</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.__rshift__">
-                  <code class="name flex">
-                    <span>def <span class="ident">__rshift__</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[A]], p: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[B]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[typing.Union[~A, ~B]]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      This applies parsers in sequence. If the first parser
-                      succeeds, the unparsed remainder gets handed off to the
-                      second parser. If either parser fails, the whole thing
-                      fails.
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.__rshift__"><code class="name flex">
+<span>def <span class="ident">__rshift__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]], p: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[typing.Union[~A, ~B]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
+gets handed off to the second parser. If either parser fails, the whole thing fails.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
 &gt;&gt;&gt; p = argument(&quot;first&quot;) &gt;&gt; argument(&quot;second&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;)
 {'first': 'a', 'second': 'b'}
@@ -4374,13 +2971,12 @@ The following arguments are required: second
 &gt;&gt;&gt; p.parse_args(&quot;b&quot;)
 usage: first second
 The following arguments are required: second
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def __rshift__(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __rshift__(
     self: Parser[Sequence[A]], p: Parser[Sequence[B]]
 ) -&gt; Parser[Sequence[A | B]]:
     &#34;&#34;&#34;
@@ -4411,114 +3007,42 @@ The following arguments are required: second
         usage=binary_usage(self.usage, &#34; &#34;, p.usage, add_brackets=False),
         helps={**self.helps, **p.helps},
     )</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.bind">
-                  <code class="name flex">
-                    <span>def <span class="ident">bind</span></span
-                    >(<span
-                      >self, f: Callable[[A_co], Monad[B]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[~B]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>Returns a new parser that</p>
-                    <ol>
-                      <li>applies <code>self</code>;</li>
-                      <li>
-                        if this succeeds, applies <code>f</code> to the parsed
-                        component of the result.
-                      </li>
-                    </ol>
-                    <p>
-                      <code>bind</code> is one of the functions that makes
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.Parser"
-                          href="#dollar_lambda.parser.Parser"
-                          >Parser</a
-                        ></code
-                      >
-                      a
-                      <a
-                        href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16"
-                        ><code>Monad</code></a
-                      >. But most users will avoid using it directly, preferring
-                      higher level combinators like <code>&gt;&gt;</code> (<code
-                        ><a
-                          title="dollar_lambda.parser.Parser.__rshift__"
-                          href="#dollar_lambda.parser.Parser.__rshift__"
-                          >Parser.__rshift__()</a
-                        ></code
-                      >), <code>|</code> (<code
-                        ><a
-                          title="dollar_lambda.parser.Parser.__or__"
-                          href="#dollar_lambda.parser.Parser.__or__"
-                          >Parser.__or__()</a
-                        ></code
-                      >) and <code>+</code> (<code
-                        ><a
-                          title="dollar_lambda.parser.Parser.__add__"
-                          href="#dollar_lambda.parser.Parser.__add__"
-                          >Parser.__add__()</a
-                        ></code
-                      >).
-                    </p>
-                    <p>
-                      Note that <code>&gt;=</code> as a synonym for
-                      <code>bind</code> (as defined in
-                      <a
-                        href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26"
-                        ><code>pytypeclass</code></a
-                      >) and we typically prefer using the infix operator to the
-                      spelled out method.
-                    </p>
-                    <p>
-                      Let's start with our simplest parser,
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.argument"
-                          href="#dollar_lambda.parser.argument"
-                          >argument()</a
-                        ></code
-                      >:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;some_dest&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.bind"><code class="name flex">
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], Monad[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a new parser that</p>
+<ol>
+<li>applies <code>self</code>;</li>
+<li>if this succeeds, applies <code>f</code> to the parsed component of the result.</li>
+</ol>
+<p><code>bind</code> is one of the functions that makes <code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code> a <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16"><code>Monad</code></a>. But most users will
+avoid using it directly, preferring higher level combinators like <code>&gt;&gt;</code> (<code><a title="dollar_lambda.parser.Parser.__rshift__" href="#dollar_lambda.parser.Parser.__rshift__">Parser.__rshift__()</a></code>),
+<code>|</code> (<code><a title="dollar_lambda.parser.Parser.__or__" href="#dollar_lambda.parser.Parser.__or__">Parser.__or__()</a></code>) and <code>+</code> (<code><a title="dollar_lambda.parser.Parser.__add__" href="#dollar_lambda.parser.Parser.__add__">Parser.__add__()</a></code>).</p>
+<p>Note that <code>&gt;=</code> as a synonym for <code>bind</code> (as defined in <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26"><code>pytypeclass</code></a>)
+and we typically prefer using the infix operator to the spelled out method.</p>
+<p>Let's start with our simplest parser, <code><a title="dollar_lambda.parser.argument" href="#dollar_lambda.parser.argument">argument()</a></code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = argument(&quot;some_dest&quot;)
 </code></pre>
-                    <p>
-                      Now let's use the
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.equals"
-                          href="#dollar_lambda.parser.equals"
-                          >equals()</a
-                        ></code
-                      >
-                      parser to write a function that takes the output of
-                      <code>p1</code> and fails unless the next argument is the
-                      same as the first:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
+<p>Now let's use the <code><a title="dollar_lambda.parser.equals" href="#dollar_lambda.parser.equals">equals()</a></code> parser to write a function that takes the output of <code>p1</code> and fails unless
+the next argument is the same as the first:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
 ...     [kv] = kvs
 ...     return equals(kv.value)
 </code></pre>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = p1 &gt;= f
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = p1 &gt;= f
 &gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;a&quot;)
 {'a': 'a'}
 &gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;)
 Expected 'a'. Got 'b'
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
     &#34;&#34;&#34;
     Returns a new parser that
 
@@ -4557,21 +3081,18 @@ Expected 'a'. Got 'b'
         return self.parse(cs) &gt;= h
 
     return Parser(g, usage=None, helps=self.helps)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.handle_error">
-                  <code class="name flex">
-                    <span>def <span class="ident">handle_error</span></span
-                    >(<span>self, error: ArgumentError) ‑> None</span>
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc"></div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.handle_error"><code class="name flex">
+<span>def <span class="ident">handle_error</span></span>(<span>self, error: ArgumentError) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
     def print_usage(usage: str):
         print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
         if &#34;\n&#34; in usage:
@@ -4588,35 +3109,14 @@ Expected 'a'. Got 'b'
             print_usage(self.usage)
         if error.usage:
             print(error.usage)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.many">
-                  <code class="name flex">
-                    <span>def <span class="ident">many</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[A]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[~A]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      Applies <code>self</code> zero or more times (like
-                      <code>*</code> in regexes).
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.many"><code class="name flex">
+<span>def <span class="ident">many</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies <code>self</code> zero or more times (like <code>*</code> in regexes).</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
 &gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
 &gt;&gt;&gt; p.parse_args(return_dict=False)
 []
@@ -4627,27 +3127,18 @@ Expected 'a'. Got 'b'
 &gt;&gt;&gt; p.parse_args(&quot;a&quot;, &quot;b&quot;, return_dict=False)  # return_dict=False allows duplicate keys
 [('as-many-as-you-like', 'a'), ('as-many-as-you-like', 'b')]
 </code></pre>
-                    <p>
-                      Note that if <code>self</code> contains
-                      <code
-                        ><a
-                          title="dollar_lambda.parser.Parser.__or__"
-                          href="#dollar_lambda.parser.Parser.__or__"
-                          >Parser.__or__()</a
-                        ></code
-                      >, the arguments can be heterogenous:
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
+<p>Note that if <code>self</code> contains <code><a title="dollar_lambda.parser.Parser.__or__" href="#dollar_lambda.parser.Parser.__or__">Parser.__or__()</a></code>, the arguments can be
+heterogenous:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
 &gt;&gt;&gt; p = p.many()
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--quiet&quot;, return_dict=False) # mix --verbose and --quiet
 [('verbose', True), ('quiet', True)]
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def many(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def many(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Applies `self` zero or more times (like `*` in regexes).
 
@@ -4671,35 +3162,14 @@ Expected 'a'. Got 'b'
     &#34;&#34;&#34;
     p = self.many1() | self.empty()
     return replace(p, usage=f&#34;[{self.usage} ...]&#34;)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.many1">
-                  <code class="name flex">
-                    <span>def <span class="ident">many1</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[A]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[~A]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      Applies <code>self</code> one or more times (like
-                      <code>+</code> in regexes).
-                    </p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.many1"><code class="name flex">
+<span>def <span class="ident">many1</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies <code>self</code> one or more times (like <code>+</code> in regexes).</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
 &gt;&gt;&gt; p = argument(&quot;1-or-more&quot;).many1()
 &gt;&gt;&gt; p.parse_args(&quot;1&quot;)
 {'1-or-more': '1'}
@@ -4708,13 +3178,12 @@ Expected 'a'. Got 'b'
 &gt;&gt;&gt; p.parse_args()
 usage: 1-or-more [1-or-more ...]
 The following arguments are required: 1-or-more
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def many1(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def many1(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Applies `self` one or more times (like `+` in regexes).
 
@@ -4747,32 +3216,14 @@ The following arguments are required: 1-or-more
         usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
         helps=self.helps,
     )</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.optional">
-                  <code class="name flex">
-                    <span>def <span class="ident">optional</span></span
-                    >(<span
-                      >self: <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[A]]) ‑> <a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[<a
-                        title="dollar_lambda.sequence.Sequence"
-                        href="sequence.html#dollar_lambda.sequence.Sequence"
-                        >Sequence</a
-                      >[~A]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>Allows arguments to be optional:</p>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;optional&quot;) &gt;&gt; done()
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.optional"><code class="name flex">
+<span>def <span class="ident">optional</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Allows arguments to be optional:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p1 = flag(&quot;optional&quot;) &gt;&gt; done()
 &gt;&gt;&gt; p = p1.optional()
 &gt;&gt;&gt; p.parse_args(&quot;--optional&quot;)
 {'optional': True}
@@ -4781,13 +3232,12 @@ The following arguments are required: 1-or-more
 &gt;&gt;&gt; p1.parse_args(&quot;--misspelled&quot;)
 usage: --optional
 Expected '--optional'. Got '--misspelled'
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def optional(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def optional(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Allows arguments to be optional:
     &gt;&gt;&gt; p1 = flag(&#34;optional&#34;) &gt;&gt; done()
@@ -4801,110 +3251,51 @@ Expected '--optional'. Got '--misspelled'
     Expected &#39;--optional&#39;. Got &#39;--misspelled&#39;
     &#34;&#34;&#34;
     return self | self.empty()</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.parse">
-                  <code class="name flex">
-                    <span>def <span class="ident">parse</span></span
-                    >(<span
-                      >self, cs: Sequence[str]) ‑> <a
-                        title="dollar_lambda.result.Result"
-                        href="result.html#dollar_lambda.result.Result"
-                        >Result</a
-                      >[<a
-                        title="dollar_lambda.parser.Parse"
-                        href="#dollar_lambda.parser.Parse"
-                        >Parse</a
-                      >[+A_co]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      Applies the parser to the input sequence <code>cs</code>.
-                    </p>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.parse"><code class="name flex">
+<span>def <span class="ident">parse</span></span>(<span>self, cs: Sequence[str]) ‑> <a title="dollar_lambda.result.Result" href="result.html#dollar_lambda.result.Result">Result</a>[<a title="dollar_lambda.parser.Parse" href="#dollar_lambda.parser.Parse">Parse</a>[+A_co]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Applies the parser to the input sequence <code>cs</code>.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
     &#34;&#34;&#34;
     Applies the parser to the input sequence `cs`.
     &#34;&#34;&#34;
     return self.f(cs)</code></pre>
-                  </details>
-                </dd>
-                <dt id="dollar_lambda.parser.Parser.parse_args">
-                  <code class="name flex">
-                    <span>def <span class="ident">parse_args</span></span
-                    >(<span
-                      >self: "'<a
-                        title="dollar_lambda.parser.Parser"
-                        href="#dollar_lambda.parser.Parser"
-                        >Parser</a
-                      >[Sequence[KeyValue]]'", *args: str,
-                      return_dict: bool = True, check_help: bool = True)
-                      ‑> Union[Sequence[<a
-                        title="dollar_lambda.key_value.KeyValueTuple"
-                        href="key_value.html#dollar_lambda.key_value.KeyValueTuple"
-                        >KeyValueTuple</a
-                      >], Dict[str, Any]]</span
-                    >
-                  </code>
-                </dt>
-                <dd>
-                  <div class="desc">
-                    <p>
-                      The main way the user extracts parsed results from the
-                      parser.
-                    </p>
-                    <h2 id="parameters">Parameters</h2>
-                    <dl>
-                      <dt>
-                        <strong><code>args</code></strong> :&ensp;<code
-                          >str</code
-                        >
-                      </dt>
-                      <dd>
-                        A sequence of strings to parse. If empty, defaults to
-                        <code>sys.argv[1:]</code>.
-                      </dd>
-                      <dt>
-                        <strong><code>return_dict</code></strong> :&ensp;<code
-                          >bool</code
-                        >
-                      </dt>
-                      <dd>
-                        Returns a sequence of tuples instead of dictionary,
-                        thereby allowing duplicate keys. The tuples are
-                        <code>KeyValueTuple</code> namedtuples, with fields
-                        <code>key</code> and <code>value</code>.
-                      </dd>
-                      <dt>
-                        <strong><code>check_help</code></strong> :&ensp;<code
-                          >bool</code
-                        >
-                      </dt>
-                      <dd>
-                        Before running the parser, checks if the input string is
-                        <code>--help</code> or <code>-h</code>. If it is,
-                        returns the usage message.
-                      </dd>
-                    </dl>
-                    <h2 id="examples">Examples</h2>
-                    <pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;-h&quot;)
+</details>
+</dd>
+<dt id="dollar_lambda.parser.Parser.parse_args"><code class="name flex">
+<span>def <span class="ident">parse_args</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[KeyValue]]'", *args: str, return_dict: bool = True, check_help: bool = True) ‑> Union[Sequence[<a title="dollar_lambda.key_value.KeyValueTuple" href="key_value.html#dollar_lambda.key_value.KeyValueTuple">KeyValueTuple</a>], Dict[str, Any]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The main way the user extracts parsed results from the parser.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>args</code></strong> :&ensp;<code>str</code></dt>
+<dd>A sequence of strings to parse. If empty, defaults to <code>sys.argv[1:]</code>.</dd>
+<dt><strong><code>return_dict</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Returns a sequence of tuples instead of dictionary, thereby allowing duplicate keys.
+The tuples are <code>KeyValueTuple</code> namedtuples, with fields <code>key</code> and <code>value</code>.</dd>
+<dt><strong><code>check_help</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Before running the parser, checks if the input string is <code>--help</code> or <code>-h</code>.
+If it is, returns the usage message.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;-h&quot;)
 usage: a
 &gt;&gt;&gt; argument(&quot;a&quot;).parse_args(&quot;--help&quot;)
 usage: a
-</code></pre>
-                  </div>
-                  <details class="source">
-                    <summary>
-                      <span>Expand source code</span>
-                    </summary>
-                    <pre><code class="python">def parse_args(
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse_args(
     self: &#34;Parser[Sequence[KeyValue]]&#34;,
     *args: str,
     return_dict: bool = True,
@@ -4949,421 +3340,85 @@ usage: a
     if return_dict:
         return {kv.key: kv.value for kv in kvs}
     return [KeyValueTuple(**asdict(kv)) for kv in kvs]</code></pre>
-                  </details>
-                </dd>
-              </dl>
-            </dd>
-          </dl>
-        </section>
-      </article>
-      <nav id="sidebar">
-        <h1>Index</h1>
-        <div class="toc">
-          <ul></ul>
-        </div>
-        <ul id="index">
-          <li>
-            <h3>Super-module</h3>
-            <ul>
-              <li>
-                <code
-                  ><a title="dollar_lambda" href="index.html"
-                    >dollar_lambda</a
-                  ></code
-                >
-              </li>
-            </ul>
-          </li>
-          <li>
-            <h3><a href="#header-functions">Functions</a></h3>
-            <ul class="two-column">
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.apply"
-                    href="#dollar_lambda.parser.apply"
-                    >apply</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.apply_item"
-                    href="#dollar_lambda.parser.apply_item"
-                    >apply_item</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.argument"
-                    href="#dollar_lambda.parser.argument"
-                    >argument</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.binary_usage"
-                    href="#dollar_lambda.parser.binary_usage"
-                    >binary_usage</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.defaults"
-                    href="#dollar_lambda.parser.defaults"
-                    >defaults</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.done"
-                    href="#dollar_lambda.parser.done"
-                    >done</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.empty"
-                    href="#dollar_lambda.parser.empty"
-                    >empty</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.equals"
-                    href="#dollar_lambda.parser.equals"
-                    >equals</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.flag"
-                    href="#dollar_lambda.parser.flag"
-                    >flag</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.help_parser"
-                    href="#dollar_lambda.parser.help_parser"
-                    >help_parser</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.item"
-                    href="#dollar_lambda.parser.item"
-                    >item</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.nonpositional"
-                    href="#dollar_lambda.parser.nonpositional"
-                    >nonpositional</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.option"
-                    href="#dollar_lambda.parser.option"
-                    >option</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.peak"
-                    href="#dollar_lambda.parser.peak"
-                    >peak</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.sat"
-                    href="#dollar_lambda.parser.sat"
-                    >sat</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.sat_item"
-                    href="#dollar_lambda.parser.sat_item"
-                    >sat_item</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.sat_peak"
-                    href="#dollar_lambda.parser.sat_peak"
-                    >sat_peak</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.type_"
-                    href="#dollar_lambda.parser.type_"
-                    >type_</a
-                  ></code
-                >
-              </li>
-              <li>
-                <code
-                  ><a
-                    title="dollar_lambda.parser.wrap_help"
-                    href="#dollar_lambda.parser.wrap_help"
-                    >wrap_help</a
-                  ></code
-                >
-              </li>
-            </ul>
-          </li>
-          <li>
-            <h3><a href="#header-classes">Classes</a></h3>
-            <ul>
-              <li>
-                <h4>
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.Parse"
-                      href="#dollar_lambda.parser.Parse"
-                      >Parse</a
-                    ></code
-                  >
-                </h4>
-                <ul class="">
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parse.parsed"
-                        href="#dollar_lambda.parser.Parse.parsed"
-                        >parsed</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parse.unparsed"
-                        href="#dollar_lambda.parser.Parse.unparsed"
-                        >unparsed</a
-                      ></code
-                    >
-                  </li>
-                </ul>
-              </li>
-              <li>
-                <h4>
-                  <code
-                    ><a
-                      title="dollar_lambda.parser.Parser"
-                      href="#dollar_lambda.parser.Parser"
-                      >Parser</a
-                    ></code
-                  >
-                </h4>
-                <ul class="two-column">
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.__add__"
-                        href="#dollar_lambda.parser.Parser.__add__"
-                        >__add__</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.__ge__"
-                        href="#dollar_lambda.parser.Parser.__ge__"
-                        >__ge__</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.__or__"
-                        href="#dollar_lambda.parser.Parser.__or__"
-                        >__or__</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.__rshift__"
-                        href="#dollar_lambda.parser.Parser.__rshift__"
-                        >__rshift__</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.bind"
-                        href="#dollar_lambda.parser.Parser.bind"
-                        >bind</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.empty"
-                        href="#dollar_lambda.parser.Parser.empty"
-                        >empty</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.f"
-                        href="#dollar_lambda.parser.Parser.f"
-                        >f</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.handle_error"
-                        href="#dollar_lambda.parser.Parser.handle_error"
-                        >handle_error</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.helps"
-                        href="#dollar_lambda.parser.Parser.helps"
-                        >helps</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.many"
-                        href="#dollar_lambda.parser.Parser.many"
-                        >many</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.many1"
-                        href="#dollar_lambda.parser.Parser.many1"
-                        >many1</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.optional"
-                        href="#dollar_lambda.parser.Parser.optional"
-                        >optional</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.parse"
-                        href="#dollar_lambda.parser.Parser.parse"
-                        >parse</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.parse_args"
-                        href="#dollar_lambda.parser.Parser.parse_args"
-                        >parse_args</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.return_"
-                        href="#dollar_lambda.parser.Parser.return_"
-                        >return_</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.usage"
-                        href="#dollar_lambda.parser.Parser.usage"
-                        >usage</a
-                      ></code
-                    >
-                  </li>
-                  <li>
-                    <code
-                      ><a
-                        title="dollar_lambda.parser.Parser.zero"
-                        href="#dollar_lambda.parser.Parser.zero"
-                        >zero</a
-                      ></code
-                    >
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </nav>
-    </main>
-    <footer id="footer">
-      <p>
-        Generated by
-        <a
-          href="https://pdoc3.github.io/pdoc"
-          title="pdoc: Python API documentation generator"
-          ><cite>pdoc</cite> 0.10.0</a
-        >.
-      </p>
-    </footer>
-  </body>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="two-column">
+<li><code><a title="dollar_lambda.parser.apply" href="#dollar_lambda.parser.apply">apply</a></code></li>
+<li><code><a title="dollar_lambda.parser.apply_item" href="#dollar_lambda.parser.apply_item">apply_item</a></code></li>
+<li><code><a title="dollar_lambda.parser.argument" href="#dollar_lambda.parser.argument">argument</a></code></li>
+<li><code><a title="dollar_lambda.parser.binary_usage" href="#dollar_lambda.parser.binary_usage">binary_usage</a></code></li>
+<li><code><a title="dollar_lambda.parser.defaults" href="#dollar_lambda.parser.defaults">defaults</a></code></li>
+<li><code><a title="dollar_lambda.parser.done" href="#dollar_lambda.parser.done">done</a></code></li>
+<li><code><a title="dollar_lambda.parser.empty" href="#dollar_lambda.parser.empty">empty</a></code></li>
+<li><code><a title="dollar_lambda.parser.equals" href="#dollar_lambda.parser.equals">equals</a></code></li>
+<li><code><a title="dollar_lambda.parser.flag" href="#dollar_lambda.parser.flag">flag</a></code></li>
+<li><code><a title="dollar_lambda.parser.help_parser" href="#dollar_lambda.parser.help_parser">help_parser</a></code></li>
+<li><code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item</a></code></li>
+<li><code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional</a></code></li>
+<li><code><a title="dollar_lambda.parser.option" href="#dollar_lambda.parser.option">option</a></code></li>
+<li><code><a title="dollar_lambda.parser.peak" href="#dollar_lambda.parser.peak">peak</a></code></li>
+<li><code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat</a></code></li>
+<li><code><a title="dollar_lambda.parser.sat_item" href="#dollar_lambda.parser.sat_item">sat_item</a></code></li>
+<li><code><a title="dollar_lambda.parser.sat_peak" href="#dollar_lambda.parser.sat_peak">sat_peak</a></code></li>
+<li><code><a title="dollar_lambda.parser.type_" href="#dollar_lambda.parser.type_">type_</a></code></li>
+<li><code><a title="dollar_lambda.parser.wrap_help" href="#dollar_lambda.parser.wrap_help">wrap_help</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="dollar_lambda.parser.Parse" href="#dollar_lambda.parser.Parse">Parse</a></code></h4>
+<ul class="">
+<li><code><a title="dollar_lambda.parser.Parse.parsed" href="#dollar_lambda.parser.Parse.parsed">parsed</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parse.unparsed" href="#dollar_lambda.parser.Parse.unparsed">unparsed</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code></h4>
+<ul class="two-column">
+<li><code><a title="dollar_lambda.parser.Parser.__add__" href="#dollar_lambda.parser.Parser.__add__">__add__</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.__ge__" href="#dollar_lambda.parser.Parser.__ge__">__ge__</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.__or__" href="#dollar_lambda.parser.Parser.__or__">__or__</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.__rshift__" href="#dollar_lambda.parser.Parser.__rshift__">__rshift__</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.bind" href="#dollar_lambda.parser.Parser.bind">bind</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.empty" href="#dollar_lambda.parser.Parser.empty">empty</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.f" href="#dollar_lambda.parser.Parser.f">f</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.handle_error" href="#dollar_lambda.parser.Parser.handle_error">handle_error</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.helps" href="#dollar_lambda.parser.Parser.helps">helps</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.many" href="#dollar_lambda.parser.Parser.many">many</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.many1" href="#dollar_lambda.parser.Parser.many1">many1</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.optional" href="#dollar_lambda.parser.Parser.optional">optional</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.parse" href="#dollar_lambda.parser.Parser.parse">parse</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.parse_args" href="#dollar_lambda.parser.Parser.parse_args">parse_args</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.return_" href="#dollar_lambda.parser.Parser.return_">return_</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.usage" href="#dollar_lambda.parser.Parser.usage">usage</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.zero" href="#dollar_lambda.parser.Parser.zero">zero</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
 </html>

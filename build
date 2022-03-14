@@ -22,41 +22,41 @@ set -eu
 # TODO mypy
 
 (
-    # The shellcheck-shfmt rule lints a shellscript with shellcheck, formats it
-    # with shfmt, then touches .tmp/shellcheck-shfmt/$in to record that it was
-    # formatted.
+	# The shellcheck-shfmt rule lints a shellscript with shellcheck, formats it
+	# with shfmt, then touches .tmp/shellcheck-shfmt/$in to record that it was
+	# formatted.
 	echo 'rule shellcheck-shfmt'
 	echo '  command = shellcheck --exclude=SC2016 $in && shfmt -s -w $in && touch $out'
 	echo 'build .tmp/shellcheck-shfmt/build: shellcheck-shfmt build'
 
-    # The nixfmt rule formats a Nix file using nixfmt. It touches
-    # .tmp/nixfmt/$in to record that the file was formatted. nixfmt update the
-    # timestamp even if the file didn’t change, so we first check if it needs to
-    # be formatted with nixfmt --check.
+	# The nixfmt rule formats a Nix file using nixfmt. It touches
+	# .tmp/nixfmt/$in to record that the file was formatted. nixfmt update the
+	# timestamp even if the file didn’t change, so we first check if it needs to
+	# be formatted with nixfmt --check.
 	echo 'rule nixfmt'
 	echo '  command = (nixfmt --check $in || nixfmt $in) && touch $out'
 	echo 'build .tmp/nixfmt/flake.nix: nixfmt flake.nix'
 
-    # The isort-black rule formats a Python file using isort followed by black.
-    # It touches .tmp/isort-black/$in to record that the file was formatted.
+	# The isort-black rule formats a Python file using isort followed by black.
+	# It touches .tmp/isort-black/$in to record that the file was formatted.
 	echo 'rule isort-black'
 	echo '  command = isort --profile black $in && black --quiet $in && touch $out'
 	git ls-files | grep '\.py$' | while read -r filename; do
 		echo "build .tmp/isort-black/$filename: isort-black $filename"
 	done
 
-    # The flake8 rule lints a Python file with flake8. We don’t lint tutorial.py
-    # and readme.py because they’re automatically generated. It touches
-    # .tmp/flake8/$in to record that the file was linted. For each file we
-    # specify that it needs to be formatted with isort-black first.
+	# The flake8 rule lints a Python file with flake8. We don’t lint tutorial.py
+	# and readme.py because they’re automatically generated. It touches
+	# .tmp/flake8/$in to record that the file was linted. For each file we
+	# specify that it needs to be formatted with isort-black first.
 	echo 'rule flake8'
 	echo '  command = flake8 $in && touch $out'
 	git ls-files | grep -v 'tutorial.py' | grep -v 'readme.py' | grep '\.py$' | while read -r filename; do
 		echo "build .tmp/flake8/$filename: flake8 $filename || .tmp/isort-black/$filename"
 	done
 
-    # The prettier rule formats the file with Prettier and touches the file
-    # .tmp/prettier/$in to indicate that the file was formatted.
+	# The prettier rule formats the file with Prettier and touches the file
+	# .tmp/prettier/$in to indicate that the file was formatted.
 	echo 'rule prettier'
 	echo '  command = prettier --loglevel warn --write $in && touch $out'
 	git ls-files | grep '\.html$|\.md$|\.yaml$' | while read -r filename; do
