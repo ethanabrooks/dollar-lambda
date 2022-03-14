@@ -1,8 +1,11 @@
 all:
-    @just mypy test readme docs
+    @just docs mypy prettier readme test
 
 mypy:
 	mypy --show-error-codes --exclude=readme.py dollar_lambda
+
+prettier:
+    prettier --write .
 
 test:
 	python -m unittest test.py
