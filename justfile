@@ -1,3 +1,5 @@
+# TODO Maybe add default recipe and/or summary recipe.
+
 init-poetry:
     # TODO fix installed Python package versions.
     # TODO can this be any faster?
