@@ -1,33 +1,462 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
-<title>dollar_lambda.decorators API documentation</title>
-<meta name="description" content="Defines the `command` decorator and the `CommandTree` class." />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
-<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
-</head>
-<body>
-<main>
-<article id="content">
-<header>
-<h1 class="title">Module <code>dollar_lambda.decorators</code></h1>
-</header>
-<section id="section-intro">
-<p>Defines the <code><a title="dollar_lambda.decorators.command" href="#dollar_lambda.decorators.command">command()</a></code> decorator and the <code><a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a></code> class.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1"
+    />
+    <meta name="generator" content="pdoc 0.10.0" />
+    <title>dollar_lambda.decorators API documentation</title>
+    <meta
+      name="description"
+      content="Defines the `command` decorator and the `CommandTree` class."
+    />
+    <link
+      rel="preload stylesheet"
+      as="style"
+      href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css"
+      integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs="
+      crossorigin
+    />
+    <link
+      rel="preload stylesheet"
+      as="style"
+      href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css"
+      integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg="
+      crossorigin
+    />
+    <link
+      rel="stylesheet preload"
+      as="style"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css"
+      crossorigin
+    />
+    <style>
+      :root {
+        --highlight-color: #fe9;
+      }
+      .flex {
+        display: flex !important;
+      }
+      body {
+        line-height: 1.5em;
+      }
+      #content {
+        padding: 20px;
+      }
+      #sidebar {
+        padding: 30px;
+        overflow: hidden;
+      }
+      #sidebar > *:last-child {
+        margin-bottom: 2cm;
+      }
+      .http-server-breadcrumbs {
+        font-size: 130%;
+        margin: 0 0 15px 0;
+      }
+      #footer {
+        font-size: 0.75em;
+        padding: 5px 30px;
+        border-top: 1px solid #ddd;
+        text-align: right;
+      }
+      #footer p {
+        margin: 0 0 0 1em;
+        display: inline-block;
+      }
+      #footer p:last-child {
+        margin-right: 30px;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      h5 {
+        font-weight: 300;
+      }
+      h1 {
+        font-size: 2.5em;
+        line-height: 1.1em;
+      }
+      h2 {
+        font-size: 1.75em;
+        margin: 1em 0 0.5em 0;
+      }
+      h3 {
+        font-size: 1.4em;
+        margin: 25px 0 10px 0;
+      }
+      h4 {
+        margin: 0;
+        font-size: 105%;
+      }
+      h1:target,
+      h2:target,
+      h3:target,
+      h4:target,
+      h5:target,
+      h6:target {
+        background: var(--highlight-color);
+        padding: 0.2em 0;
+      }
+      a {
+        color: #058;
+        text-decoration: none;
+        transition: color 0.3s ease-in-out;
+      }
+      a:hover {
+        color: #e82;
+      }
+      .title code {
+        font-weight: bold;
+      }
+      h2[id^="header-"] {
+        margin-top: 2em;
+      }
+      .ident {
+        color: #900;
+      }
+      pre code {
+        background: #f8f8f8;
+        font-size: 0.8em;
+        line-height: 1.4em;
+      }
+      code {
+        background: #f2f2f1;
+        padding: 1px 4px;
+        overflow-wrap: break-word;
+      }
+      h1 code {
+        background: transparent;
+      }
+      pre {
+        background: #f8f8f8;
+        border: 0;
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        margin: 1em 0;
+        padding: 1ex;
+      }
+      #http-server-module-list {
+        display: flex;
+        flex-flow: column;
+      }
+      #http-server-module-list div {
+        display: flex;
+      }
+      #http-server-module-list dt {
+        min-width: 10%;
+      }
+      #http-server-module-list p {
+        margin-top: 0;
+      }
+      .toc ul,
+      #index {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      #index code {
+        background: transparent;
+      }
+      #index h3 {
+        border-bottom: 1px solid #ddd;
+      }
+      #index ul {
+        padding: 0;
+      }
+      #index h4 {
+        margin-top: 0.6em;
+        font-weight: bold;
+      }
+      @media (min-width: 200ex) {
+        #index .two-column {
+          column-count: 2;
+        }
+      }
+      @media (min-width: 300ex) {
+        #index .two-column {
+          column-count: 3;
+        }
+      }
+      dl {
+        margin-bottom: 2em;
+      }
+      dl dl:last-child {
+        margin-bottom: 4em;
+      }
+      dd {
+        margin: 0 0 1em 3em;
+      }
+      #header-classes + dl > dd {
+        margin-bottom: 3em;
+      }
+      dd dd {
+        margin-left: 2em;
+      }
+      dd p {
+        margin: 10px 0;
+      }
+      .name {
+        background: #eee;
+        font-weight: bold;
+        font-size: 0.85em;
+        padding: 5px 10px;
+        display: inline-block;
+        min-width: 40%;
+      }
+      .name:hover {
+        background: #e0e0e0;
+      }
+      dt:target .name {
+        background: var(--highlight-color);
+      }
+      .name > span:first-child {
+        white-space: nowrap;
+      }
+      .name.class > span:nth-child(2) {
+        margin-left: 0.4em;
+      }
+      .inherited {
+        color: #999;
+        border-left: 5px solid #eee;
+        padding-left: 1em;
+      }
+      .inheritance em {
+        font-style: normal;
+        font-weight: bold;
+      }
+      .desc h2 {
+        font-weight: 400;
+        font-size: 1.25em;
+      }
+      .desc h3 {
+        font-size: 1em;
+      }
+      .desc dt code {
+        background: inherit;
+      }
+      .source summary,
+      .git-link-div {
+        color: #666;
+        text-align: right;
+        font-weight: 400;
+        font-size: 0.8em;
+        text-transform: uppercase;
+      }
+      .source summary > * {
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .git-link {
+        color: inherit;
+        margin-left: 1em;
+      }
+      .source pre {
+        max-height: 500px;
+        overflow: auto;
+        margin: 0;
+      }
+      .source pre code {
+        font-size: 12px;
+        overflow: visible;
+      }
+      .hlist {
+        list-style: none;
+      }
+      .hlist li {
+        display: inline;
+      }
+      .hlist li:after {
+        content: ",\2002";
+      }
+      .hlist li:last-child:after {
+        content: none;
+      }
+      .hlist .hlist {
+        display: inline;
+        padding-left: 1em;
+      }
+      img {
+        max-width: 100%;
+      }
+      td {
+        padding: 0 0.5em;
+      }
+      .admonition {
+        padding: 0.1em 0.5em;
+        margin-bottom: 1em;
+      }
+      .admonition-title {
+        font-weight: bold;
+      }
+      .admonition.note,
+      .admonition.info,
+      .admonition.important {
+        background: #aef;
+      }
+      .admonition.todo,
+      .admonition.versionadded,
+      .admonition.tip,
+      .admonition.hint {
+        background: #dfd;
+      }
+      .admonition.warning,
+      .admonition.versionchanged,
+      .admonition.deprecated {
+        background: #fd4;
+      }
+      .admonition.error,
+      .admonition.danger,
+      .admonition.caution {
+        background: lightpink;
+      }
+    </style>
+    <style media="screen and (min-width: 700px)">
+      @media screen and (min-width: 700px) {
+        #sidebar {
+          width: 30%;
+          height: 100vh;
+          overflow: auto;
+          position: sticky;
+          top: 0;
+        }
+        #content {
+          width: 70%;
+          max-width: 100ch;
+          padding: 3em 4em;
+          border-left: 1px solid #ddd;
+        }
+        pre code {
+          font-size: 1em;
+        }
+        .item .name {
+          font-size: 1em;
+        }
+        main {
+          display: flex;
+          flex-direction: row-reverse;
+          justify-content: flex-end;
+        }
+        .toc ul ul,
+        #index ul {
+          padding-left: 1.5em;
+        }
+        .toc > ul > li {
+          margin-top: 0.5em;
+        }
+      }
+    </style>
+    <style media="print">
+      @media print {
+        #sidebar h1 {
+          page-break-before: always;
+        }
+        .source {
+          display: none;
+        }
+      }
+      @media print {
+        * {
+          background: transparent !important;
+          color: #000 !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+        a[href]:after {
+          content: " (" attr(href) ")";
+          font-size: 90%;
+        }
+        a[href][title]:after {
+          content: none;
+        }
+        abbr[title]:after {
+          content: " (" attr(title) ")";
+        }
+        .ir a:after,
+        a[href^="javascript:"]:after,
+        a[href^="#"]:after {
+          content: "";
+        }
+        pre,
+        blockquote {
+          border: 1px solid #999;
+          page-break-inside: avoid;
+        }
+        thead {
+          display: table-header-group;
+        }
+        tr,
+        img {
+          page-break-inside: avoid;
+        }
+        img {
+          max-width: 100% !important;
+        }
+        @page {
+          margin: 0.5cm;
+        }
+        p,
+        h2,
+        h3 {
+          orphans: 3;
+          widows: 3;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+          page-break-after: avoid;
+        }
+      }
+    </style>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"
+      integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8="
+      crossorigin
+    ></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", () =>
+        hljs.initHighlighting()
+      );
+    </script>
+  </head>
+  <body>
+    <main>
+      <article id="content">
+        <header>
+          <h1 class="title">Module <code>dollar_lambda.decorators</code></h1>
+        </header>
+        <section id="section-intro">
+          <p>
+            Defines the
+            <code
+              ><a
+                title="dollar_lambda.decorators.command"
+                href="#dollar_lambda.decorators.command"
+                >command()</a
+              ></code
+            >
+            decorator and the
+            <code
+              ><a
+                title="dollar_lambda.decorators.CommandTree"
+                href="#dollar_lambda.decorators.CommandTree"
+                >CommandTree</a
+              ></code
+            >
+            class.
+          </p>
+          <details class="source">
+            <summary>
+              <span>Expand source code</span>
+            </summary>
+            <pre><code class="python">&#34;&#34;&#34;
 Defines the `command` decorator and the `CommandTree` class.
 &#34;&#34;&#34;
 import operator
@@ -35,7 +464,7 @@ import sys
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
-from typing import Any, Callable, Dict, Iterator, List, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, cast
 
 from pytypeclass.nonempty_list import NonemptyList
 
@@ -196,46 +625,48 @@ class _FunctionPair(Sequence[A]):
         function = other.function if isinstance(other, _FunctionPair) else self.function
         return _FunctionPair(get=[*self, *other], function=function)
 
-
-def _command_parser(
-    func: Callable,
-    usage: Optional[str] = None,
-    help: Optional[Dict[str, str]] = None,
-) -&gt; Parser[_FunctionPair[A]]:
-    _help = {} if help is None else help
-    return Parser[_FunctionPair[A]](
-        lambda cs: Result.return_(
-            Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
-        ),
-        usage=usage,
-        helps=_help,
-    )
-
-
-def _subcommand_parser(
-    func: Callable,
-    usage: Optional[str] = None,
-    help: Optional[Dict[str, str]] = None,
-) -&gt; Parser[_FunctionPair[KeyValue[str]]]:
-    _help = {} if help is None else help
-
-    # def f(
-    #     _: Sequence[KeyValue[str]],
-    # ) -&gt; Parser[FunctionPair[KeyValue[str]]]:
-    #     return Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
-
-    def g(
-        cs: Sequence[str],
-    ) -&gt; Result[Parse[_FunctionPair[KeyValue[str]]]]:
-        return Result.return_(
-            Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+    @classmethod
+    def command(
+        cls: Type[&#34;_FunctionPair[A]&#34;],
+        func: Callable,
+        usage: Optional[str] = None,
+        help: Optional[Dict[str, str]] = None,
+    ) -&gt; Parser[&#34;_FunctionPair[A]&#34;]:
+        _help = {} if help is None else help
+        return Parser[_FunctionPair[A]](
+            lambda cs: Result.return_(
+                Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
+            ),
+            usage=usage,
+            helps=_help,
         )
 
-    eq = equals(func.__name__)
-    p = eq &gt;= (
-        lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
-    )
-    return replace(p, usage=eq.usage, helps=eq.helps)
+    @classmethod
+    def subcommand(
+        cls: Type[&#34;_FunctionPair[A]&#34;],
+        func: Callable,
+        usage: Optional[str] = None,
+        help: Optional[Dict[str, str]] = None,
+    ) -&gt; Parser[&#34;_FunctionPair[KeyValue[str]]&#34;]:
+        _help = {} if help is None else help
+
+        # def f(
+        #     _: Sequence[KeyValue[str]],
+        # ) -&gt; Parser[FunctionPair[KeyValue[str]]]:
+        #     return Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+
+        def g(
+            cs: Sequence[str],
+        ) -&gt; Result[Parse[_FunctionPair[KeyValue[str]]]]:
+            return Result.return_(
+                Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+            )
+
+        eq = equals(func.__name__)
+        p = eq &gt;= (
+            lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+        )
+        return replace(p, usage=eq.usage, helps=eq.helps)
 
 
 @dataclass
@@ -251,9 +682,9 @@ class _Node:
 
     def parser(self, *exclude: str) -&gt; Parser[_FunctionPair[KeyValue[Any]]]:
         p1 = (
-            _subcommand_parser(self.function)
+            _FunctionPair[KeyValue[Any]].subcommand(self.function)
             if self.subcommand
-            else _command_parser(self.function)
+            else _FunctionPair[KeyValue[Any]].command(self.function)
         )
         p2 = _func_to_parser(
             self.function,
@@ -286,7 +717,7 @@ class CommandTree:
 
     At this point tree is just a parser that takes a single option `-a`:
 
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A
 
     Now let&#39;s add a second child function:
@@ -295,18 +726,18 @@ class CommandTree:
     ... def f2(b: bool):
     ...     return dict(f2=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: [-a A | -b]
 
-    `tree.main` will execute either `f1` or `f2` based on which of the parsers succeeds:
+    `tree` will execute either `f1` or `f2` based on which of the parsers succeeds:
 
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)  # this will execute f1
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)  # this will execute f1
     {&#39;f1&#39;: {&#39;a&#39;: 1}}
 
-    &gt;&gt;&gt; tree.main(&#34;-b&#34;)  # this will execute f2
+    &gt;&gt;&gt; tree(&#34;-b&#34;)  # this will execute f2
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
-    &gt;&gt;&gt; tree.main()  # fails
+    &gt;&gt;&gt; tree()  # fails
     usage: [-a A | -b]
     The following arguments are required: -a
 
@@ -328,7 +759,7 @@ class CommandTree:
 
     Now this sequences the arguments of f1 and f2:
 
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A -b
 
     As before we can define an additional child function to induce alternative
@@ -339,15 +770,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Note that our usage message shows `-a A` preceding the brackets:
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A [-b | -c C]
 
     To execute f2, we give the `-b` flag:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-b&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;-b&#34;)
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
     To execute f3, we give the `-c` flag:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;-c&#34;, &#34;foo&#34;)
     {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
 
     Often we want to explicity specify which function to execute by naming it on the command line.
@@ -371,15 +802,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Now the usage message indicates the `f2` and `f3` are required arguments:
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A [f2 -b | f3 -c C]
 
     Now we would select f2 as follows:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f2&#34;, &#34;-b&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;f2&#34;, &#34;-b&#34;)
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
     And f3 as follows:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;foo&#34;)
     {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
     &#34;&#34;&#34;
 
@@ -425,7 +856,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: --no-b
         b: (default: True)
 
@@ -437,7 +868,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: -b
         b: (default: True)
 
@@ -459,8 +890,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        Now we invoke `tree` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
         {&#39;f1&#39;: {&#39;a&#39;: 1}}
         &#34;&#34;&#34;
         return self._decorator(
@@ -499,7 +930,7 @@ class CommandTree:
 
         return wrap_help(reduce(operator.or_, get_alternatives()))
 
-    def main(self, *args: str) -&gt; Any:
+    def __call__(self, *args: str) -&gt; Any:
         &#34;&#34;&#34;
         Run the parser associated with this tree and execute the
         function associated with a succeeding parser.
@@ -560,7 +991,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: f1 --no-b
         b: (default: True)
 
@@ -572,7 +1003,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: f1 -b
         b: (default: True)
 
@@ -594,8 +1025,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        Now we invoke `tree` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
         {&#39;f1&#39;: {&#39;a&#39;: 1}}
         &#34;&#34;&#34;
         return self._decorator(
@@ -606,45 +1037,87 @@ class CommandTree:
             strings=strings,
             subcommand=True,
         )</code></pre>
-</details>
-</section>
-<section>
-</section>
-<section>
-</section>
-<section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="dollar_lambda.decorators.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable[[Callable], Callable]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A succinct way to generate a simple <code>nonpositional</code> parser. <code>@command</code> derives the
-component parsers from the function's signature and automatically executes the function with
-the parsed arguments, if parsing succeeds:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
+          </details>
+        </section>
+        <section></section>
+        <section></section>
+        <section>
+          <h2 class="section-title" id="header-functions">Functions</h2>
+          <dl>
+            <dt id="dollar_lambda.decorators.command">
+              <code class="name flex">
+                <span>def <span class="ident">command</span></span
+                >(<span
+                  >flip_bools: bool = True,
+                  help: Optional[Dict[str, str]] = None,
+                  strings: Optional[Dict[str, str]] = None,
+                  types: Optional[Dict[str, Callable[[str], Any]]] = None)
+                  ‑> Callable[[Callable], Callable]</span
+                >
+              </code>
+            </dt>
+            <dd>
+              <div class="desc">
+                <p>
+                  A succinct way to generate a simple
+                  <code>nonpositional</code> parser.
+                  <code>@command</code> derives the component parsers from the
+                  function's signature and automatically executes the function
+                  with the parsed arguments, if parsing succeeds:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(a=&quot;something about a&quot;), types=dict(a=lambda x: int(x) + 1))
 ... def f(a: int = 1, b: bool = False):
 ...     return dict(a=a, b=b)
 &gt;&gt;&gt; f(&quot;-a&quot;, &quot;2&quot;, &quot;-b&quot;)
 {'a': 3, 'b': True}
 </code></pre>
-<p>If the wrapped function receives no arguments (as in <code>f()</code>), the parser will take
-<code>sys.argv[1:]</code> as the input.</p>
-<p>Note that <code>@command</code> does not handle mutually exclusive arguments or alternative
-arguments.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
-<dd>For boolean arguments that default to true, this changes the flag from <code>--{dest}</code> to <code>--no-{dest}</code>:</dd>
-<dt><strong><code>help</code></strong> :&ensp;<code>dict[str, str]</code></dt>
-<dd>A dictionary of help strings for the arguments.</dd>
-<dt><strong><code>strings</code></strong> :&ensp;<code>dict[str, str]</code></dt>
-<dd>This dictionary maps variable names to the strings that the parser will look for in the input.</dd>
-<dt><strong><code>types</code></strong> :&ensp;<code>dict[str, Callable[[str], Any]]</code></dt>
-<dd>This dictionary maps variable names to custom type converters.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command()
+                <p>
+                  If the wrapped function receives no arguments (as in
+                  <code>f()</code>), the parser will take
+                  <code>sys.argv[1:]</code> as the input.
+                </p>
+                <p>
+                  Note that <code>@command</code> does not handle mutually
+                  exclusive arguments or alternative arguments.
+                </p>
+                <h2 id="parameters">Parameters</h2>
+                <dl>
+                  <dt>
+                    <strong><code>flip_bools</code></strong> :&ensp;<code
+                      >bool</code
+                    >
+                  </dt>
+                  <dd>
+                    For boolean arguments that default to true, this changes the
+                    flag from <code>--{dest}</code> to <code>--no-{dest}</code>:
+                  </dd>
+                  <dt>
+                    <strong><code>help</code></strong> :&ensp;<code
+                      >dict[str, str]</code
+                    >
+                  </dt>
+                  <dd>A dictionary of help strings for the arguments.</dd>
+                  <dt>
+                    <strong><code>strings</code></strong> :&ensp;<code
+                      >dict[str, str]</code
+                    >
+                  </dt>
+                  <dd>
+                    This dictionary maps variable names to the strings that the
+                    parser will look for in the input.
+                  </dd>
+                  <dt>
+                    <strong><code>types</code></strong> :&ensp;<code
+                      >dict[str, Callable[[str], Any]]</code
+                    >
+                  </dt>
+                  <dd>
+                    This dictionary maps variable names to custom type
+                    converters.
+                  </dd>
+                </dl>
+                <h2 id="examples">Examples</h2>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command()
 ... def f(cuda: bool = True):
 ...     return dict(cuda=cuda)
 &gt;&gt;&gt; f()
@@ -652,23 +1125,29 @@ arguments.</p>
 &gt;&gt;&gt; f(&quot;--no-cuda&quot;)  # flip_bools adds --no- to the flag
 {'cuda': False}
 </code></pre>
-<p>As the following example demonstrates, when <code>flip_bools=False</code> output can be somewhat confusing:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=False)
+                <p>
+                  As the following example demonstrates, when
+                  <code>flip_bools=False</code> output can be somewhat
+                  confusing:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command(flip_bools=False)
 ... def f(cuda: bool = True):
 ...     return dict(cuda=cuda)
 &gt;&gt;&gt; f(&quot;--cuda&quot;)
 {'cuda': False}
 </code></pre>
-<p>Here is an example using the <code>help</code> parameter:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(quiet=&quot;Be quiet&quot;))
+                <p>Here is an example using the <code>help</code> parameter:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(quiet=&quot;Be quiet&quot;))
 ... def f(quiet: bool):
 ...     return dict(quiet=quiet)
 &gt;&gt;&gt; f(&quot;--help&quot;)
 usage: --quiet
 quiet: Be quiet
 </code></pre>
-<p>Here is an example using the <code>strings</code> parameter:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(strings=dict(quiet=&quot;--quiet-mode&quot;))
+                <p>
+                  Here is an example using the <code>strings</code> parameter:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command(strings=dict(quiet=&quot;--quiet-mode&quot;))
 ... def f(quiet: bool):
 ...     return dict(quiet=quiet)
 &gt;&gt;&gt; f(&quot;--quiet-mode&quot;)
@@ -677,18 +1156,19 @@ quiet: Be quiet
 usage: --quiet-mode
 Expected '--quiet-mode'. Got '--quiet'
 </code></pre>
-<p>Here is an example using the <code>type</code> parameter:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
+                <p>Here is an example using the <code>type</code> parameter:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @command(types=dict(x=lambda x: int(x) + 1))
 ... def f(x: int):
 ...     return dict(x=x)
 &gt;&gt;&gt; f(&quot;-x&quot;, &quot;0&quot;)
 {'x': 1}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def command(
+</code></pre>
+              </div>
+              <details class="source">
+                <summary>
+                  <span>Expand source code</span>
+                </summary>
+                <pre><code class="python">def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
     strings: Optional[Dict[str, str]] = None,
@@ -792,91 +1272,128 @@ Expected '--quiet-mode'. Got '--quiet'
         return wrapped
 
     return wrapper</code></pre>
-</details>
-</dd>
-</dl>
-</section>
-<section>
-<h2 class="section-title" id="header-classes">Classes</h2>
-<dl>
-<dt id="dollar_lambda.decorators.CommandTree"><code class="flex name class">
-<span>class <span class="ident">CommandTree</span></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Allows parsers to dynamically dispatch their results based on the input.
-First we must define a <code><a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a></code> object:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+              </details>
+            </dd>
+          </dl>
+        </section>
+        <section>
+          <h2 class="section-title" id="header-classes">Classes</h2>
+          <dl>
+            <dt id="dollar_lambda.decorators.CommandTree">
+              <code class="flex name class">
+                <span>class <span class="ident">CommandTree</span></span>
+              </code>
+            </dt>
+            <dd>
+              <div class="desc">
+                <p>
+                  Allows parsers to dynamically dispatch their results based on
+                  the input. First we must define a
+                  <code
+                    ><a
+                      title="dollar_lambda.decorators.CommandTree"
+                      href="#dollar_lambda.decorators.CommandTree"
+                      >CommandTree</a
+                    ></code
+                  >
+                  object:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 </code></pre>
-<p>Now we define at least one child function:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
+                <p>Now we define at least one child function:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 </code></pre>
-<p>At this point tree is just a parser that takes a single option <code>-a</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+                <p>
+                  At this point tree is just a parser that takes a single option
+                  <code>-a</code>:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A
 </code></pre>
-<p>Now let's add a second child function:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
+                <p>Now let's add a second child function:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
 ... def f2(b: bool):
 ...     return dict(f2=dict(b=b))
 ...
-&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: [-a A | -b]
 </code></pre>
-<p><code>tree.main</code> will execute either <code>f1</code> or <code>f2</code> based on which of the parsers succeeds:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)  # this will execute f1
+                <p>
+                  <code>tree</code> will execute either <code>f1</code> or
+                  <code>f2</code> based on which of the parsers succeeds:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;)  # this will execute f1
 {'f1': {'a': 1}}
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-b&quot;)  # this will execute f2
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-b&quot;)  # this will execute f2
 {'f2': {'b': True}}
 </code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main()  # fails
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree()  # fails
 usage: [-a A | -b]
 The following arguments are required: -a
 </code></pre>
-<p>Often in cases where there are alternative sets of argument like this,
-there is also a set of shared arguments. It would be cumbersome to have to
-repeat these for both child functions. Instead we can define a parent function
-as follows:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                <p>
+                  Often in cases where there are alternative sets of argument
+                  like this, there is also a set of shared arguments. It would
+                  be cumbersome to have to repeat these for both child
+                  functions. Instead we can define a parent function as follows:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
 ...     raise RuntimeError(&quot;This function should not be called&quot;)
 </code></pre>
-<p>Note that the arguments of <code>f2</code> must include all the arguments of <code>f1</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
+                <p>
+                  Note that the arguments of <code>f2</code> must include all
+                  the arguments of <code>f1</code>:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
 ... def f2(a:int, b: bool):
 ...     return dict(f2=dict(b=b))
 </code></pre>
-<p>Now this sequences the arguments of f1 and f2:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+                <p>Now this sequences the arguments of f1 and f2:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A -b
 </code></pre>
-<p>As before we can define an additional child function to induce alternative
-argument sets:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
+                <p>
+                  As before we can define an additional child function to induce
+                  alternative argument sets:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
 ... def f3(a: int, c: str):
 ...     return dict(f3=dict(c=c))
 </code></pre>
-<p>Note that our usage message shows <code>-a A</code> preceding the brackets:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+                <p>
+                  Note that our usage message shows <code>-a A</code> preceding
+                  the brackets:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A [-b | -c C]
 </code></pre>
-<p>To execute f2, we give the <code>-b</code> flag:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;-b&quot;)
+                <p>To execute f2, we give the <code>-b</code> flag:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;, &quot;-b&quot;)
 {'f2': {'b': True}}
 </code></pre>
-<p>To execute f3, we give the <code>-c</code> flag:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;-c&quot;, &quot;foo&quot;)
+                <p>To execute f3, we give the <code>-c</code> flag:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;, &quot;-c&quot;, &quot;foo&quot;)
 {'f3': {'c': 'foo'}}
 </code></pre>
-<p>Often we want to explicity specify which function to execute by naming it on the command line.
-This would implement functionality similar to
-<a href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers"><code>ArgumentParser.add_subparsers</code></a></p>
-<p>For this we would use the <code>subcommand</code> decorator:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                <p>
+                  Often we want to explicity specify which function to execute
+                  by naming it on the command line. This would implement
+                  functionality similar to
+                  <a
+                    href="https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers"
+                    ><code>ArgumentParser.add_subparsers</code></a
+                  >
+                </p>
+                <p>
+                  For this we would use the <code>subcommand</code> decorator:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
@@ -890,23 +1407,27 @@ This would implement functionality similar to
 ... def f3(a: int, c: str):
 ...     return dict(f3=dict(c=c))
 </code></pre>
-<p>Now the usage message indicates the <code>f2</code> and <code>f3</code> are required arguments:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+                <p>
+                  Now the usage message indicates the <code>f2</code> and
+                  <code>f3</code> are required arguments:
+                </p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A [f2 -b | f3 -c C]
 </code></pre>
-<p>Now we would select f2 as follows:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f2&quot;, &quot;-b&quot;)
+                <p>Now we would select f2 as follows:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;, &quot;f2&quot;, &quot;-b&quot;)
 {'f2': {'b': True}}
 </code></pre>
-<p>And f3 as follows:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;, &quot;f3&quot;, &quot;-c&quot;, &quot;foo&quot;)
+                <p>And f3 as follows:</p>
+                <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;, &quot;f3&quot;, &quot;-c&quot;, &quot;foo&quot;)
 {'f3': {'c': 'foo'}}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@dataclass
+</code></pre>
+              </div>
+              <details class="source">
+                <summary>
+                  <span>Expand source code</span>
+                </summary>
+                <pre><code class="python">@dataclass
 class CommandTree:
     &#34;&#34;&#34;
     Allows parsers to dynamically dispatch their results based on the input.
@@ -922,7 +1443,7 @@ class CommandTree:
 
     At this point tree is just a parser that takes a single option `-a`:
 
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A
 
     Now let&#39;s add a second child function:
@@ -931,18 +1452,18 @@ class CommandTree:
     ... def f2(b: bool):
     ...     return dict(f2=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: [-a A | -b]
 
-    `tree.main` will execute either `f1` or `f2` based on which of the parsers succeeds:
+    `tree` will execute either `f1` or `f2` based on which of the parsers succeeds:
 
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)  # this will execute f1
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)  # this will execute f1
     {&#39;f1&#39;: {&#39;a&#39;: 1}}
 
-    &gt;&gt;&gt; tree.main(&#34;-b&#34;)  # this will execute f2
+    &gt;&gt;&gt; tree(&#34;-b&#34;)  # this will execute f2
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
-    &gt;&gt;&gt; tree.main()  # fails
+    &gt;&gt;&gt; tree()  # fails
     usage: [-a A | -b]
     The following arguments are required: -a
 
@@ -964,7 +1485,7 @@ class CommandTree:
 
     Now this sequences the arguments of f1 and f2:
 
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A -b
 
     As before we can define an additional child function to induce alternative
@@ -975,15 +1496,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Note that our usage message shows `-a A` preceding the brackets:
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A [-b | -c C]
 
     To execute f2, we give the `-b` flag:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-b&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;-b&#34;)
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
     To execute f3, we give the `-c` flag:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;-c&#34;, &#34;foo&#34;)
     {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
 
     Often we want to explicity specify which function to execute by naming it on the command line.
@@ -1007,15 +1528,15 @@ class CommandTree:
     ...     return dict(f3=dict(c=c))
 
     Now the usage message indicates the `f2` and `f3` are required arguments:
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -a A [f2 -b | f3 -c C]
 
     Now we would select f2 as follows:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f2&#34;, &#34;-b&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;f2&#34;, &#34;-b&#34;)
     {&#39;f2&#39;: {&#39;b&#39;: True}}
 
     And f3 as follows:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;foo&#34;)
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;, &#34;f3&#34;, &#34;-c&#34;, &#34;foo&#34;)
     {&#39;f3&#39;: {&#39;c&#39;: &#39;foo&#39;}}
     &#34;&#34;&#34;
 
@@ -1061,7 +1582,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: --no-b
         b: (default: True)
 
@@ -1073,7 +1594,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: -b
         b: (default: True)
 
@@ -1095,8 +1616,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        Now we invoke `tree` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
         {&#39;f1&#39;: {&#39;a&#39;: 1}}
         &#34;&#34;&#34;
         return self._decorator(
@@ -1135,7 +1656,7 @@ class CommandTree:
 
         return wrap_help(reduce(operator.or_, get_alternatives()))
 
-    def main(self, *args: str) -&gt; Any:
+    def __call__(self, *args: str) -&gt; Any:
         &#34;&#34;&#34;
         Run the parser associated with this tree and execute the
         function associated with a succeeding parser.
@@ -1196,7 +1717,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: f1 --no-b
         b: (default: True)
 
@@ -1208,7 +1729,7 @@ class CommandTree:
         ... def f1(b: bool = True):
         ...     return dict(f1=dict(b=b))
         ...
-        &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+        &gt;&gt;&gt; tree(&#34;-h&#34;)
         usage: f1 -b
         b: (default: True)
 
@@ -1230,8 +1751,8 @@ class CommandTree:
         ... def f3(a: int, c: str):
         ...     return dict(f3=dict(c=c))
 
-        Now we invoke `tree.main` without calling `f2` or `f3`:
-        &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+        Now we invoke `tree` without calling `f2` or `f3`:
+        &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
         {&#39;f1&#39;: {&#39;a&#39;: 1}}
         &#34;&#34;&#34;
         return self._decorator(
@@ -1242,53 +1763,99 @@ class CommandTree:
             strings=strings,
             subcommand=True,
         )</code></pre>
-</details>
-<h3>Methods</h3>
-<dl>
-<dt id="dollar_lambda.decorators.CommandTree.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = True, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A decorator for adding a function as a child of this tree.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
-<dt><strong><code>help</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of help strings for the arguments.</dd>
-<dt><strong><code>required</code></strong> :&ensp;<code>bool</code></dt>
-<dd>If any sibling child functions are not required, then the user will be
-able to invoke the parent function by not selecting any of the child functions.</dd>
-<dt><strong><code>strings</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of strings to use for the arguments.</dd>
-<dt><strong><code>types</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of types to use for the arguments.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<p>With <code>flip_bools</code> set to <code>True</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+              </details>
+              <h3>Methods</h3>
+              <dl>
+                <dt id="dollar_lambda.decorators.CommandTree.command">
+                  <code class="name flex">
+                    <span>def <span class="ident">command</span></span
+                    >(<span
+                      >self, flip_bools: bool = True,
+                      help: Optional[Dict[str, str]] = None,
+                      required: bool = True,
+                      strings: Optional[Dict[str, str]] = None,
+                      types: Optional[Dict[str, Callable[[str], Any]]] = None)
+                      ‑> Callable</span
+                    >
+                  </code>
+                </dt>
+                <dd>
+                  <div class="desc">
+                    <p>
+                      A decorator for adding a function as a child of this tree.
+                    </p>
+                    <h2 id="parameters">Parameters</h2>
+                    <dl>
+                      <dt>
+                        <strong><code>flip_bools</code></strong> :&ensp;<code
+                          >bool</code
+                        >
+                      </dt>
+                      <dd>
+                        Whether to add <code>--no-&lt;argument&gt;</code> before
+                        arguments that default to <code>True</code>.
+                      </dd>
+                      <dt>
+                        <strong><code>help</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of help strings for the arguments.</dd>
+                      <dt>
+                        <strong><code>required</code></strong> :&ensp;<code
+                          >bool</code
+                        >
+                      </dt>
+                      <dd>
+                        If any sibling child functions are not required, then
+                        the user will be able to invoke the parent function by
+                        not selecting any of the child functions.
+                      </dd>
+                      <dt>
+                        <strong><code>strings</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of strings to use for the arguments.</dd>
+                      <dt>
+                        <strong><code>types</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of types to use for the arguments.</dd>
+                    </dl>
+                    <h2 id="examples">Examples</h2>
+                    <p>
+                      With <code>flip_bools</code> set to <code>True</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(flip_bools=True)
 ... def f1(b: bool = True):
 ...     return dict(f1=dict(b=b))
 ...
-&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: --no-b
 b: (default: True)
 </code></pre>
-<p>With <code>flip_bools</code> set to <code>False</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                    <p>
+                      With <code>flip_bools</code> set to <code>False</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(flip_bools=False)
 ... def f1(b: bool = True):
 ...     return dict(f1=dict(b=b))
 ...
-&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -b
 b: (default: True)
 </code></pre>
-<p>Here is an example of how the <code>required</code> argument works:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                    <p>
+                      Here is an example of how the
+                      <code>required</code> argument works:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
@@ -1303,15 +1870,19 @@ b: (default: True)
 ... def f3(a: int, c: str):
 ...     return dict(f3=dict(c=c))
 </code></pre>
-<p>Now we invoke <code>tree.main</code> without calling <code>f2</code> or <code>f3</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
+                    <p>
+                      Now we invoke <code>tree</code> without calling
+                      <code>f2</code> or <code>f3</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;)
 {'f1': {'a': 1}}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def command(
+</code></pre>
+                  </div>
+                  <details class="source">
+                    <summary>
+                      <span>Expand source code</span>
+                    </summary>
+                    <pre><code class="python">def command(
     self,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
@@ -1350,7 +1921,7 @@ b: (default: True)
     ... def f1(b: bool = True):
     ...     return dict(f1=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: --no-b
     b: (default: True)
 
@@ -1362,7 +1933,7 @@ b: (default: True)
     ... def f1(b: bool = True):
     ...     return dict(f1=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: -b
     b: (default: True)
 
@@ -1384,8 +1955,8 @@ b: (default: True)
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(c=c))
 
-    Now we invoke `tree.main` without calling `f2` or `f3`:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+    Now we invoke `tree` without calling `f2` or `f3`:
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
     {&#39;f1&#39;: {&#39;a&#39;: 1}}
     &#34;&#34;&#34;
     return self._decorator(
@@ -1396,86 +1967,100 @@ b: (default: True)
         subcommand=False,
         types=types,
     )</code></pre>
-</details>
-</dd>
-<dt id="dollar_lambda.decorators.CommandTree.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>self, *args: str) ‑> Any</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Run the parser associated with this tree and execute the
-function associated with a succeeding parser.</p>
-<p>If <code>args</code> is empty, uses <code>sys.argv[1:]</code>.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main(self, *args: str) -&gt; Any:
-    &#34;&#34;&#34;
-    Run the parser associated with this tree and execute the
-    function associated with a succeeding parser.
-
-    If `args` is empty, uses `sys.argv[1:]`.
-    &#34;&#34;&#34;
-    _args = args if args or parser_mod.TESTING else sys.argv[1:]
-    p = self._parser() &gt;&gt; done()
-    result = p.parse(Sequence(list(_args))).get
-    if isinstance(result, ArgumentError):
-        p.handle_error(result)
-        if parser_mod.TESTING:
-            return  # type: ignore[return-value]
-        else:
-            exit()
-    assert isinstance(result, NonemptyList)
-    pair = cast(_FunctionPair, result.head.parsed)
-    return pair.function(**{kv.key: kv.value for kv in pair.get})</code></pre>
-</details>
-</dd>
-<dt id="dollar_lambda.decorators.CommandTree.subcommand"><code class="name flex">
-<span>def <span class="ident">subcommand</span></span>(<span>self, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, required: bool = False, strings: Optional[Dict[str, str]] = None, types: Optional[Dict[str, Callable[[str], Any]]] = None) ‑> Callable</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A decorator for adding a function as a child of this tree.
-As a subcommand, the function's name must be invoked on the command
-line for the function to be called.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
-<dt><strong><code>help</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of help strings for the arguments.</dd>
-<dt><strong><code>required</code></strong> :&ensp;<code>bool</code></dt>
-<dd>If any sibling child functions are not required, then the user will be
-able to invoke the parent function by not selecting any of the child functions.</dd>
-<dt><strong><code>strings</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of strings to use for the arguments.</dd>
-<dt><strong><code>types</code></strong> :&ensp;<code>dict</code></dt>
-<dd>A dictionary of types to use for the arguments.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<p>With <code>flip_bools</code> set to <code>True</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                  </details>
+                </dd>
+                <dt id="dollar_lambda.decorators.CommandTree.subcommand">
+                  <code class="name flex">
+                    <span>def <span class="ident">subcommand</span></span
+                    >(<span
+                      >self, flip_bools: bool = True,
+                      help: Optional[Dict[str, str]] = None,
+                      required: bool = False,
+                      strings: Optional[Dict[str, str]] = None,
+                      types: Optional[Dict[str, Callable[[str], Any]]] = None)
+                      ‑> Callable</span
+                    >
+                  </code>
+                </dt>
+                <dd>
+                  <div class="desc">
+                    <p>
+                      A decorator for adding a function as a child of this tree.
+                      As a subcommand, the function's name must be invoked on
+                      the command line for the function to be called.
+                    </p>
+                    <h2 id="parameters">Parameters</h2>
+                    <dl>
+                      <dt>
+                        <strong><code>flip_bools</code></strong> :&ensp;<code
+                          >bool</code
+                        >
+                      </dt>
+                      <dd>
+                        Whether to add <code>--no-&lt;argument&gt;</code> before
+                        arguments that default to <code>True</code>.
+                      </dd>
+                      <dt>
+                        <strong><code>help</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of help strings for the arguments.</dd>
+                      <dt>
+                        <strong><code>required</code></strong> :&ensp;<code
+                          >bool</code
+                        >
+                      </dt>
+                      <dd>
+                        If any sibling child functions are not required, then
+                        the user will be able to invoke the parent function by
+                        not selecting any of the child functions.
+                      </dd>
+                      <dt>
+                        <strong><code>strings</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of strings to use for the arguments.</dd>
+                      <dt>
+                        <strong><code>types</code></strong> :&ensp;<code
+                          >dict</code
+                        >
+                      </dt>
+                      <dd>A dictionary of types to use for the arguments.</dd>
+                    </dl>
+                    <h2 id="examples">Examples</h2>
+                    <p>
+                      With <code>flip_bools</code> set to <code>True</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.subcommand(flip_bools=True)
 ... def f1(b: bool = True):
 ...     return dict(f1=dict(b=b))
 ...
-&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: f1 --no-b
 b: (default: True)
 </code></pre>
-<p>With <code>flip_bools</code> set to <code>False</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                    <p>
+                      With <code>flip_bools</code> set to <code>False</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.subcommand(flip_bools=False)
 ... def f1(b: bool = True):
 ...     return dict(f1=dict(b=b))
 ...
-&gt;&gt;&gt; tree.main(&quot;-h&quot;)
+&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: f1 -b
 b: (default: True)
 </code></pre>
-<p>Here is an example of how the <code>required</code> argument works:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
+                    <p>
+                      Here is an example of how the
+                      <code>required</code> argument works:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
@@ -1490,15 +2075,19 @@ b: (default: True)
 ... def f3(a: int, c: str):
 ...     return dict(f3=dict(c=c))
 </code></pre>
-<p>Now we invoke <code>tree.main</code> without calling <code>f2</code> or <code>f3</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; tree.main(&quot;-a&quot;, &quot;1&quot;)
+                    <p>
+                      Now we invoke <code>tree</code> without calling
+                      <code>f2</code> or <code>f3</code>:
+                    </p>
+                    <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;)
 {'f1': {'a': 1}}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def subcommand(
+</code></pre>
+                  </div>
+                  <details class="source">
+                    <summary>
+                      <span>Expand source code</span>
+                    </summary>
+                    <pre><code class="python">def subcommand(
     self,
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
@@ -1539,7 +2128,7 @@ b: (default: True)
     ... def f1(b: bool = True):
     ...     return dict(f1=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: f1 --no-b
     b: (default: True)
 
@@ -1551,7 +2140,7 @@ b: (default: True)
     ... def f1(b: bool = True):
     ...     return dict(f1=dict(b=b))
     ...
-    &gt;&gt;&gt; tree.main(&#34;-h&#34;)
+    &gt;&gt;&gt; tree(&#34;-h&#34;)
     usage: f1 -b
     b: (default: True)
 
@@ -1573,8 +2162,8 @@ b: (default: True)
     ... def f3(a: int, c: str):
     ...     return dict(f3=dict(c=c))
 
-    Now we invoke `tree.main` without calling `f2` or `f3`:
-    &gt;&gt;&gt; tree.main(&#34;-a&#34;, &#34;1&#34;)
+    Now we invoke `tree` without calling `f2` or `f3`:
+    &gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
     {&#39;f1&#39;: {&#39;a&#39;: 1}}
     &#34;&#34;&#34;
     return self._decorator(
@@ -1585,46 +2174,93 @@ b: (default: True)
         strings=strings,
         subcommand=True,
     )</code></pre>
-</details>
-</dd>
-</dl>
-</dd>
-</dl>
-</section>
-</article>
-<nav id="sidebar">
-<h1>Index</h1>
-<div class="toc">
-<ul></ul>
-</div>
-<ul id="index">
-<li><h3>Super-module</h3>
-<ul>
-<li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="dollar_lambda.decorators.command" href="#dollar_lambda.decorators.command">command</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="dollar_lambda.decorators.CommandTree" href="#dollar_lambda.decorators.CommandTree">CommandTree</a></code></h4>
-<ul class="">
-<li><code><a title="dollar_lambda.decorators.CommandTree.command" href="#dollar_lambda.decorators.CommandTree.command">command</a></code></li>
-<li><code><a title="dollar_lambda.decorators.CommandTree.main" href="#dollar_lambda.decorators.CommandTree.main">main</a></code></li>
-<li><code><a title="dollar_lambda.decorators.CommandTree.subcommand" href="#dollar_lambda.decorators.CommandTree.subcommand">subcommand</a></code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</nav>
-</main>
-<footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
-</footer>
-</body>
+                  </details>
+                </dd>
+              </dl>
+            </dd>
+          </dl>
+        </section>
+      </article>
+      <nav id="sidebar">
+        <h1>Index</h1>
+        <div class="toc">
+          <ul></ul>
+        </div>
+        <ul id="index">
+          <li>
+            <h3>Super-module</h3>
+            <ul>
+              <li>
+                <code
+                  ><a title="dollar_lambda" href="index.html"
+                    >dollar_lambda</a
+                  ></code
+                >
+              </li>
+            </ul>
+          </li>
+          <li>
+            <h3><a href="#header-functions">Functions</a></h3>
+            <ul class="">
+              <li>
+                <code
+                  ><a
+                    title="dollar_lambda.decorators.command"
+                    href="#dollar_lambda.decorators.command"
+                    >command</a
+                  ></code
+                >
+              </li>
+            </ul>
+          </li>
+          <li>
+            <h3><a href="#header-classes">Classes</a></h3>
+            <ul>
+              <li>
+                <h4>
+                  <code
+                    ><a
+                      title="dollar_lambda.decorators.CommandTree"
+                      href="#dollar_lambda.decorators.CommandTree"
+                      >CommandTree</a
+                    ></code
+                  >
+                </h4>
+                <ul class="">
+                  <li>
+                    <code
+                      ><a
+                        title="dollar_lambda.decorators.CommandTree.command"
+                        href="#dollar_lambda.decorators.CommandTree.command"
+                        >command</a
+                      ></code
+                    >
+                  </li>
+                  <li>
+                    <code
+                      ><a
+                        title="dollar_lambda.decorators.CommandTree.subcommand"
+                        href="#dollar_lambda.decorators.CommandTree.subcommand"
+                        >subcommand</a
+                      ></code
+                    >
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </main>
+    <footer id="footer">
+      <p>
+        Generated by
+        <a
+          href="https://pdoc3.github.io/pdoc"
+          title="pdoc: Python API documentation generator"
+          ><cite>pdoc</cite> 0.10.0</a
+        >.
+      </p>
+    </footer>
+  </body>
 </html>
