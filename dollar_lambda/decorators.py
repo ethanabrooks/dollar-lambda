@@ -53,38 +53,6 @@ def _func_to_parser(
     )
 
 
-@dataclass
-class Command(Parser[Sequence[KeyValue[Any]]]):
-    f: Callable[[Sequence[str]], Result[Parse[Sequence[KeyValue[Any]]]]]
-    function: Callable
-
-    def __call__(self, *args, **kwargs):
-        args = self.parse_args(*args, **kwargs)
-        if args is not None:
-            return self.function(**dict(args))
-
-    @staticmethod
-    def make(
-        exclude_from: Optional[Parser[Sequence[KeyValue[Any]]]] = None, **kwargs
-    ) -> Callable[[Callable], "Command"]:
-        def wrapper(func: Callable):
-            if exclude_from is None:
-                p1: Parser[Sequence[KeyValue[Any]]] = _func_to_parser(func, **kwargs)
-                return Command(p1.f, helps=p1.helps, usage=p1.usage, function=func)
-
-            else:
-
-                def f(
-                    parsed: Sequence[KeyValue[Any]],
-                ) -> Parser[Sequence[KeyValue[Any]]]:
-                    return _func_to_parser(func, exclude=[kv.key for kv in parsed])
-
-                p2: Parser[Sequence[KeyValue[Any]]] = exclude_from >= f
-                return Command(p2.f, helps=p2.helps, usage=p2.usage, function=func)
-
-        return wrapper
-
-
 def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
@@ -169,7 +137,26 @@ def command(
     >>> f("-x", "0")
     {'x': 1}
     """
-    return Command.make(flip_bools=flip_bools, help=help, strings=strings, types=types)
+
+    def wrapper(func: Callable) -> Callable:
+        p = (
+            _func_to_parser(
+                func, flip_bools=flip_bools, help=help, strings=strings, types=types
+            )
+            >> done()
+        )
+        p = wrap_help(p)
+
+        def wrapped(*args) -> Any:
+            parsed = p.parse_args(*args)
+            if parsed is None:
+                return
+            assert isinstance(parsed, Dict), parsed
+            return func(**parsed)
+
+        return wrapped
+
+    return wrapper
 
 
 @dataclass
