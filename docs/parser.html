@@ -41,7 +41,7 @@ from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
 from typing import Any, Callable, Dict, Generator, Generic, Optional, Type, TypeVar
 
-from pytypeclass import MonadPlus, Monoid
+from pytypeclass import Monad, MonadPlus
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.error import (
@@ -55,9 +55,6 @@ from dollar_lambda.key_value import KeyValue, KeyValueTuple
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
-Monoid_co = TypeVar(&#34;Monoid_co&#34;, bound=Monoid, covariant=True)
-Monoid1 = TypeVar(&#34;Monoid1&#34;, bound=Monoid)
-Monoid2 = TypeVar(&#34;Monoid2&#34;, bound=Monoid)
 A_co = TypeVar(&#34;A_co&#34;, covariant=True)
 A = TypeVar(&#34;A&#34;)
 B = TypeVar(&#34;B&#34;)
@@ -222,7 +219,10 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **p.helps},
         )
 
-    def bind(self, f: Callable[[A_co], Parser[B]]) -&gt; Parser[B]:
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
+        return self.bind(f)
+
+    def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
         &#34;&#34;&#34;
         Returns a new parser that
 
@@ -241,7 +241,7 @@ class Parser(MonadPlus[A_co]):
 
         Now let&#39;s use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
-        &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
+        &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
         ...     [kv] = kvs
         ...     return equals(kv.value)
 
@@ -253,7 +253,9 @@ class Parser(MonadPlus[A_co]):
         &#34;&#34;&#34;
 
         def h(parse: Parse[A_co]) -&gt; Result[Parse[B]]:
-            return f(parse.parsed).parse(parse.unparsed)
+            y = f(parse.parsed)
+            assert isinstance(y, Parser), y
+            return y.parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
             return self.parse(cs) &gt;= h
@@ -287,7 +289,7 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
-    def many(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+    def many(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
         &#34;&#34;&#34;
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -312,7 +314,7 @@ class Parser(MonadPlus[A_co]):
         p = self.many1() | self.empty()
         return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
 
-    def many1(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+    def many1(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
         &#34;&#34;&#34;
         Applies `self` one or more times (like `+` in regexes).
 
@@ -327,16 +329,18 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         &#34;&#34;&#34;
 
-        def g() -&gt; Generator[&#34;Parser[Sequence[Monoid1]]&#34;, Sequence[Monoid1], None]:
+        def g() -&gt; Generator[&#34;Parser[Sequence[A]]&#34;, Sequence[A], None]:
             # noinspection PyTypeChecker
-            r1: Sequence[Monoid1] = yield self
+            r1: Sequence[A] = yield self
             # noinspection PyTypeChecker
-            r2: Sequence[Monoid1] = yield self.many()
-            yield Parser[Sequence[Monoid1]].return_(r1 + r2)
+            r2: Sequence[A] = yield self.many()
+            yield Parser[Sequence[A]].return_(r1 + r2)
 
         @lru_cache()
         def f(cs: tuple):
-            return Parser.do(g).parse(Sequence(list(cs)))
+            y = Parser.do(g)
+            assert isinstance(y, Parser), y
+            return y.parse(Sequence(list(cs)))
 
         return Parser(
             lambda cs: f(tuple(cs)),
@@ -450,8 +454,8 @@ class Parser(MonadPlus[A_co]):
 
 
 def apply(
-    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
-) -&gt; Parser[Monoid_co]:
+    f: Callable[[A], Result[B]], parser: Parser[A]  # type: ignore[misc]
+) -&gt; Parser[B]:
     &#34;&#34;&#34;
     Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
 
@@ -465,15 +469,14 @@ def apply(
     [(&#39;hello&#39;, True), (&#39;hello&#39;, True)]
     &#34;&#34;&#34;
 
-    def g(a: Monoid1) -&gt; Parser[Monoid_co]:
+    def g(a: A) -&gt; Parser[B]:
         try:
             y = f(a)
         except Exception as e:
             usage = f&#34;An argument {a}: raised exception {e}&#34;
             y = Result(ArgumentError(usage))
         return Parser(
-            lambda unparsed: y
-            &gt;= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            lambda cs: y &gt;= (lambda parsed: Result.return_(Parse(parsed, cs))),
             usage=parser.usage,
             helps=parser.helps,
         )
@@ -482,7 +485,7 @@ def apply(
     return replace(p, usage=parser.usage, helps=parser.helps)
 
 
-def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Monoid_co]:
+def apply_item(f: Callable[[str], B], description: str) -&gt; Parser[B]:
     &#34;&#34;&#34;
     A shortcut for `apply(f, item(description))`
     and spares `f` the trouble of outputting a `Result` object.
@@ -497,7 +500,7 @@ def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Mon
     [(&#39;bare&#39;, &#39;barf&#39;)]
     &#34;&#34;&#34;
 
-    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[Monoid_co]:
+    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[B]:
         [kv] = parsed
         try:
             y = f(kv.value)
@@ -733,10 +736,10 @@ def flag(
     return parser if default is None else parser | defaults(**{dest: default})
 
 
-def help_parser(usage: Optional[str], parsed: Monoid1) -&gt; Parser[Monoid1]:
+def help_parser(usage: Optional[str], parsed: A) -&gt; Parser[A]:
     def f(
         cs: Sequence[str],
-    ) -&gt; Result[Parse[Monoid1]]:
+    ) -&gt; Result[Parse[A]]:
         result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
@@ -992,10 +995,10 @@ def peak(
 
 
 def sat(
-    parser: Parser[Monoid1],
-    predicate: Callable[[Monoid1], bool],
-    on_fail: Callable[[Monoid1], ArgumentError],
-) -&gt; Parser[Monoid1]:
+    parser: Parser[A],
+    predicate: Callable[[A], bool],
+    on_fail: Callable[[A], ArgumentError],
+) -&gt; Parser[A]:
     &#34;&#34;&#34;
     Applies `parser`, applies a predicate to the result and fails if this returns false.
 
@@ -1013,16 +1016,16 @@ def sat(
 
     Parameters
     ----------
-    parser : Parser[Monoid1]
+    parser : Parser[A]
         The parser to apply.
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `parser` as an argument.
     &#34;&#34;&#34;
 
-    def f(x: Monoid1) -&gt; Result[Monoid1]:
+    def f(x: A) -&gt; Result[A]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)
@@ -1045,9 +1048,9 @@ def sat_item(
 
     Parameters
     ----------
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `item`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `item` as an argument.
     name: str
@@ -1116,7 +1119,7 @@ def type_(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.parser.apply"><code class="name flex">
-<span>def <span class="ident">apply</span></span>(<span>f: Callable[[Monoid1], Result[Monoid_co]], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Monoid1]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+Monoid_co]</span>
+<span>def <span class="ident">apply</span></span>(<span>f: Callable[[A], Result[B]], parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Takes the output of <code>parser</code> and applies <code>f</code> to it. Convert any errors that arise into <code>ArgumentError</code>.</p>
@@ -1134,8 +1137,8 @@ def type_(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def apply(
-    f: Callable[[Monoid1], Result[Monoid_co]], parser: Parser[Monoid1]
-) -&gt; Parser[Monoid_co]:
+    f: Callable[[A], Result[B]], parser: Parser[A]  # type: ignore[misc]
+) -&gt; Parser[B]:
     &#34;&#34;&#34;
     Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
 
@@ -1149,15 +1152,14 @@ def type_(
     [(&#39;hello&#39;, True), (&#39;hello&#39;, True)]
     &#34;&#34;&#34;
 
-    def g(a: Monoid1) -&gt; Parser[Monoid_co]:
+    def g(a: A) -&gt; Parser[B]:
         try:
             y = f(a)
         except Exception as e:
             usage = f&#34;An argument {a}: raised exception {e}&#34;
             y = Result(ArgumentError(usage))
         return Parser(
-            lambda unparsed: y
-            &gt;= (lambda parsed: Result.return_(Parse(parsed, unparsed))),
+            lambda cs: y &gt;= (lambda parsed: Result.return_(Parse(parsed, cs))),
             usage=parser.usage,
             helps=parser.helps,
         )
@@ -1167,7 +1169,7 @@ def type_(
 </details>
 </dd>
 <dt id="dollar_lambda.parser.apply_item"><code class="name flex">
-<span>def <span class="ident">apply_item</span></span>(<span>f: Callable[[str], Monoid_co], description: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[+Monoid_co]</span>
+<span>def <span class="ident">apply_item</span></span>(<span>f: Callable[[str], B], description: str) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A shortcut for <code><a title="dollar_lambda.parser.apply" href="#dollar_lambda.parser.apply">apply()</a>(f, <a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a>(description))</code>
@@ -1185,7 +1187,7 @@ and spares <code>f</code> the trouble of outputting a <code>Result</code> object
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def apply_item(f: Callable[[str], Monoid_co], description: str) -&gt; Parser[Monoid_co]:
+<pre><code class="python">def apply_item(f: Callable[[str], B], description: str) -&gt; Parser[B]:
     &#34;&#34;&#34;
     A shortcut for `apply(f, item(description))`
     and spares `f` the trouble of outputting a `Result` object.
@@ -1200,7 +1202,7 @@ and spares <code>f</code> the trouble of outputting a <code>Result</code> object
     [(&#39;bare&#39;, &#39;barf&#39;)]
     &#34;&#34;&#34;
 
-    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[Monoid_co]:
+    def g(parsed: Sequence[KeyValue[str]]) -&gt; Result[B]:
         [kv] = parsed
         try:
             y = f(kv.value)
@@ -1645,7 +1647,7 @@ Expected '--verbose'. Got '-v'
 </details>
 </dd>
 <dt id="dollar_lambda.parser.help_parser"><code class="name flex">
-<span>def <span class="ident">help_parser</span></span>(<span>usage: Optional[str], parsed: Monoid1) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~Monoid1]</span>
+<span>def <span class="ident">help_parser</span></span>(<span>usage: Optional[str], parsed: A) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1653,10 +1655,10 @@ Expected '--verbose'. Got '-v'
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def help_parser(usage: Optional[str], parsed: Monoid1) -&gt; Parser[Monoid1]:
+<pre><code class="python">def help_parser(usage: Optional[str], parsed: A) -&gt; Parser[A]:
     def f(
         cs: Sequence[str],
-    ) -&gt; Result[Parse[Monoid1]]:
+    ) -&gt; Result[Parse[A]]:
         result = (equals(&#34;--help&#34;, peak=True) | equals(&#34;-h&#34;, peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
@@ -2013,7 +2015,7 @@ function that takes a single string argument:</p>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.sat"><code class="name flex">
-<span>def <span class="ident">sat</span></span>(<span>parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Monoid1], predicate: Callable[[Monoid1], bool], on_fail: Callable[[Monoid1], ArgumentError]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~Monoid1]</span>
+<span>def <span class="ident">sat</span></span>(<span>parser: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A], predicate: Callable[[A], bool], on_fail: Callable[[A], ArgumentError]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Applies <code>parser</code>, applies a predicate to the result and fails if this returns false.</p>
@@ -2031,11 +2033,11 @@ The values in [KeyValue(key='x', value=-1), KeyValue(key='x', value=1)] must sum
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>parser</code></strong> :&ensp;<code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Monoid1]</code></dt>
+<dt><strong><code>parser</code></strong> :&ensp;<code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A]</code></dt>
 <dd>The parser to apply.</dd>
-<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[Monoid1], bool]</code></dt>
+<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[A], bool]</code></dt>
 <dd>The predicate to apply to the result of <code>parser</code>. <code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat()</a></code> fails if this predicate returns false.</dd>
-<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[Monoid1], ArgumentError]</code></dt>
+<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[A], ArgumentError]</code></dt>
 <dd>A function producing an ArgumentError to return if the predicate fails.
 Takes the output of <code>parser</code> as an argument.</dd>
 </dl></div>
@@ -2044,10 +2046,10 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def sat(
-    parser: Parser[Monoid1],
-    predicate: Callable[[Monoid1], bool],
-    on_fail: Callable[[Monoid1], ArgumentError],
-) -&gt; Parser[Monoid1]:
+    parser: Parser[A],
+    predicate: Callable[[A], bool],
+    on_fail: Callable[[A], ArgumentError],
+) -&gt; Parser[A]:
     &#34;&#34;&#34;
     Applies `parser`, applies a predicate to the result and fails if this returns false.
 
@@ -2065,16 +2067,16 @@ Takes the output of <code>parser</code> as an argument.</dd>
 
     Parameters
     ----------
-    parser : Parser[Monoid1]
+    parser : Parser[A]
         The parser to apply.
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `parser` as an argument.
     &#34;&#34;&#34;
 
-    def f(x: Monoid1) -&gt; Result[Monoid1]:
+    def f(x: A) -&gt; Result[A]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
     return apply(f, parser)</code></pre>
@@ -2094,9 +2096,9 @@ usage: x
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[Monoid1], bool]</code></dt>
+<dt><strong><code>predicate</code></strong> :&ensp;<code>Callable[[A], bool]</code></dt>
 <dd>The predicate to apply to the result of <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code>. <code><a title="dollar_lambda.parser.sat" href="#dollar_lambda.parser.sat">sat()</a></code> fails if this predicate returns false.</dd>
-<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[Monoid1], ArgumentError]</code></dt>
+<dt><strong><code>on_fail</code></strong> :&ensp;<code>Callable[[A], ArgumentError]</code></dt>
 <dd>A function producing an ArgumentError to return if the predicate fails.
 Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lambda.parser.item">item()</a></code> as an argument.</dd>
 <dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
@@ -2123,9 +2125,9 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 
     Parameters
     ----------
-    predicate : Callable[[Monoid1], bool]
+    predicate : Callable[[A], bool]
         The predicate to apply to the result of `item`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[Monoid1], ArgumentError]
+    on_fail : Callable[[A], ArgumentError]
         A function producing an ArgumentError to return if the predicate fails.
         Takes the output of `item` as an argument.
     name: str
@@ -2444,7 +2446,10 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **p.helps},
         )
 
-    def bind(self, f: Callable[[A_co], Parser[B]]) -&gt; Parser[B]:
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
+        return self.bind(f)
+
+    def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
         &#34;&#34;&#34;
         Returns a new parser that
 
@@ -2463,7 +2468,7 @@ class Parser(MonadPlus[A_co]):
 
         Now let&#39;s use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
-        &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
+        &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
         ...     [kv] = kvs
         ...     return equals(kv.value)
 
@@ -2475,7 +2480,9 @@ class Parser(MonadPlus[A_co]):
         &#34;&#34;&#34;
 
         def h(parse: Parse[A_co]) -&gt; Result[Parse[B]]:
-            return f(parse.parsed).parse(parse.unparsed)
+            y = f(parse.parsed)
+            assert isinstance(y, Parser), y
+            return y.parse(parse.unparsed)
 
         def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
             return self.parse(cs) &gt;= h
@@ -2509,7 +2516,7 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
-    def many(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+    def many(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
         &#34;&#34;&#34;
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -2534,7 +2541,7 @@ class Parser(MonadPlus[A_co]):
         p = self.many1() | self.empty()
         return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
 
-    def many1(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+    def many1(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
         &#34;&#34;&#34;
         Applies `self` one or more times (like `+` in regexes).
 
@@ -2549,16 +2556,18 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         &#34;&#34;&#34;
 
-        def g() -&gt; Generator[&#34;Parser[Sequence[Monoid1]]&#34;, Sequence[Monoid1], None]:
+        def g() -&gt; Generator[&#34;Parser[Sequence[A]]&#34;, Sequence[A], None]:
             # noinspection PyTypeChecker
-            r1: Sequence[Monoid1] = yield self
+            r1: Sequence[A] = yield self
             # noinspection PyTypeChecker
-            r2: Sequence[Monoid1] = yield self.many()
-            yield Parser[Sequence[Monoid1]].return_(r1 + r2)
+            r2: Sequence[A] = yield self.many()
+            yield Parser[Sequence[A]].return_(r1 + r2)
 
         @lru_cache()
         def f(cs: tuple):
-            return Parser.do(g).parse(Sequence(list(cs)))
+            y = Parser.do(g)
+            assert isinstance(y, Parser), y
+            return y.parse(Sequence(list(cs)))
 
         return Parser(
             lambda cs: f(tuple(cs)),
@@ -2870,6 +2879,19 @@ Expected '-b'. Got '-c'
     return replace(p, usage=usage)</code></pre>
 </details>
 </dd>
+<dt id="dollar_lambda.parser.Parser.__ge__"><code class="name flex">
+<span>def <span class="ident">__ge__</span></span>(<span>self, f: Callable[[A_co], Monad[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return self&gt;=value.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
+    return self.bind(f)</code></pre>
+</details>
+</dd>
 <dt id="dollar_lambda.parser.Parser.__or__"><code class="name flex">
 <span>def <span class="ident">__or__</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[A_co], other: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[B]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[typing.Union[+A_co, ~B]]</span>
 </code></dt>
@@ -2988,7 +3010,7 @@ The following arguments are required: second
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], Monad[B]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a new parser that</p>
@@ -3006,7 +3028,7 @@ and we typically prefer using the infix operator to the spelled out method.</p>
 </code></pre>
 <p>Now let's use the <code><a title="dollar_lambda.parser.equals" href="#dollar_lambda.parser.equals">equals()</a></code> parser to write a function that takes the output of <code>p1</code> and fails unless
 the next argument is the same as the first:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
+<pre><code class="language-python-repl">&gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
 ...     [kv] = kvs
 ...     return equals(kv.value)
 </code></pre>
@@ -3020,7 +3042,7 @@ Expected 'a'. Got 'b'
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def bind(self, f: Callable[[A_co], Parser[B]]) -&gt; Parser[B]:
+<pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; Parser[B]:
     &#34;&#34;&#34;
     Returns a new parser that
 
@@ -3039,7 +3061,7 @@ Expected 'a'. Got 'b'
 
     Now let&#39;s use the `equals` parser to write a function that takes the output of `p1` and fails unless
     the next argument is the same as the first:
-    &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Sequence(KeyValue[str]):
+    &gt;&gt;&gt; def f(kvs: Sequence(KeyValue[str])) -&gt; Parser[Sequence[KeyValue[str]]]:
     ...     [kv] = kvs
     ...     return equals(kv.value)
 
@@ -3051,7 +3073,9 @@ Expected 'a'. Got 'b'
     &#34;&#34;&#34;
 
     def h(parse: Parse[A_co]) -&gt; Result[Parse[B]]:
-        return f(parse.parsed).parse(parse.unparsed)
+        y = f(parse.parsed)
+        assert isinstance(y, Parser), y
+        return y.parse(parse.unparsed)
 
     def g(cs: Sequence[str]) -&gt; Result[Parse[B]]:
         return self.parse(cs) &gt;= h
@@ -3088,7 +3112,7 @@ Expected 'a'. Got 'b'
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.many"><code class="name flex">
-<span>def <span class="ident">many</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[Monoid1]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~Monoid1]]</span>
+<span>def <span class="ident">many</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Applies <code>self</code> zero or more times (like <code>*</code> in regexes).</p>
@@ -3114,7 +3138,7 @@ heterogenous:</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def many(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+<pre><code class="python">def many(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Applies `self` zero or more times (like `*` in regexes).
 
@@ -3141,7 +3165,7 @@ heterogenous:</p>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.many1"><code class="name flex">
-<span>def <span class="ident">many1</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[Monoid1]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~Monoid1]]</span>
+<span>def <span class="ident">many1</span></span>(<span>self: <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]) ‑> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[~A]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Applies <code>self</code> one or more times (like <code>+</code> in regexes).</p>
@@ -3159,7 +3183,7 @@ The following arguments are required: 1-or-more
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def many1(self: Parser[Sequence[Monoid1]]) -&gt; Parser[Sequence[Monoid1]]:
+<pre><code class="python">def many1(self: Parser[Sequence[A]]) -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
     Applies `self` one or more times (like `+` in regexes).
 
@@ -3174,16 +3198,18 @@ The following arguments are required: 1-or-more
     The following arguments are required: 1-or-more
     &#34;&#34;&#34;
 
-    def g() -&gt; Generator[&#34;Parser[Sequence[Monoid1]]&#34;, Sequence[Monoid1], None]:
+    def g() -&gt; Generator[&#34;Parser[Sequence[A]]&#34;, Sequence[A], None]:
         # noinspection PyTypeChecker
-        r1: Sequence[Monoid1] = yield self
+        r1: Sequence[A] = yield self
         # noinspection PyTypeChecker
-        r2: Sequence[Monoid1] = yield self.many()
-        yield Parser[Sequence[Monoid1]].return_(r1 + r2)
+        r2: Sequence[A] = yield self.many()
+        yield Parser[Sequence[A]].return_(r1 + r2)
 
     @lru_cache()
     def f(cs: tuple):
-        return Parser.do(g).parse(Sequence(list(cs)))
+        y = Parser.do(g)
+        assert isinstance(y, Parser), y
+        return y.parse(Sequence(list(cs)))
 
     return Parser(
         lambda cs: f(tuple(cs)),
@@ -3368,6 +3394,7 @@ usage: a
 <h4><code><a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a></code></h4>
 <ul class="two-column">
 <li><code><a title="dollar_lambda.parser.Parser.__add__" href="#dollar_lambda.parser.Parser.__add__">__add__</a></code></li>
+<li><code><a title="dollar_lambda.parser.Parser.__ge__" href="#dollar_lambda.parser.Parser.__ge__">__ge__</a></code></li>
 <li><code><a title="dollar_lambda.parser.Parser.__or__" href="#dollar_lambda.parser.Parser.__or__">__or__</a></code></li>
 <li><code><a title="dollar_lambda.parser.Parser.__rshift__" href="#dollar_lambda.parser.Parser.__rshift__">__rshift__</a></code></li>
 <li><code><a title="dollar_lambda.parser.Parser.bind" href="#dollar_lambda.parser.Parser.bind">bind</a></code></li>

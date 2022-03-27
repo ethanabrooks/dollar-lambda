@@ -36,14 +36,14 @@ import typing
 from dataclasses import dataclass
 from typing import Callable, Generator, Iterator, Type, TypeVar, overload
 
-from pytypeclass import MonadPlus
+from pytypeclass import Monad, MonadPlus
 
-A = TypeVar(&#34;A&#34;, covariant=True)
-B = TypeVar(&#34;B&#34;)
+A_co = TypeVar(&#34;A_co&#34;, covariant=True)
+A = TypeVar(&#34;A&#34;)
 
 
 @dataclass
-class Sequence(MonadPlus[A], typing.Sequence[A]):
+class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     &#34;&#34;&#34;
     This class combines the functionality of [`MonadPlus`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24)
     and [`typing.Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence).
@@ -63,47 +63,49 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     Sequence(get=[1, -1, 2, -2])
     &#34;&#34;&#34;
 
-    get: typing.Sequence[A]
+    get: typing.Sequence[A_co]
 
     @overload
-    def __getitem__(self, i: int) -&gt; &#34;A&#34;:
+    def __getitem__(self, i: int) -&gt; &#34;A_co&#34;:
         ...
 
     @overload
-    def __getitem__(self, i: slice) -&gt; Sequence[A]:
+    def __getitem__(self, i: slice) -&gt; Sequence[A_co]:
         ...
 
-    def __getitem__(self, i: int | slice) -&gt; A | Sequence[A]:
+    def __getitem__(self, i: int | slice) -&gt; A_co | Sequence[A_co]:
         if isinstance(i, int):
             return self.get[i]
         return Sequence(self.get[i])
 
-    def __iter__(self) -&gt; Generator[A, None, None]:
+    def __iter__(self) -&gt; Generator[A_co, None, None]:
         yield from self.get
 
     def __len__(self) -&gt; int:
         return len(self.get)
 
-    def __or__(self, other: Sequence[B]) -&gt; Sequence[A | B]:
+    def __or__(self, other: Sequence[A]) -&gt; Sequence[A_co | A]:
         return Sequence([*self, *other])
 
-    def __add__(self, other: Sequence[B]) -&gt; Sequence[A | B]:
+    def __add__(self, other: Sequence[A]) -&gt; Sequence[A_co | A]:
         return self | other
 
-    def bind(self, f: Callable[[A], Sequence[B]]) -&gt; Sequence[B]:
+    def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; Sequence[A]:
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence([1, 2]) &gt;= (lambda x: Sequence([x, -x]))
         Sequence(get=[1, -1, 2, -2])
         &#34;&#34;&#34;
 
-        def g() -&gt; Iterator[B]:
+        def g() -&gt; Iterator[A]:
             for a in self:
-                yield from f(a)
+                y = f(a)
+                assert isinstance(y, Sequence), y
+                yield from y
 
         return Sequence(list(g()))
 
     @staticmethod
-    def return_(a: B) -&gt; Sequence[B]:
+    def return_(a: A) -&gt; Sequence[A]:
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence.return_(1)
         Sequence(get=[1])
@@ -111,7 +113,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
         return Sequence([a])
 
     @classmethod
-    def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
+    def zero(cls: Type[Sequence[A_co]]) -&gt; Sequence[A_co]:
         return Sequence([])</code></pre>
 </details>
 </section>
@@ -126,7 +128,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 <dl>
 <dt id="dollar_lambda.sequence.Sequence"><code class="flex name class">
 <span>class <span class="ident">Sequence</span></span>
-<span>(</span><span>get: typing.Sequence[A])</span>
+<span>(</span><span>get: typing.Sequence[A_co])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This class combines the functionality of <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24"><code>MonadPlus</code></a>
@@ -150,7 +152,7 @@ Sequence(get=[1, -1, 2, -2])
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@dataclass
-class Sequence(MonadPlus[A], typing.Sequence[A]):
+class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     &#34;&#34;&#34;
     This class combines the functionality of [`MonadPlus`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24)
     and [`typing.Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence).
@@ -170,47 +172,49 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
     Sequence(get=[1, -1, 2, -2])
     &#34;&#34;&#34;
 
-    get: typing.Sequence[A]
+    get: typing.Sequence[A_co]
 
     @overload
-    def __getitem__(self, i: int) -&gt; &#34;A&#34;:
+    def __getitem__(self, i: int) -&gt; &#34;A_co&#34;:
         ...
 
     @overload
-    def __getitem__(self, i: slice) -&gt; Sequence[A]:
+    def __getitem__(self, i: slice) -&gt; Sequence[A_co]:
         ...
 
-    def __getitem__(self, i: int | slice) -&gt; A | Sequence[A]:
+    def __getitem__(self, i: int | slice) -&gt; A_co | Sequence[A_co]:
         if isinstance(i, int):
             return self.get[i]
         return Sequence(self.get[i])
 
-    def __iter__(self) -&gt; Generator[A, None, None]:
+    def __iter__(self) -&gt; Generator[A_co, None, None]:
         yield from self.get
 
     def __len__(self) -&gt; int:
         return len(self.get)
 
-    def __or__(self, other: Sequence[B]) -&gt; Sequence[A | B]:
+    def __or__(self, other: Sequence[A]) -&gt; Sequence[A_co | A]:
         return Sequence([*self, *other])
 
-    def __add__(self, other: Sequence[B]) -&gt; Sequence[A | B]:
+    def __add__(self, other: Sequence[A]) -&gt; Sequence[A_co | A]:
         return self | other
 
-    def bind(self, f: Callable[[A], Sequence[B]]) -&gt; Sequence[B]:
+    def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; Sequence[A]:
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence([1, 2]) &gt;= (lambda x: Sequence([x, -x]))
         Sequence(get=[1, -1, 2, -2])
         &#34;&#34;&#34;
 
-        def g() -&gt; Iterator[B]:
+        def g() -&gt; Iterator[A]:
             for a in self:
-                yield from f(a)
+                y = f(a)
+                assert isinstance(y, Sequence), y
+                yield from y
 
         return Sequence(list(g()))
 
     @staticmethod
-    def return_(a: B) -&gt; Sequence[B]:
+    def return_(a: A) -&gt; Sequence[A]:
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence.return_(1)
         Sequence(get=[1])
@@ -218,7 +222,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
         return Sequence([a])
 
     @classmethod
-    def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
+    def zero(cls: Type[Sequence[A_co]]) -&gt; Sequence[A_co]:
         return Sequence([])</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -241,7 +245,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.sequence.Sequence.get"><code class="name">var <span class="ident">get</span> : <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A]</code></dt>
+<dt id="dollar_lambda.sequence.Sequence.get"><code class="name">var <span class="ident">get</span> : <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A_co]</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -249,7 +253,7 @@ class Sequence(MonadPlus[A], typing.Sequence[A]):
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.sequence.Sequence.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: B) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~B]</span>
+<span>def <span class="ident">return_</span></span>(<span>a: A) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Sequence.return_(1)
@@ -260,7 +264,7 @@ Sequence(get=[1])
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def return_(a: B) -&gt; Sequence[B]:
+def return_(a: A) -&gt; Sequence[A]:
     &#34;&#34;&#34;
     &gt;&gt;&gt; Sequence.return_(1)
     Sequence(get=[1])
@@ -269,7 +273,7 @@ def return_(a: B) -&gt; Sequence[B]:
 </details>
 </dd>
 <dt id="dollar_lambda.sequence.Sequence.zero"><code class="name flex">
-<span>def <span class="ident">zero</span></span>(<span>) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A]</span>
+<span>def <span class="ident">zero</span></span>(<span>) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A_co]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -278,7 +282,7 @@ def return_(a: B) -&gt; Sequence[B]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
+def zero(cls: Type[Sequence[A_co]]) -&gt; Sequence[A_co]:
     return Sequence([])</code></pre>
 </details>
 </dd>
@@ -286,7 +290,7 @@ def zero(cls: Type[Sequence[A]]) -&gt; Sequence[A]:
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.sequence.Sequence.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A], <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[B]]) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~B]</span>
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], Monad[A]]) ‑> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Sequence([1, 2]) &gt;= (lambda x: Sequence([x, -x]))
@@ -296,15 +300,17 @@ Sequence(get=[1, -1, 2, -2])
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def bind(self, f: Callable[[A], Sequence[B]]) -&gt; Sequence[B]:
+<pre><code class="python">def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; Sequence[A]:
     &#34;&#34;&#34;
     &gt;&gt;&gt; Sequence([1, 2]) &gt;= (lambda x: Sequence([x, -x]))
     Sequence(get=[1, -1, 2, -2])
     &#34;&#34;&#34;
 
-    def g() -&gt; Iterator[B]:
+    def g() -&gt; Iterator[A]:
         for a in self:
-            yield from f(a)
+            y = f(a)
+            assert isinstance(y, Sequence), y
+            yield from y
 
     return Sequence(list(g()))</code></pre>
 </details>
