@@ -1,8 +1,6 @@
 """
 Defines the `Result` dataclass, representing success or failure, output by parsers.
 """
-from __future__ import annotations
-
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Optional, Type, TypeVar
@@ -22,9 +20,9 @@ B = TypeVar("B")
 
 @dataclass
 class Result(MonadPlus[A_co]):
-    get: NonemptyList[A_co] | ArgumentError
+    get: "NonemptyList[A_co] | ArgumentError"
 
-    def __or__(self, other: Result[B]) -> Result[A_co | B]:  # type: ignore[override]
+    def __or__(self, other: "Result[B]") -> "Result[A_co | B]":  # type: ignore[override]
         a = self.get
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
@@ -42,8 +40,8 @@ class Result(MonadPlus[A_co]):
         raise RuntimeError("Unreachable")
 
     def __rshift__(
-        self: Result[Sequence[A]], other: Result[Sequence[B]]
-    ) -> Result[Sequence[A | B]]:
+        self: "Result[Sequence[A]]", other: "Result[Sequence[B]]"
+    ) -> "Result[Sequence[A | B]]":
         """
         Sequence cs >> ds for each (cs, ds) in self.get * other.get.
         Short circuit at Exceptions.
@@ -51,10 +49,10 @@ class Result(MonadPlus[A_co]):
 
         return self >= (lambda cs: other >= (lambda ds: Result(NonemptyList(cs + ds))))
 
-    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> Result[B]:
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> "Result[B]":
         return self.bind(f)
 
-    def bind(self, f: Callable[[A_co], Monad[B]]) -> Result[B]:
+    def bind(self, f: Callable[[A_co], Monad[B]]) -> "Result[B]":
         x = self.get
         if isinstance(x, ArgumentError):
             return Result(x)

@@ -4,7 +4,7 @@ Defines the `Args` dataclass and associated functions.
 import dataclasses
 import typing
 from dataclasses import Field, dataclass, fields
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Callable, Iterator, Optional
 
 from dollar_lambda.key_value import KeyValue, KeyValueTuple
 from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
@@ -14,7 +14,7 @@ from dollar_lambda.sequence import Sequence
 def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
-    type: Optional[Union[type, Callable[[str], Any]]] = None,
+    type: Optional["type | Callable[[str], Any]"] = None,
     **kwargs,
 ) -> Field:
     """
@@ -26,7 +26,7 @@ def field(
         An optional help string for the argument.
     metadata : str
         Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
-    type : Optional[Union[type, Callable[[str], Any]]]
+    type : Optional[type | Callable[[str], Any]]
         A function that takes a string and returns a value just like the `type` argument for
         [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
 
@@ -189,7 +189,7 @@ class Args:
     @classmethod
     def parse_args(
         cls, *args, flip_bools: bool = True
-    ) -> typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]:
+    ) -> "typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]":
         """
         Parses the arguments and returns a dictionary of the parsed values.
         """

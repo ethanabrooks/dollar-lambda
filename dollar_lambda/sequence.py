@@ -1,8 +1,6 @@
 """
 Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 """
-from __future__ import annotations
-
 import typing
 from dataclasses import dataclass
 from typing import Callable, Generator, Iterator, Type, TypeVar, overload
@@ -41,10 +39,10 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         ...
 
     @overload
-    def __getitem__(self, i: slice) -> Sequence[A_co]:
+    def __getitem__(self, i: slice) -> "Sequence[A_co]":
         ...
 
-    def __getitem__(self, i: int | slice) -> A_co | Sequence[A_co]:
+    def __getitem__(self, i: "int | slice") -> "A_co | Sequence[A_co]":
         if isinstance(i, int):
             return self.get[i]
         return Sequence(self.get[i])
@@ -55,13 +53,13 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     def __len__(self) -> int:
         return len(self.get)
 
-    def __or__(self, other: Sequence[A]) -> Sequence[A_co | A]:  # type: ignore[override]
+    def __or__(self, other: "Sequence[A]") -> "Sequence[A_co | A]":  # type: ignore[override]
         return Sequence([*self, *other])
 
-    def __add__(self, other: Sequence[A]) -> Sequence[A_co | A]:
+    def __add__(self, other: "Sequence[A]") -> "Sequence[A_co | A]":
         return self | other
 
-    def bind(self, f: Callable[[A_co], Monad[A]]) -> Sequence[A]:
+    def bind(self, f: Callable[[A_co], Monad[A]]) -> "Sequence[A]":
         """
         >>> Sequence([1, 2]) >= (lambda x: Sequence([x, -x]))
         Sequence(get=[1, -1, 2, -2])
@@ -76,7 +74,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence(list(g()))
 
     @staticmethod
-    def return_(a: A) -> Sequence[A]:
+    def return_(a: A) -> "Sequence[A]":
         """
         >>> Sequence.return_(1)
         Sequence(get=[1])
@@ -84,5 +82,5 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence([a])
 
     @classmethod
-    def zero(cls: Type[Sequence[A_co]]) -> Sequence[A_co]:
+    def zero(cls: Type["Sequence[A_co]"]) -> "Sequence[A_co]":
         return Sequence([])

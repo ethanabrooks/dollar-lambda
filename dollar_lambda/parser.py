@@ -2,8 +2,6 @@
 Defines parsing functions and the `Parser` class that they instantiate.
 """
 # pyright: reportGeneralTypeIssues=false
-from __future__ import annotations
-
 import operator
 import os
 import sys
@@ -51,7 +49,7 @@ class Parse(Generic[A_co]):
     unparsed: Sequence[str]
 
 
-def empty() -> Parser[Sequence]:
+def empty() -> "Parser[Sequence]":
     """
     Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
     >>> empty().parse_args("any", "arguments")
@@ -90,8 +88,8 @@ class Parser(MonadPlus[A_co]):
     helps: Dict[str, str]
 
     def __add__(
-        self: Parser[Sequence[A]], other: Parser[Sequence[B]]
-    ) -> Parser[Sequence[A | B]]:
+        self: "Parser[Sequence[A]]", other: "Parser[Sequence[B]]"
+    ) -> "Parser[Sequence[A | B]]":
         """
         Parse two arguments in either order.
         >>> p = flag("verbose") + flag("debug")
@@ -124,9 +122,9 @@ class Parser(MonadPlus[A_co]):
         return replace(p, usage=usage)
 
     def __or__(  # type: ignore[override]
-        self: Parser[A_co],
-        other: Parser[B],
-    ) -> Parser[A_co | B]:
+        self: "Parser[A_co]",
+        other: "Parser[B]",
+    ) -> "Parser[A_co | B]":
         """
         Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails.
 
@@ -149,7 +147,7 @@ class Parser(MonadPlus[A_co]):
         {'option': 'x'}
         """
 
-        def f(cs: Sequence[str]) -> Result[Parse[A_co | B]]:
+        def f(cs: Sequence[str]) -> Result[Parse["A_co | B"]]:
             return self.parse(cs) | other.parse(cs)
 
         return Parser(
@@ -159,8 +157,8 @@ class Parser(MonadPlus[A_co]):
         )
 
     def __rshift__(
-        self: Parser[Sequence[A]], p: Parser[Sequence[B]]
-    ) -> Parser[Sequence[A | B]]:
+        self: "Parser[Sequence[A]]", p: "Parser[Sequence[B]]"
+    ) -> "Parser[Sequence[A | B]]":
         """
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
         gets handed off to the second parser. If either parser fails, the whole thing fails.
@@ -190,10 +188,10 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **p.helps},
         )
 
-    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> Parser[B]:
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
         return self.bind(f)
 
-    def bind(self, f: Callable[[A_co], Monad[B]]) -> Parser[B]:
+    def bind(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
         """
         Returns a new parser that
 
@@ -234,7 +232,7 @@ class Parser(MonadPlus[A_co]):
         return Parser(g, usage=None, helps=self.helps)
 
     @classmethod
-    def empty(cls: Type[Parser[Sequence[A]]]) -> Parser[Sequence[A]]:
+    def empty(cls: Type["Parser[Sequence[A]]"]) -> "Parser[Sequence[A]]":
         """
         Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
         >>> empty().parse_args("any", "arguments")
@@ -260,7 +258,7 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
-    def many(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+    def many(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
         """
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -285,7 +283,7 @@ class Parser(MonadPlus[A_co]):
         p = self.many1() | self.empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
-    def many1(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+    def many1(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
         """
         Applies `self` one or more times (like `+` in regexes).
 
@@ -319,7 +317,7 @@ class Parser(MonadPlus[A_co]):
             helps=self.helps,
         )
 
-    def optional(self: Parser[Sequence[A]]) -> Parser[Sequence[A]]:
+    def optional(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
         """
         Allows arguments to be optional:
         >>> p1 = flag("optional") >> done()
@@ -345,7 +343,7 @@ class Parser(MonadPlus[A_co]):
         *args: str,
         return_dict: bool = True,
         check_help: bool = True,
-    ) -> typing.Sequence[KeyValueTuple] | Dict[str, Any]:
+    ) -> "typing.Sequence[KeyValueTuple] | Dict[str, Any]":
         """
         The main way the user extracts parsed results from the parser.
 
@@ -387,7 +385,7 @@ class Parser(MonadPlus[A_co]):
         return [KeyValueTuple(**asdict(kv)) for kv in kvs]
 
     @classmethod
-    def return_(cls, a: A_co) -> Parser[A_co]:  # type: ignore[misc]
+    def return_(cls, a: A_co) -> "Parser[A_co]":  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         This method is required to make `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). It consumes none of the input
@@ -405,7 +403,7 @@ class Parser(MonadPlus[A_co]):
         return Parser(f, usage=None, helps={})
 
     @classmethod
-    def zero(cls, error: Optional[ArgumentError] = None) -> Parser[A_co]:
+    def zero(cls, error: Optional[ArgumentError] = None) -> "Parser[A_co]":
         """
         This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
 
