@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dollar-lambda"
-version = "0.1.5"
+version = "0.1.6"
 description = ""
 authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]
 include = ["dollar_lambda/py.typed"]

@@ -4,10 +4,10 @@ mypy:
 test:
 	python -m unittest test.py
 
-readme: readme.py
-	rm -rf readme.rst
-	jupytext --sync readme.py
-	DOLLAR_LAMBDA_TESTING=1 jupyter nbconvert --to markdown --execute readme.ipynb
+readme: README.py
+	rm -rf README.rst
+	jupytext --sync README.py
+	DOLLAR_LAMBDA_TESTING=1 jupyter nbconvert --to markdown --execute README.ipynb
 
 docs: dollar_lambda/
 	rm -rf docs/
