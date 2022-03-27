@@ -123,7 +123,7 @@ class Parser(MonadPlus[A_co]):
         usage = binary_usage(self.usage, " ", other.usage, add_brackets=False)
         return replace(p, usage=usage)
 
-    def __or__(
+    def __or__(  # type: ignore[override]
         self: Parser[A_co],
         other: Parser[B],
     ) -> Parser[A_co | B]:

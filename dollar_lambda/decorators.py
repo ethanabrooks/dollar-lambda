@@ -163,7 +163,7 @@ def command(
 class _FunctionPair(Sequence[A]):
     function: Callable
 
-    def __or__(self, other: Sequence[B]) -> "_FunctionPair[A | B]":
+    def __or__(self, other: Sequence[B]) -> "_FunctionPair[A | B]":  # type: ignore[override]
         function = other.function if isinstance(other, _FunctionPair) else self.function
         return _FunctionPair(get=[*self, *other], function=function)
 

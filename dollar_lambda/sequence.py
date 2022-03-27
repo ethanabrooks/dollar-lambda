@@ -55,7 +55,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     def __len__(self) -> int:
         return len(self.get)
 
-    def __or__(self, other: Sequence[A]) -> Sequence[A_co | A]:
+    def __or__(self, other: Sequence[A]) -> Sequence[A_co | A]:  # type: ignore[override]
         return Sequence([*self, *other])
 
     def __add__(self, other: Sequence[A]) -> Sequence[A_co | A]:

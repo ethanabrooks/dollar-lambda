@@ -24,7 +24,7 @@ B = TypeVar("B")
 class Result(MonadPlus[A_co]):
     get: NonemptyList[A_co] | ArgumentError
 
-    def __or__(self, other: Result[B]) -> Result[A_co | B]:
+    def __or__(self, other: Result[B]) -> Result[A_co | B]:  # type: ignore[override]
         a = self.get
         b = other.get
         if isinstance(a, NonemptyList) and isinstance(b, NonemptyList):
