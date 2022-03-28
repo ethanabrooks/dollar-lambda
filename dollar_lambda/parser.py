@@ -69,19 +69,11 @@ def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True)
     return usage or None
 
 
-__pdoc__ = {}
-
-
 @dataclass
 class Parser(MonadPlus[A_co]):
     """
     Main class powering the argument parser.
     """
-
-    __pdoc__["Parser.__add__"] = True
-    __pdoc__["Parser.__or__"] = True
-    __pdoc__["Parser.__rshift__"] = True
-    __pdoc__["Parser.__ge__"] = True
 
     f: Callable[[Sequence[str]], Result[Parse[A_co]]]
     usage: Optional[str]

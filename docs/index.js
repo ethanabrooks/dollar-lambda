@@ -450,30 +450,6 @@ INDEX=[
 "doc":""
 },
 {
-"ref":"dollar_lambda.parser.Parser.__add__",
-"url":4,
-"doc":"Parse two arguments in either order. >>> p = flag(\"verbose\") + flag(\"debug\") >>> p.parse_args(\" verbose\", \" debug\") {'verbose': True, 'debug': True} >>> p.parse_args(\" debug\", \" verbose\") {'debug': True, 'verbose': True} >>> p.parse_args(\" debug\") usage:  verbose  debug Expected ' verbose'. Got ' debug' Note that if more than two arguments are chained together with  + , some combinations will not parse: >>> p = flag(\"a\") + flag(\"b\") + flag(\"c\") >>> p.parse_args(\"-c\", \"-a\", \"-b\")  this works {'c': True, 'a': True, 'b': True} >>> p.parse_args(\"-a\", \"-c\", \"-b\")  this doesn't usage: -a -b -c Expected '-b'. Got '-c' This makes more sense when one supplies the implicit parentheses: >>> p = (flag(\"a\") + flag(\"b\" + flag(\"c\") In order to chain together more than two arguments, use  nonpositional : >>> p = nonpositional(flag(\"a\"), flag(\"b\"), flag(\"c\" >>> p.parse_args(\"-a\", \"-c\", \"-b\") {'a': True, 'c': True, 'b': True}",
-"func":1
-},
-{
-"ref":"dollar_lambda.parser.Parser.__or__",
-"url":4,
-"doc":"Tries apply the first parser. If it fails, tries the second. If that fails, the parser fails. >>> from dollar_lambda import argument, option, done, flag >>> p = option(\"option\") | flag(\"verbose\") >>> p.parse_args(\" option\", \"x\") {'option': 'x'} >>> p.parse_args(\" verbose\") {'verbose': True} Note that when both arguments are supplied, this will only parse the first: >>> p.parse_args(\" verbose\", \" option\", \"x\") {'verbose': True} If you want this to fail, use  >> ( Parser.__rshift__ ) with  done() or another parser: >>> (p >> done( .parse_args(\" verbose\", \" option\", \"x\") usage: [ option OPTION |  verbose] Unrecognized argument:  option >>> p.parse_args(\" option\", \"x\") {'option': 'x'}",
-"func":1
-},
-{
-"ref":"dollar_lambda.parser.Parser.__rshift__",
-"url":4,
-"doc":"This applies parsers in sequence. If the first parser succeeds, the unparsed remainder gets handed off to the second parser. If either parser fails, the whole thing fails. >>> from dollar_lambda import argument, flag >>> p = argument(\"first\") >> argument(\"second\") >>> p.parse_args(\"a\", \"b\") {'first': 'a', 'second': 'b'} >>> p.parse_args(\"a\") usage: FIRST SECOND The following arguments are required: second >>> p.parse_args(\"b\") usage: FIRST SECOND The following arguments are required: second",
-"func":1
-},
-{
-"ref":"dollar_lambda.parser.Parser.__ge__",
-"url":4,
-"doc":"Return self>=value.",
-"func":1
-},
-{
 "ref":"dollar_lambda.parser.Parser.bind",
 "url":4,
 "doc":"Returns a new parser that 1. applies  self ; 2. if this succeeds, applies  f to the parsed component of the result.  bind is one of the functions that makes  Parser a [ Monad ](https: github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py L16). But most users will avoid using it directly, preferring higher level combinators like  >> ( Parser.__rshift__ ),  | ( Parser.__or__ ) and  + ( Parser.__add__ ). Note that  >= as a synonym for  bind (as defined in [ pytypeclass ](https: github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py L26 and we typically prefer using the infix operator to the spelled out method. Let's start with our simplest parser,  argument : >>> p1 = argument(\"some_dest\") Now let's use the  equals parser to write a function that takes the output of  p1 and fails unless the next argument is the same as the first: >>> def f(kvs: Sequence(KeyValue[str] -> Parser[Sequence[KeyValue[str ]:  . [kv] = kvs  . return equals(kv.value) >>> p = p1 >= f >>> p.parse_args(\"a\", \"a\") {'a': 'a'} >>> p.parse_args(\"a\", \"b\") Expected 'a'. Got 'b'",
