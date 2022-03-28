@@ -423,6 +423,41 @@ class Parser(MonadPlus[A_co]):
 
         return Parser(f, usage=None, helps={})
 
+    def sat(
+        self: "Parser[A]",
+        predicate: Callable[[A], bool],
+        on_fail: Callable[[A], ArgumentError],
+    ) -> "Parser[A]":
+        """
+        Applies `parser`, applies a predicate to the result and fails if this returns false.
+
+        >>> p = option("x", type=int).many().sat(
+        ...     lambda kvs: sum([kv.value for kv in kvs]) > 0,
+        ...     lambda x: ArgumentError(f"The values in {list(x)} must sum to more than 0."),
+        ... )
+        >>> p.parse_args("-x", "-1", "-x", "1")  # fails
+        usage: [-x X ...]
+        The values in [KeyValue(key='x', value=-1), KeyValue(key='x', value=1)] must sum to more than 0.
+
+        >>> p.parse_args("-x", "-1", "-x", "2")  # succeeds
+        {'x': 2}
+
+        Parameters
+        ----------
+        parser : Parser[A]
+            The parser to apply.
+        predicate : Callable[[A], bool]
+            The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
+        on_fail : Callable[[A], ArgumentError]
+            A function producing an ArgumentError to return if the predicate fails.
+            Takes the output of `parser` as an argument.
+        """
+
+        def f(x: A) -> Result[A]:
+            return Result(NonemptyList(x) if predicate(x) else on_fail(x))
+
+        return self.apply(f)
+
     def type(
         self: "Parser[Sequence[KeyValue[str]]]", f: Callable[[str], Any]
     ) -> "Parser[Sequence[KeyValue[Any]]]":
@@ -996,43 +1031,6 @@ def peak(
     return Parser(f, usage=name, helps={})
 
 
-def sat(
-    parser: Parser[A],
-    predicate: Callable[[A], bool],
-    on_fail: Callable[[A], ArgumentError],
-) -> Parser[A]:
-    """
-    Applies `parser`, applies a predicate to the result and fails if this returns false.
-
-    >>> p = sat(
-    ...     option("x", type=int).many(),
-    ...     lambda kvs: sum([kv.value for kv in kvs]) > 0,
-    ...     lambda x: ArgumentError(f"The values in {list(x)} must sum to more than 0."),
-    ... )
-    >>> p.parse_args("-x", "-1", "-x", "1")  # fails
-    usage: [-x X ...]
-    The values in [KeyValue(key='x', value=-1), KeyValue(key='x', value=1)] must sum to more than 0.
-
-    >>> p.parse_args("-x", "-1", "-x", "2")  # succeeds
-    {'x': 2}
-
-    Parameters
-    ----------
-    parser : Parser[A]
-        The parser to apply.
-    predicate : Callable[[A], bool]
-        The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
-    on_fail : Callable[[A], ArgumentError]
-        A function producing an ArgumentError to return if the predicate fails.
-        Takes the output of `parser` as an argument.
-    """
-
-    def f(x: A) -> Result[A]:
-        return Result(NonemptyList(x) if predicate(x) else on_fail(x))
-
-    return parser.apply(f)
-
-
 def sat_item(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
@@ -1067,7 +1065,7 @@ def sat_item(
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(item(name), _predicate, _on_fail)
+    return item(name).sat(_predicate, _on_fail)
 
 
 def sat_peak(
@@ -1083,4 +1081,4 @@ def sat_peak(
         [kv] = parsed
         return on_fail(kv.value)
 
-    return sat(peak(name), _predicate, _on_fail)
+    return peak(name).sat(_predicate, _on_fail)

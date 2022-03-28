@@ -686,7 +686,6 @@ from dollar_lambda.parser import (
     item,
     nonpositional,
     option,
-    sat,
     sat_item,
 )
 
@@ -701,7 +700,6 @@ __all__ = [
     "item",
     "nonpositional",
     "option",
-    "sat",
     "sat_item",
     "Args",
     "defaults",
