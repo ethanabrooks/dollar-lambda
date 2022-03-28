@@ -1,6 +1,2 @@
-- add --help
-- test monad laws
-- handle parse errors
-- write docs
-- improve types
-- add Tap-style convenience class
+- fix `@command` help print out
+- can we infer the `base_function`?
