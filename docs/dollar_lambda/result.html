@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/1eb673fc9aba9db505734f07b295e18c58c4e353/dollar_lambda/result.py#L1-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L1-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Result` dataclass, representing success or failure, output by parsers.
@@ -61,7 +61,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import ArgumentError, HelpError, ZeroError
+from dollar_lambda.error import ArgumentError, BinaryError, HelpError, ZeroError
 from dollar_lambda.sequence import Sequence
 
 Monoid_co = TypeVar(&#34;Monoid_co&#34;, covariant=True, bound=Monoid)
@@ -87,10 +87,9 @@ class Result(MonadPlus[A_co]):
         for get in [a, b]:
             if isinstance(get, HelpError):
                 return Result(get)
-        for get in [a, b]:
-            if isinstance(get, ArgumentError):
-                return Result(get)
-        raise RuntimeError(&#34;Unreachable&#34;)
+        assert isinstance(a, ArgumentError)
+        assert isinstance(b, ArgumentError)
+        return Result(BinaryError(a.usage, a, b))
 
     def __rshift__(
         self: &#34;Result[Sequence[A]]&#34;, other: &#34;Result[Sequence[B]]&#34;
@@ -159,7 +158,7 @@ class Result(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/1eb673fc9aba9db505734f07b295e18c58c4e353/dollar_lambda/result.py#L21-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L21-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Result(MonadPlus[A_co]):
@@ -177,10 +176,9 @@ class Result(MonadPlus[A_co]):
         for get in [a, b]:
             if isinstance(get, HelpError):
                 return Result(get)
-        for get in [a, b]:
-            if isinstance(get, ArgumentError):
-                return Result(get)
-        raise RuntimeError(&#34;Unreachable&#34;)
+        assert isinstance(a, ArgumentError)
+        assert isinstance(b, ArgumentError)
+        return Result(BinaryError(a.usage, a, b))
 
     def __rshift__(
         self: &#34;Result[Sequence[A]]&#34;, other: &#34;Result[Sequence[B]]&#34;
@@ -255,7 +253,7 @@ class Result(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/1eb673fc9aba9db505734f07b295e18c58c4e353/dollar_lambda/result.py#L80-L82" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L79-L81" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
@@ -270,7 +268,7 @@ def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/1eb673fc9aba9db505734f07b295e18c58c4e353/dollar_lambda/result.py#L84-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L83-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(
@@ -290,7 +288,7 @@ def zero(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/1eb673fc9aba9db505734f07b295e18c58c4e353/dollar_lambda/result.py#L55-L78" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L54-L77" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; &#34;Result[B]&#34;:
     x = self.get

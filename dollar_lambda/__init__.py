@@ -259,6 +259,16 @@ This is just sugar for
 >>> (flag("verbose") | flag("quiet") | defaults(quiet=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
 {'quiet': False}
 
+Users should note that unlike logical "or" but like Python `or`, the `|` operator is not commutative:
+
+>>> (flag("verbose") | argument("x")).parse_args("--verbose")
+{'verbose': True}
+
+>>> (argument("x") | flag("verbose")).parse_args("--verbose")
+{'x': '--verbose'}
+
+Users may therefore prefer
+
 ### [`>>`](#dollar_lambda.Parser.__rshift__)
 
 The [`>>`](#dollar_lambda.Parser.__rshift__) operator is used for sequential composition. It applies the first parser and then
@@ -658,5 +668,6 @@ __all__ = [
 
 __pdoc__["Parser.__add__"] = True
 __pdoc__["Parser.__or__"] = True
+__pdoc__["Parser.__xor__"] = True
 __pdoc__["Parser.__rshift__"] = True
 __pdoc__["Parser.__ge__"] = True

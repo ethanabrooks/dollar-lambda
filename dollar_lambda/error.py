@@ -14,6 +14,12 @@ A = TypeVar("A")
 
 
 @dataclass
+class BinaryError(ArgumentError):
+    error1: ArgumentError
+    error2: ArgumentError
+
+
+@dataclass
 class ExceptionError(ArgumentError):
     exception: Exception
 
@@ -41,4 +47,4 @@ class UnexpectedError(ArgumentError):
 
 @dataclass
 class HelpError(ArgumentError):
-    usage: str
+    pass

@@ -8,7 +8,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import ArgumentError, HelpError, ZeroError
+from dollar_lambda.error import ArgumentError, BinaryError, HelpError, ZeroError
 from dollar_lambda.sequence import Sequence
 
 Monoid_co = TypeVar("Monoid_co", covariant=True, bound=Monoid)
@@ -34,10 +34,9 @@ class Result(MonadPlus[A_co]):
         for get in [a, b]:
             if isinstance(get, HelpError):
                 return Result(get)
-        for get in [a, b]:
-            if isinstance(get, ArgumentError):
-                return Result(get)
-        raise RuntimeError("Unreachable")
+        assert isinstance(a, ArgumentError)
+        assert isinstance(b, ArgumentError)
+        return Result(BinaryError(a.usage, a, b))
 
     def __rshift__(
         self: "Result[Sequence[A]]", other: "Result[Sequence[B]]"

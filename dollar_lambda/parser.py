@@ -15,6 +15,7 @@ from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.error import (
     ArgumentError,
+    BinaryError,
     HelpError,
     MissingError,
     UnequalError,
@@ -47,6 +48,12 @@ class Parse(Generic[A_co]):
 
     parsed: A_co
     unparsed: Sequence[str]
+
+
+@dataclass
+class SuccessError(ArgumentError, Generic[A]):
+    input: Sequence[str]
+    output: NonemptyList[Parse[A]]
 
 
 def empty() -> "Parser[Sequence]":
@@ -112,6 +119,9 @@ class Parser(MonadPlus[A_co]):
         p = (self >> other) | (other >> self)
         usage = binary_usage(self.usage, " ", other.usage, add_brackets=False)
         return replace(p, usage=usage)
+
+    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
+        return self.bind(f)
 
     def __or__(  # type: ignore[override]
         self: "Parser[A_co]",
@@ -183,8 +193,28 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **p.helps},
         )
 
-    def __ge__(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
-        return self.bind(f)
+    def __xor__(
+        self: "Parser[Sequence[A]]", other: "Parser[Sequence[B]]"
+    ) -> "Parser[Sequence[A | B]]":
+        """
+        This is the same as `__or__`, but it succeeds only if one of the two parsers fails.
+
+        >>> p = argument("int", type=int) ^ argument("div", type=lambda x: 1 / float(x))
+        >>> p.parse_args("inf")  # succeeds because int("inf") fails
+        {'div': 0.0}
+        >>> p.parse_args("0")  # succeeds because 1 / 0 throws an error
+        {'int': 0}
+        >>> p.parse_args("1")  # fails because both parsers succeed
+        Both parsers succeeded. This causes ^ to fail.
+        """
+        p = (self.fails() >> other) | (other.fails() >> self)
+
+        def f(error: ArgumentError) -> ArgumentError:
+            if isinstance(error, BinaryError):
+                return ArgumentError("Both parsers succeeded. This causes ^ to fail.")
+            return error
+
+        return p.map_error(f)
 
     def apply(self: "Parser[A]", f: Callable[[A], Result[B]]) -> "Parser[B]":  # type: ignore[misc]
         """
@@ -264,6 +294,29 @@ class Parser(MonadPlus[A_co]):
         """
         return cls.return_(Sequence([]))
 
+    def fails(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
+        """
+        Succeeds only if self fails. Does not consume any input.
+
+        >>> flag("x").fails().parse_args("not x", allow_unparsed=True)  # succeeds
+        {}
+        >>> flag("x").fails().parse_args("-x", allow_unparsed=True)  # fails
+        Parser unexpectedly succeeded.
+        """
+
+        def g(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
+            parse = self.parse(cs).get
+            if isinstance(parse, Exception):
+                return Result.return_(Parse(Sequence([]), cs))
+            else:
+                return Result.zero(
+                    error=SuccessError(
+                        "Parser unexpectedly succeeded.", input=cs, output=parse
+                    )
+                )
+
+        return Parser(g, usage=None, helps=self.helps)
+
     def handle_error(self, error: ArgumentError) -> None:
         def print_usage(usage: str):
             print("usage:", end="\n" if "\n" in usage else " ")
@@ -340,6 +393,16 @@ class Parser(MonadPlus[A_co]):
             usage=f"{self.usage} [{self.usage} ...]",
             helps=self.helps,
         )
+
+    def map_error(self, f: Callable[[ArgumentError], ArgumentError]) -> "Parser[A_co]":
+        def g(cs: Sequence[str]) -> Result[Parse[A_co]]:
+            parse = self.parse(cs)
+            if isinstance(parse.get, ArgumentError):
+                return Result.zero(error=f(parse.get))
+            else:
+                return parse
+
+        return Parser(g, usage=None, helps=self.helps)
 
     def optional(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
         """
@@ -500,6 +563,9 @@ class Parser(MonadPlus[A_co]):
 
         p = self.apply(g)
         return replace(p, usage=self.usage, helps=self.helps)
+
+    def wrap_error(self, error: ArgumentError) -> "Parser[A_co]":
+        return self.map_error(lambda _: error)
 
     def wrap_help(self: "Parser[A]") -> "Parser[A]":
         """
