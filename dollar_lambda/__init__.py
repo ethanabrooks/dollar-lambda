@@ -115,7 +115,7 @@ floats:
 We go over this syntax in greater detail in the [tutorial](#tutorial).
 For now, suffice to say that `argument` defines a positional argument,
 [`many`](#dollar_lambda.Parser.many) allows parsers to be applied
-zero or more times, and `|` expresses alternatives.
+zero or more times, and [`|`](#dollar_lambda.Parser.__or__) expresses alternatives.
 
 Here is the help text:
 
@@ -242,12 +242,12 @@ but more on that later.
 
 ## Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: `nonpositional`, `|` or `Parser.__or__`,
-and `>>` or `Parser.__rshift__`.
+Our example uses three such functions: `nonpositional`, [`|`](#dollar_lambda.Parser.__or__)
+and [`>>`](#dollar_lambda.Parser.__rshift__).
 
-### `Parser.__or__`
+### [`|`](#dollar_lambda.Parser.__or__)
 
-The `|` operator is used for alternatives. Specifically, it will try the first parser,
+The [`|`](#dollar_lambda.Parser.__or__) operator is used for alternatives. Specifically, it will try the first parser,
 and if that fails, try the second:
 
 >>> p = flag("verbose") | flag("quiet")
@@ -274,9 +274,9 @@ This is just sugar for
 >>> (flag("verbose") | flag("quiet") | defaults(quiet=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
 {'quiet': False}
 
-### `Parser.__rshift__`
+### [`>>`](#dollar_lambda.Parser.__rshift__)
 
-The `>>` operator is used for sequential composition. It applies the first parser and then
+The [`>>`](#dollar_lambda.Parser.__rshift__) operator is used for sequential composition. It applies the first parser and then
 hands the output of the first parser to the second parser. If either parser fails, the composition fails:
 
 >>> p = flag("verbose") >> done()
@@ -289,7 +289,7 @@ Expected '--verbose'. Got '--something-else'
 usage: --verbose
 Unrecognized argument: --something-else
 
-### `nonpositional` and `Parser.__add__`
+### `nonpositional` and [`+`](#dollar_lambda.Parser.__add__)
 `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
 returning the first permutations that is successful:
 
@@ -299,7 +299,7 @@ returning the first permutations that is successful:
 >>> p.parse_args("--quiet", "--verbose")  # reverse order also works
 {'quiet': True, 'verbose': True}
 
-For just two parsers you can use `+`, or `Parser.__add__`, instead of `nonpositional`:
+For just two parsers you can use [`+`](#dollar_lambda.Parser.__add__) instead of `nonpositional`:
 >>> p = flag("verbose") + flag("quiet")
 >>> p.parse_args("--verbose", "--quiet")
 {'verbose': True, 'quiet': True}
@@ -322,7 +322,7 @@ use `nonpositional`:
 {'verbose': True, 'x': '1', 'quiet': True}
 
 If alternatives or defaults appear among the arguments to `nonpositional`, you will probably want
-to add `>>` followed by `done` (or another parser) after `nonpositional`. Otherwise,
+to add [`>>`](#dollar_lambda.Parser.__rshift__) followed by `done` (or another parser) after `nonpositional`. Otherwise,
 the parser will not behave as expected:
 
 >>> p = nonpositional(flag("verbose", default=False), flag("quiet"))
@@ -388,7 +388,7 @@ that only makes sense if the user chooses `--verbose`?
 ...     >> done()
 ... )
 
-Remember that `+` or `Parser.__add__` evaluates two parsers in both orders
+Remember that [`+`](#dollar_lambda.Parser.__add__) evaluates two parsers in both orders
 and stopping at the first order that succeeds. So this allows us to
 supply `--verbose` and `--verbosity` in any order.
 
@@ -468,7 +468,7 @@ no `--verbose` flags were given?
 
 For this, we use `Parser.many1`. This method is like `Parser.many` except that it fails
 when on zero successes (recall that `Parser.many` always succeeds). So if `Parser.many`
-is like regex `*`, `Parser.many1` is like `+`. Take a look:
+is like regex `*`, `Parser.many1` is like [`+`](#dollar_lambda.Parser.__add__). Take a look:
 
 >>> p = flag("verbose").many()
 >>> p.parse_args()  # succeeds
@@ -659,7 +659,7 @@ for the user_ to reason about the code.
 ### Concise
 `$λ` provides many syntactic shortcuts for cutting down boilerplate:
 
-- operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
+- operators like [`>>`](#dollar_lambda.Parser.__rshift__), [`|`](#dollar_lambda.Parser.__or__), and [`+`](#dollar_lambda.Parser.__add__) (and [`>=`](#dollar_lambda.Parser.__ge__) if you want to get fancy)
 - the `command` decorator and the `CommandTree` object for building tree-shaped parsers
 - the `Args` syntax built on top of python `dataclasses`.
 
