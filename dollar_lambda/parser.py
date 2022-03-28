@@ -423,6 +423,32 @@ class Parser(MonadPlus[A_co]):
 
         return Parser(f, usage=None, helps={})
 
+    def type(
+        self: "Parser[Sequence[KeyValue[str]]]", f: Callable[[str], Any]
+    ) -> "Parser[Sequence[KeyValue[Any]]]":
+        """
+        A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
+        >>> p1 = option("x") >> option("y")
+        >>> p = p1.type(int)
+        >>> p.parse_args("-x", "1", "-y", "2")  # converts "1" but not "2"
+        {'y': '2', 'x': 1}
+        """
+
+        def g(
+            kvs: Sequence[KeyValue[str]],
+        ) -> Result[Sequence[KeyValue[Any]]]:
+            head, *tail = kvs.get
+            try:
+                y = f(head.value)
+            except Exception as e:
+                usage = f"argument {head.value}: raised exception {e}"
+                return Result(ArgumentError(usage))
+            head = replace(head, value=y)
+            return Result.return_(Sequence([*tail, head]))
+
+        p = self.apply(g)
+        return replace(p, usage=self.usage, helps=self.helps)
+
     @classmethod
     def zero(cls, error: Optional[ArgumentError] = None) -> "Parser[A_co]":
         """
@@ -497,7 +523,7 @@ def argument(
     parser = item(dest)
     _type: Callable[[str], Any] = str if type is None else type  # type: ignore[assignment]
     if _type is not str:
-        parser = type_(_type, parser)
+        parser = parser.type(_type)
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=dest.upper(), helps=helps)
     return parser
@@ -935,7 +961,7 @@ def option(
 
     parser = Parser(f, usage=None, helps={})
     if type is not str:
-        parser = type_(type, parser)
+        parser = parser.type(type)
     if short and len(dest) > 1:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
@@ -1059,30 +1085,3 @@ def sat_peak(
         return on_fail(kv.value)
 
     return sat(peak(name), _predicate, _on_fail)
-
-
-def type_(
-    f: Callable[[str], Any], parser: Parser[Sequence[KeyValue[str]]]
-) -> Parser[Sequence[KeyValue[Any]]]:
-    """
-    A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
-    >>> p1 = option("x") >> option("y")
-    >>> p = type_(int, p1)
-    >>> p.parse_args("-x", "1", "-y", "2")  # converts "1" but not "2"
-    {'y': '2', 'x': 1}
-    """
-
-    def g(
-        kvs: Sequence[KeyValue[str]],
-    ) -> Result[Sequence[KeyValue[Any]]]:
-        head, *tail = kvs.get
-        try:
-            y = f(head.value)
-        except Exception as e:
-            usage = f"argument {head.value}: raised exception {e}"
-            return Result(ArgumentError(usage))
-        head = replace(head, value=y)
-        return Result.return_(Sequence([*tail, head]))
-
-    p = parser.apply(g)
-    return replace(p, usage=parser.usage, helps=parser.helps)

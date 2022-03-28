@@ -688,7 +688,6 @@ from dollar_lambda.parser import (
     option,
     sat,
     sat_item,
-    type_,
     wrap_help,
 )
 
@@ -705,7 +704,6 @@ __all__ = [
     "option",
     "sat",
     "sat_item",
-    "type_",
     "Args",
     "defaults",
     "field",

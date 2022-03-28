@@ -7,7 +7,7 @@ from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional
 
 from dollar_lambda.key_value import KeyValue, KeyValueTuple
-from dollar_lambda.parser import Parser, done, flag, nonpositional, option, type_
+from dollar_lambda.parser import Parser, done, flag, nonpositional, option
 from dollar_lambda.sequence import Sequence
 
 
@@ -99,7 +99,7 @@ class _ArgsField:
                         flag=field.string,
                         help=field.help,
                     )
-                    yield type_(field.type, opt)
+                    yield opt.type(field.type)
 
         return nonpositional(*get_parsers())
 
