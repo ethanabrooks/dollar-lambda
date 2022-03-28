@@ -52,7 +52,7 @@ class Parse(Generic[A_co]):
 def empty() -> "Parser[Sequence]":
     """
     Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
-    >>> empty().parse_args("any", "arguments")
+    >>> empty().parse_args("any", "arguments", allow_unparsed=True)
     {}
     """
     return Parser[Sequence[A]].empty()
@@ -127,16 +127,16 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("--verbose")
         {'verbose': True}
 
-        Note that when both arguments are supplied, this will only parse the first:
-        >>> p.parse_args("--verbose", "--option", "x")
-        {'verbose': True}
+        Note that by default, `parse_args` adds `>> done` to the end of parsers, causing
+        `p` to fail when both arguments are supplied:
 
-        If you want this to fail, use `>>` (`Parser.__rshift__`) with `done()` or another parser:
-        >>> (p >> done()).parse_args("--verbose", "--option", "x")
+        >>> p.parse_args("--verbose", "--option", "x")
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option
-        >>> p.parse_args("--option", "x")
-        {'option': 'x'}
+
+        To disable this behavior, use `allow_unparsed`:
+        >>> p.parse_args("--verbose", "--option", "x", allow_unparsed=True)
+        {'verbose': True}
         """
 
         def f(cs: Sequence[str]) -> Result[Parse["A_co | B"]]:
@@ -149,7 +149,7 @@ class Parser(MonadPlus[A_co]):
         )
 
     def __rshift__(
-        self: "Parser[Sequence[A]]", p: "Parser[Sequence[B]]"
+        self: "Parser[typing.Sequence[A]]", p: "Parser[typing.Sequence[B]]"
     ) -> "Parser[Sequence[A | B]]":
         """
         This applies parsers in sequence. If the first parser succeeds, the unparsed remainder
@@ -166,14 +166,17 @@ class Parser(MonadPlus[A_co]):
         usage: FIRST SECOND
         The following arguments are required: second
         """
-        # def f(p1: Sequence[D]) -> Parser[Parse[Sequence[D | B]]]:
-        #     def g(p2: Sequence[B]) -> Parser[Sequence[D | B]]:
-        #         return Parser.return_(p1 + p2)
 
-        #     return p >= g
+        def f(p1: typing.Sequence[A]) -> Parser[Sequence[A | B]]:
+            def g(p2: typing.Sequence[B]) -> Parser[Sequence[A | B]]:
+                _p1 = p1 if isinstance(p1, Sequence) else Sequence(p1)
+                _p2 = p2 if isinstance(p2, Sequence) else Sequence(p2)
+                return Parser.return_(_p1 + _p2)
 
-        # return self >= f
-        parser = self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
+            return p >= g
+
+        parser = self >= f
+        # parser = self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
         return replace(
             parser,
             usage=binary_usage(self.usage, " ", p.usage, add_brackets=False),
@@ -256,7 +259,7 @@ class Parser(MonadPlus[A_co]):
     def empty(cls: Type["Parser[Sequence[A]]"]) -> "Parser[Sequence[A]]":
         """
         Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
-        >>> empty().parse_args("any", "arguments")
+        >>> empty().parse_args("any", "arguments", allow_unparsed=True)
         {}
         """
         return cls.return_(Sequence([]))
@@ -341,11 +344,11 @@ class Parser(MonadPlus[A_co]):
     def optional(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
         """
         Allows arguments to be optional:
-        >>> p1 = flag("optional") >> done()
+        >>> p1 = flag("optional")
         >>> p = p1.optional()
         >>> p.parse_args("--optional")
         {'optional': True}
-        >>> p.parse_args("--misspelled")  # succeeds with no output
+        >>> p.parse_args("--misspelled", allow_unparsed=True)  # succeeds with no output
         {}
         >>> p1.parse_args("--misspelled")
         usage: --optional
@@ -362,8 +365,9 @@ class Parser(MonadPlus[A_co]):
     def parse_args(
         self: "Parser[Sequence[KeyValue]]",
         *args: str,
-        return_dict: bool = True,
+        allow_unparsed: bool = False,
         check_help: bool = True,
+        return_dict: bool = True,
     ) -> "typing.Sequence[KeyValueTuple] | Dict[str, Any]":
         """
         The main way the user extracts parsed results from the parser.
@@ -372,12 +376,15 @@ class Parser(MonadPlus[A_co]):
         ----------
         args : str
             A sequence of strings to parse. If empty, defaults to `sys.argv[1:]`.
-        return_dict : bool
-            Returns a sequence of tuples instead of dictionary, thereby allowing duplicate keys.
-            The tuples are `KeyValueTuple` namedtuples, with fields `key` and `value`.
+        allow_unparsed : bool
+            Whether to cause parser to fail if there are unparsed inputs. Note that setting this to false
+            may cause unexpected behavior when using `nonpositional` or `Args`.
         check_help : bool
             Before running the parser, checks if the input string is `--help` or `-h`.
             If it is, returns the usage message.
+        return_dict : bool
+            Returns a sequence of tuples instead of dictionary, thereby allowing duplicate keys.
+            The tuples are `KeyValueTuple` namedtuples, with fields `key` and `value`.
 
         Examples
         --------
@@ -388,9 +395,19 @@ class Parser(MonadPlus[A_co]):
         usage: A
         """
         _args = args if args or TESTING else sys.argv[1:]
+        if not allow_unparsed:
+            return (self >> done()).parse_args(
+                *_args,
+                allow_unparsed=True,
+                check_help=check_help,
+                return_dict=return_dict,
+            )
         if check_help:
             return self.wrap_help().parse_args(
-                *_args, return_dict=return_dict, check_help=False
+                *_args,
+                allow_unparsed=allow_unparsed,
+                return_dict=return_dict,
+                check_help=False,
             )
         result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
@@ -629,8 +646,19 @@ def done() -> Parser[Sequence[A]]:
 
     Without `done` the parser will not complain about leftover (unparsed) input:
 
-    >>> flag("verbose").parse_args("--verbose", "--quiet")
+    >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=True)
     {'verbose': True}
+
+    When `allow_unparsed=False` (the default), `parse_args` adds `>> done()`
+    to the end of the parser:
+
+    >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=False)
+    usage: --verbose
+    Unrecognized argument: --quiet
+
+    >>> (flag("verbose") >> done()).parse_args("--verbose", "--quiet", allow_unparsed=True)
+    usage: --verbose
+    Unrecognized argument: --quiet
 
     `--quiet` is not parsed here but this does not cause the parser to fail.
     If we want to prevent leftover inputs, we can use `done`:
@@ -869,31 +897,6 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     >>> p.parse_args("--verbose", "--quiet")
     {'verbose': True, 'quiet': True}
     >>> p.parse_args("--quiet", "--verbose")  # reverse order also works
-    {'quiet': True, 'verbose': True}
-
-    If alternatives or defaults appear among the arguments to `nonpositional`, you will probably want
-    to add `>>` followed by `done` (or another parser) after `nonpositional`. Otherwise,
-    the parser will not behave as expected:
-
-    >>> p = nonpositional(flag("verbose", default=False), flag("quiet"))
-    >>> p.parse_args("--quiet", "--verbose")  # you expect this to set verbose to True, but it doesn't
-    {'verbose': False, 'quiet': True}
-
-    Why is happening? There are two permutions:
-
-    - `flag("verbose", default=False) >> flag("quiet")` and
-    - `flag("quiet") >> flag("verbose", default=False)`
-
-    In our example, both permutations are actually succeeding. This first succeeds by falling
-    back to the default, and leaving the last word of the input, `--verbose`, unparsed.
-    Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
-
-    Now let's add `>> done()` to the end:
-    >>> p = nonpositional(flag("verbose", default=False), flag("quiet")) >> done()
-
-    This ensures that the first permutation will fail because the leftover `--verbose` input will
-    cause the `done` parser to fail:
-    >>> p.parse_args("--quiet", "--verbose")
     {'quiet': True, 'verbose': True}
     """
     if not parsers:

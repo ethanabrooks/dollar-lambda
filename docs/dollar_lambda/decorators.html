@@ -46,7 +46,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/2dd38f347bc67dc9c649c4178e966ddbaddf6fcf/dollar_lambda/decorators.py#L1-L433" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/150823d4766fda67dc37a6d762eecbbb820d8cdc/dollar_lambda/decorators.py#L1-L429" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `command` decorator and the `CommandTree` class.
@@ -64,7 +64,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, equals, wrap_help
+from dollar_lambda.parser import Parse, Parser, done, equals
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -189,13 +189,10 @@ def command(
     &#34;&#34;&#34;
 
     def wrapper(func: Callable) -&gt; Callable:
-        p = (
-            _func_to_parser(
-                func, flip_bools=flip_bools, help=help, strings=strings, types=types
-            )
-            &gt;&gt; done()
+        p = _func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
         )
-        p = wrap_help(p)
+        p = p.wrap_help()
 
         def wrapped(*args) -&gt; Any:
             parsed = p.parse_args(*args)
@@ -394,8 +391,7 @@ class CommandTree:
                     )
                 yield parser
 
-        parser = reduce(operator.or_, get_alternatives())
-        return wrap_help(parser)
+        return reduce(operator.or_, get_alternatives()).wrap_help()
 
     def __call__(self, *args: str) -&gt; Any:
         &#34;&#34;&#34;
@@ -562,7 +558,7 @@ Expected '--quiet-mode'. Got '--quiet'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/2dd38f347bc67dc9c649c4178e966ddbaddf6fcf/dollar_lambda/decorators.py#L56-L159" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/150823d4766fda67dc37a6d762eecbbb820d8cdc/dollar_lambda/decorators.py#L56-L156" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     flip_bools: bool = True,
@@ -650,13 +646,10 @@ Expected '--quiet-mode'. Got '--quiet'
     &#34;&#34;&#34;
 
     def wrapper(func: Callable) -&gt; Callable:
-        p = (
-            _func_to_parser(
-                func, flip_bools=flip_bools, help=help, strings=strings, types=types
-            )
-            &gt;&gt; done()
+        p = _func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
         )
-        p = wrap_help(p)
+        p = p.wrap_help()
 
         def wrapped(*args) -&gt; Any:
             parsed = p.parse_args(*args)
@@ -684,7 +677,7 @@ see the <a href="#commandtree-tutorial"><code>CommandTree</code> tutorial</a>.</
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/2dd38f347bc67dc9c649c4178e966ddbaddf6fcf/dollar_lambda/decorators.py#L246-L433" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/150823d4766fda67dc37a6d762eecbbb820d8cdc/dollar_lambda/decorators.py#L243-L429" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class CommandTree:
@@ -787,8 +780,7 @@ class CommandTree:
                     )
                 yield parser
 
-        parser = reduce(operator.or_, get_alternatives())
-        return wrap_help(parser)
+        return reduce(operator.or_, get_alternatives()).wrap_help()
 
     def __call__(self, *args: str) -&gt; Any:
         &#34;&#34;&#34;
@@ -921,7 +913,7 @@ b: (default: True)
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/2dd38f347bc67dc9c649c4178e966ddbaddf6fcf/dollar_lambda/decorators.py#L256-L317" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/150823d4766fda67dc37a6d762eecbbb820d8cdc/dollar_lambda/decorators.py#L253-L314" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     self,
@@ -1033,7 +1025,7 @@ b: (default: True)
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/2dd38f347bc67dc9c649c4178e966ddbaddf6fcf/dollar_lambda/decorators.py#L370-L433" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/150823d4766fda67dc37a6d762eecbbb820d8cdc/dollar_lambda/decorators.py#L366-L429" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def subcommand(
     self,

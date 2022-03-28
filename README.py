@@ -143,9 +143,9 @@ tree("-x", "1")
 # floats:
 
 # %%
-from dollar_lambda import argument, done, option
+from dollar_lambda import argument, option
 
-p = (option("x", type=int) | argument("y", type=float).many()) >> done()
+p = option("x", type=int) | argument("y", type=float).many()
 
 # %% [markdown]
 # We go over this syntax in greater detail in the [tutorial](#tutorial).

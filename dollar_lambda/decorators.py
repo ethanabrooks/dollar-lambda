@@ -139,11 +139,8 @@ def command(
     """
 
     def wrapper(func: Callable) -> Callable:
-        p = (
-            _func_to_parser(
-                func, flip_bools=flip_bools, help=help, strings=strings, types=types
-            )
-            >> done()
+        p = _func_to_parser(
+            func, flip_bools=flip_bools, help=help, strings=strings, types=types
         )
         p = p.wrap_help()
 

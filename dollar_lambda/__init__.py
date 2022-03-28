@@ -111,7 +111,7 @@ Suppose you want to implement a parser that first tries to parse an option
 `-x X` and if that fails, tries to parse the input as a variadic sequence of
 floats:
 
->>> p = (option("x", type=int) | argument("y", type=float).many()) >> done()
+>>> p = option("x", type=int) | argument("y", type=float).many()
 
 We go over this syntax in greater detail in the [tutorial](#tutorial).
 For now, suffice to say that `argument` defines a positional argument,
@@ -162,7 +162,7 @@ Here is the exact equivalent in this package:
 ...     (flag("verbose") | flag("quiet")).optional(),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
-... ) >> done()
+... )
 ...
 >>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
@@ -225,22 +225,6 @@ Use the `type` argument to convert the input to a different type:
 >>> option("x", type=int).parse_args("-x", "1")  # converts "1" to an int
 {'x': 1}
 
-### `done`
-Without `done` the parser will not complain about leftover (unparsed) input:
-
->>> flag("verbose").parse_args("--verbose", "--quiet")
-{'verbose': True}
-
-`--quiet` is not parsed here but this does not cause the parser to fail.
-If we want to prevent leftover inputs, we can use `done`:
-
->>> (flag("verbose") >> done()).parse_args("--verbose", "--quiet")
-usage: --verbose
-Unrecognized argument: --quiet
-
-`done` is usually necessary to get `nonpositional` to behave in the way that you expect,
-but more on that later.
-
 ## Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
 Our example uses three such functions: `nonpositional`, [`|`](#dollar_lambda.Parser.__or__)
@@ -280,7 +264,7 @@ This is just sugar for
 The [`>>`](#dollar_lambda.Parser.__rshift__) operator is used for sequential composition. It applies the first parser and then
 hands the output of the first parser to the second parser. If either parser fails, the composition fails:
 
->>> p = flag("verbose") >> done()
+>>> p = flag("verbose")
 >>> p.parse_args("--verbose")
 {'verbose': True}
 >>> p.parse_args("--something-else")  # first parser will fail
@@ -322,31 +306,6 @@ use `nonpositional`:
 >>> p.parse_args("--verbose", "-x", "1", "--quiet")  # works
 {'verbose': True, 'x': '1', 'quiet': True}
 
-If alternatives or defaults appear among the arguments to `nonpositional`, you will probably want
-to add [`>>`](#dollar_lambda.Parser.__rshift__) followed by `done` (or another parser) after `nonpositional`. Otherwise,
-the parser will not behave as expected:
-
->>> p = nonpositional(flag("verbose", default=False), flag("quiet"))
->>> p.parse_args("--quiet", "--verbose")  # you expect this to set verbose to True, but it doesn't
-{'verbose': False, 'quiet': True}
-
-Why is happening? There are two permutions:
-
-- `flag("verbose", default=False) >> flag("quiet")` and
-- `flag("quiet") >> flag("verbose", default=False)`
-
-In our example, both permutations are actually succeeding. This first succeeds by falling
-back to the default, and leaving the last word of the input, `--verbose`, unparsed.
-Either interpretation is valid, and `nonpositional` returns one arbitrarily -- just not the one we expected.
-
-Now let's add `>> done()` to the end:
->>> p = nonpositional(flag("verbose", default=False), flag("quiet")) >> done()
-
-This ensures that the first permutation will fail because the leftover `--verbose` input will
-cause the `done` parser to fail:
->>> p.parse_args("--quiet", "--verbose")
-{'quiet': True, 'verbose': True}
-
 ## Putting it all together
 Let's recall the original example:
 
@@ -354,7 +313,7 @@ Let's recall the original example:
 ...     (flag("verbose") | flag("quiet")).optional(),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
-... ) >> done()
+... )
 ...
 >>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
@@ -372,7 +331,6 @@ some integer, binding that integer to the variable `"x"`. Similarly for `option(
 - `option("y", type=int)`
 
 and applies them in every order, until some order succeeds.
-Finally `done()` ensures that only one of these parser permutations will succeed, preventing ambiguity.
 
 ## Variations on the example
 ### Variable numbers of arguments
@@ -380,13 +338,10 @@ Finally `done()` ensures that only one of these parser permutations will succeed
 What if there was a special argument, `verbosity`,
 that only makes sense if the user chooses `--verbose`?
 
->>> p = (
-...     nonpositional(
-...         ((flag("verbose") + option("verbosity", type=int)) | flag("quiet")),
-...         option("x", type=int),
-...         option("y", type=int),
-...     )
-...     >> done()
+>>> p = nonpositional(
+...    ((flag("verbose") + option("verbosity", type=int)) | flag("quiet")),
+...    option("x", type=int),
+...    option("y", type=int),
 ... )
 
 Remember that [`+`](#dollar_lambda.Parser.__add__) evaluates two parsers in both orders
@@ -433,9 +388,7 @@ let's look at how it works.
 >>> p = flag("verbose").many()
 >>> p.parse_args()  # succeeds
 {}
->>> p.parse_args("blah")  # still succeeds
-{}
->>> p.parse_args("--verbose", "blah")  # still succeeds
+>>> p.parse_args("--verbose")  # still succeeds
 {'verbose': True}
 >>> p.parse_args("--verbose", "--verbose", return_dict=False)
 [('verbose', True), ('verbose', True)]
@@ -445,13 +398,10 @@ can have duplicate keys.
 
 Now returning to the original example:
 
->>> p = (
-...     nonpositional(
-...         flag("verbose").many(),
-...         option("x", type=int),
-...         option("y", type=int),
-...     )
-...     >> done()
+>>> p = nonpositional(
+...     flag("verbose").many(),
+...     option("x", type=int),
+...     option("y", type=int),
 ... )
 >>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose", return_dict=False)
 >>> args
@@ -483,13 +433,10 @@ The following arguments are required: --verbose
 
 To compell that `--quiet` flag from our users, we can do the following:
 
->>> p = (
-...     nonpositional(
-...         ((flag("verbose").many1()) | flag("quiet")),
-...         option("x", type=int),
-...         option("y", type=int),
-...     )
-...     >> done()
+>>> p = nonpositional(
+...    ((flag("verbose").many1()) | flag("quiet")),
+...    option("x", type=int),
+...    option("y", type=int),
 ... )
 
 Now omitting both `--verbose` and `--quiet` will fail:
