@@ -110,7 +110,7 @@ Suppose you want to implement a parser that first tries to parse an option
 `-x X` and if that fails, tries to parse the input as a variadic sequence of
 floats:
 
->>> p = (option("x", type=int) | argument("y").many()) >> done()
+>>> p = (option("x", type=int) | argument("y", type=float).many()) >> done()
 
 We go over this syntax in greater detail in the [tutorial](#tutorial).
 For now, suffice to say that `argument` defines a positional argument,
@@ -129,8 +129,8 @@ As promised, this succeeds:
 
 And this succeeds:
 
->>> p.parse_args("a", "b", "c", return_dict=False)
-[('y', 'a'), ('y', 'b'), ('y', 'c')]
+>>> p.parse_args("1", "2", "3", return_dict=False)
+[('y', 1.0), ('y', 2.0), ('y', 3.0)]
 
 # Tutorial
 
@@ -158,7 +158,7 @@ args = parser.parse_args()
 Here is the exact equivalent in this package:
 
 >>> p = nonpositional(
-...     (flag("verbose") | flag("quiet") | empty()),
+...     (flag("verbose") | flag("quiet")).optional(),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
 ... ) >> done()
@@ -166,10 +166,24 @@ Here is the exact equivalent in this package:
 >>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
-This is similar to what we saw in the
-[earlier section on alternatives](##for-alternatives),
- except that now we use `| empty()` to allow both
-`--verbose` and `--quiet` to be omitted:
+Here is the help text:
+
+>>> p.parse_args("-h")
+usage: [--verbose | --quiet] -x X -y Y
+x: the base
+y: the exponent
+
+As indicated, this succeeds given `--verbose`
+
+>>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
+{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+
+or `--quiet`
+
+>>> main(**p.parse_args("-x", "1", "-y", "2", "--quiet"))
+{'x': 1, 'y': 2, 'verbose': False, 'quiet': True}
+
+or neither
 
 >>> main(**p.parse_args("-x", "1", "-y", "2"))
 {'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
@@ -179,7 +193,7 @@ Let's walk through this step by step.
 ## High-Level Parsers
 So far we've seen a few different parser constructors.
 `flag` binds a boolean value to a variable whereas `option` binds an arbitrary value to a variable.
-`empty` and `done` do not bind any values to variables, but `empty` always succeeds whereas `done` only
+`done` does not bind any values to variables, but only
 succeeds on the end of input.
 
 ### `flag`
@@ -209,24 +223,6 @@ as opposed to `--` for longer names (as in `--xenophon`):
 Use the `type` argument to convert the input to a different type:
 >>> option("x", type=int).parse_args("-x", "1")  # converts "1" to an int
 {'x': 1}
-
-### `empty`
-As we've said, `empty` always succeeds:
-
->>> empty().parse_args("any", "arguments")
-{}
-
-For a more type-safe version, you can use `Parser.empty`:
-
->>> p = Parser[int].empty()
-
-`empty` is useful when you want to make an argument optional --
-the definition of `Parser.optional` is:
-
-```
-def optional(self):
-    return self | self.empty()
-```
 
 ### `done`
 Without `done` the parser will not complain about leftover (unparsed) input:
@@ -266,9 +262,9 @@ usage: [--verbose | --quiet]
 The following arguments are required: --verbose
 
 We can permit the omission of both flags
-by using `empty`, as we saw earlier, or we can supply a default value:
+by using `optional`, as we saw earlier, or we can supply a default value:
 
->>> (flag("verbose") | flag("quiet") | empty()).parse_args() # flags fail, but empty() succeeds
+>>> (flag("verbose") | flag("quiet")).optional().parse_args() # flags fail, but that's ok
 {}
 >>> (flag("verbose") | flag("quiet", default=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
 {'quiet': False}
@@ -354,7 +350,7 @@ cause the `done` parser to fail:
 Let's recall the original example:
 
 >>> p = nonpositional(
-...     (flag("verbose") | flag("quiet") | empty()),
+...     (flag("verbose") | flag("quiet")).optional(),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
 ... ) >> done()
@@ -362,7 +358,7 @@ Let's recall the original example:
 >>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
-As we've seen, `flag("verbose") | flag("quiet") | empty()` succeeds on either `--verbose` or `--quiet`
+As we've seen, `(flag("verbose") | flag("quiet")).optional()` succeeds on either `--verbose` or `--quiet`
 or neither.
 
 `option("x", type=int)` succeeds on `-x X`, where `X` is
@@ -370,7 +366,7 @@ some integer, binding that integer to the variable `"x"`. Similarly for `option(
 
 `nonpositional` takes the three parsers:
 
-- `flag("verbose") | flag("quiet") | empty()`
+- `(flag("verbose") | flag("quiet")).optional()`
 - `option("x", type=int)`
 - `option("y", type=int)`
 

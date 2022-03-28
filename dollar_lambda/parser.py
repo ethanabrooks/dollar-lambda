@@ -506,7 +506,7 @@ def argument(
     The following arguments are required: name
     """
     parser = item(dest)
-    _type: Callable[[str], Any] = lambda s: str(s) if type is None else type
+    _type: Callable[[str], Any] = str if type is None else type  # type: ignore[assignment]
     if _type is not str:
         parser = type_(_type, parser)
     helps = {dest: help} if help else {}
