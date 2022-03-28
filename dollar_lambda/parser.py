@@ -183,6 +183,35 @@ class Parser(MonadPlus[A_co]):
     def __ge__(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
         return self.bind(f)
 
+    def apply(self: "Parser[A]", f: Callable[[A], Result[B]]) -> "Parser[B]":  # type: ignore[misc]
+        """
+        Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+
+        >>> p1 = flag("hello")
+        >>> p1.parse_args("--hello", return_dict=False)
+        [('hello', True)]
+
+        This will double `p1`'s output:
+        >>> p2 = p1.apply(lambda kv: Result.return_(kv + kv))
+        >>> p2.parse_args("--hello", return_dict=False)
+        [('hello', True), ('hello', True)]
+        """
+
+        def g(a: A) -> Parser[B]:
+            try:
+                y = f(a)
+            except Exception as e:
+                usage = f"An argument {a}: raised exception {e}"
+                y = Result(ArgumentError(usage))
+            return Parser(
+                lambda cs: y >= (lambda parsed: Result.return_(Parse(parsed, cs))),
+                usage=self.usage,
+                helps=self.helps,
+            )
+
+        p = self >= g
+        return replace(p, usage=self.usage, helps=self.helps)
+
     def bind(self, f: Callable[[A_co], Monad[B]]) -> "Parser[B]":
         """
         Returns a new parser that
@@ -414,38 +443,6 @@ class Parser(MonadPlus[A_co]):
         return Parser(lambda _: Result.zero(error=error), usage=None, helps={})
 
 
-def apply(
-    f: Callable[[A], Result[B]], parser: Parser[A]  # type: ignore[misc]
-) -> Parser[B]:
-    """
-    Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
-
-    >>> p1 = flag("hello")
-    >>> p1.parse_args("--hello", return_dict=False)
-    [('hello', True)]
-
-    This will double `p1`'s output:
-    >>> p2 = apply(lambda kv: Result.return_(kv + kv), p1)
-    >>> p2.parse_args("--hello", return_dict=False)
-    [('hello', True), ('hello', True)]
-    """
-
-    def g(a: A) -> Parser[B]:
-        try:
-            y = f(a)
-        except Exception as e:
-            usage = f"An argument {a}: raised exception {e}"
-            y = Result(ArgumentError(usage))
-        return Parser(
-            lambda cs: y >= (lambda parsed: Result.return_(Parse(parsed, cs))),
-            usage=parser.usage,
-            helps=parser.helps,
-        )
-
-    p = parser >= g
-    return replace(p, usage=parser.usage, helps=parser.helps)
-
-
 def apply_item(f: Callable[[str], B], description: str) -> Parser[B]:
     """
     A shortcut for `apply(f, item(description))`
@@ -470,7 +467,7 @@ def apply_item(f: Callable[[str], B], description: str) -> Parser[B]:
             return Result(ArgumentError(usage))
         return Result.return_(y)
 
-    return apply(g, item(description))
+    return item(description).apply(g)
 
 
 def argument(
@@ -1008,7 +1005,7 @@ def sat(
     def f(x: A) -> Result[A]:
         return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
-    return apply(f, parser)
+    return parser.apply(f)
 
 
 def sat_item(
@@ -1087,5 +1084,5 @@ def type_(
         head = replace(head, value=y)
         return Result.return_(Sequence([*tail, head]))
 
-    p = apply(g, parser)
+    p = parser.apply(g)
     return replace(p, usage=parser.usage, helps=parser.helps)

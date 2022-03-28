@@ -676,7 +676,6 @@ from dollar_lambda.args import Args, field
 from dollar_lambda.decorators import CommandTree, command
 from dollar_lambda.parser import (
     Parser,
-    apply,
     apply_item,
     argument,
     defaults,
@@ -696,7 +695,6 @@ from dollar_lambda.parser import (
 __all__ = [
     "Parser",
     "empty",
-    "apply",
     "apply_item",
     "argument",
     "done",
