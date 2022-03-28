@@ -105,6 +105,32 @@ To learn more, we recommend the [`CommandTree` tutorial](#commandtree-tutorial).
 but they are both syntactic sugar for a lower-level interface that is far
 more expressive.
 
+Suppose you want to implement a parser that first tries to parse an option
+(a flag that takes an argument),
+`-x X` and if that fails, tries to parse the input as a variadic sequence of
+floats:
+
+>>> p = (option("x", type=int) | argument("y").many()) >> done()
+
+We go over this syntax in greater detail in the [tutorial](#tutorial).
+For now, suffice to say that `argument` defines a positional argument,
+[`many`](#dollar_lambda.Parser.many) allows parsers to be applied
+zero or more times, and `|` expresses alternatives.
+
+Here is the help text:
+
+>>> p.parse_args("-h")
+usage: [-x X | [Y ...]]
+
+As promised, this succeeds:
+
+>>> p.parse_args("-x", "1")
+{'x': 1}
+
+And this succeeds:
+
+>>> p.parse_args("a", "b", "c", return_dict=False)
+[('y', 'a'), ('y', 'b'), ('y', 'c')]
 
 # Tutorial
 

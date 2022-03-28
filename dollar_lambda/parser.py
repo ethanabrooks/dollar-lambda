@@ -168,10 +168,10 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("a", "b")
         {'first': 'a', 'second': 'b'}
         >>> p.parse_args("a")
-        usage: first second
+        usage: FIRST SECOND
         The following arguments are required: second
         >>> p.parse_args("b")
-        usage: first second
+        usage: FIRST SECOND
         The following arguments are required: second
         """
         # def f(p1: Sequence[D]) -> Parser[Parse[Sequence[D | B]]]:
@@ -294,7 +294,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("1", "2", return_dict=False)  # return_dict=False allows duplicate keys
         [('1-or-more', '1'), ('1-or-more', '2')]
         >>> p.parse_args()
-        usage: 1-or-more [1-or-more ...]
+        usage: 1-OR-MORE [1-OR-MORE ...]
         The following arguments are required: 1-or-more
         """
 
@@ -362,9 +362,9 @@ class Parser(MonadPlus[A_co]):
         --------
 
         >>> argument("a").parse_args("-h")
-        usage: a
+        usage: A
         >>> argument("a").parse_args("--help")
-        usage: a
+        usage: A
         """
         _args = args if args or TESTING else sys.argv[1:]
         if check_help:
@@ -481,18 +481,37 @@ def apply_item(f: Callable[[str], B], description: str) -> Parser[B]:
     return apply(g, item(description))
 
 
-def argument(dest: str) -> Parser[Sequence[KeyValue[str]]]:
+def argument(
+    dest: str, help: Optional[str] = None, type: Optional[Callable[[str], Any]] = None
+) -> Parser[Sequence[KeyValue[Any]]]:
     """
     Parses a single word and binds it to `dest`.
     Useful for positional arguments.
 
+    Parameters
+    ----------
+    dest : str
+        The name of variable to bind to:
+
+    help : Optional[str]
+        The help message to display for the option:
+
+    type : Optional[Callable[[str], Any]]
+        Use the `type` argument to convert the input to a different type:
+
     >>> argument("name").parse_args("Alice")
     {'name': 'Alice'}
     >>> argument("name").parse_args()
-    usage: name
+    usage: NAME
     The following arguments are required: name
     """
-    return item(dest)
+    parser = item(dest)
+    _type: Callable[[str], Any] = lambda s: str(s) if type is None else type
+    if _type is not str:
+        parser = type_(_type, parser)
+    helps = {dest: help} if help else {}
+    parser = replace(parser, usage=dest.upper(), helps=helps)
+    return parser
 
 
 def defaults(**kwargs: Any) -> Parser[Sequence[KeyValue[Any]]]:
