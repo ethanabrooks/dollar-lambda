@@ -1,2 +1,3 @@
 - fix `@command` help print out
 - can we infer the `base_function`?
+- add `__xor__`

@@ -213,10 +213,10 @@ class _FunctionPair(Sequence[A]):
 
 @dataclass
 class _Node:
+    can_run: bool
     function: Callable
     flip_bools: bool
     help: Optional[Dict[str, str]]
-    required: bool
     strings: Optional[Dict[str, str]]
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
@@ -237,7 +237,7 @@ class _Node:
             types=self.types,
         )
         p = p1 >> p2
-        return p if self.required else p.optional()  # type: ignore[return-value]
+        return p  # type: ignore[return-value]
 
     def variable_names(self) -> Iterator[str]:
         yield from signature(self.function).parameters.keys()
@@ -251,13 +251,13 @@ class CommandTree:
     """
 
     _children: List[_Node] = field(default_factory=list)
-    _required: bool = False
+    _can_run: bool = True
 
     def command(
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        required: bool = True,
+        can_run: bool = True,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
@@ -267,15 +267,14 @@ class CommandTree:
         Parameters
         ----------
 
+        can_run: bool
+            Whether the parser will permit the parser to run if no further arguments are supplied.
+
         flip_bools: bool
             Whether to add `--no-<argument>` before arguments that default to `True`.
 
         help: dict
             A dictionary of help strings for the arguments.
-
-        required: bool
-            If any sibling child functions are not required, then the user will be
-            able to invoke the parent function by not selecting any of the child functions.
 
         strings: dict
             A dictionary of strings to use for the arguments.
@@ -307,33 +306,11 @@ class CommandTree:
         >>> tree("-h")
         usage: -b
         b: (default: True)
-
-
-        Here is an example of how the `required` argument works:
-
-        >>> tree = CommandTree()
-        ...
-        >>> @tree.command()
-        ... def f1(a: int):
-        ...     # this function can be called because one of the children (f2) is not required
-        ...     return dict(f1=dict(a=a))
-        ...
-        >>> @f1.command(required=False)
-        ... def f2(a:int, b: bool):
-        ...     return dict(f2=dict(b=b))
-        ...
-        >>> @f1.command()
-        ... def f3(a: int, c: str):
-        ...     return dict(f3=dict(c=c))
-
-        Now we invoke `tree` without calling `f2` or `f3`:
-        >>> tree("-a", "1")
-        {'f1': {'a': 1}}
         """
         return self._decorator(
             flip_bools=flip_bools,
             help=help,
-            required=required,
+            can_run=can_run,
             strings=strings,
             subcommand=False,
             types=types,
@@ -357,14 +334,18 @@ class CommandTree:
             for child in self._children:
                 parser: Parser[_FunctionPair[KeyValue[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree._children:
+                    child_parser = child.tree._parser(
+                        *variables, *child.variable_names()
+                    )
+                    if child.can_run:
+                        child_parser = child_parser | done()  # type: ignore[operator]
                     parser = cast(
-                        Parser[_FunctionPair[KeyValue[Any]]],
-                        parser
-                        >> child.tree._parser(*variables, *child.variable_names()),
+                        Parser[_FunctionPair[KeyValue[Any]]], parser >> child_parser
                     )
                 yield parser
 
-        return wrap_help(reduce(operator.or_, get_alternatives()))
+        parser = reduce(operator.or_, get_alternatives())
+        return wrap_help(parser)
 
     def __call__(self, *args: str) -> Any:
         """
@@ -390,7 +371,7 @@ class CommandTree:
         self,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        required: bool = False,
+        can_run: bool = True,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
@@ -402,15 +383,14 @@ class CommandTree:
         Parameters
         ----------
 
+        can_run: bool
+            Whether the parser will permit the parser to run if no further arguments are supplied.
+
         flip_bools: bool
             Whether to add `--no-<argument>` before arguments that default to `True`.
 
         help: dict
             A dictionary of help strings for the arguments.
-
-        required: bool
-            If any sibling child functions are not required, then the user will be
-            able to invoke the parent function by not selecting any of the child functions.
 
         strings: dict
             A dictionary of strings to use for the arguments.
@@ -442,33 +422,11 @@ class CommandTree:
         >>> tree("-h")
         usage: f1 -b
         b: (default: True)
-
-
-        Here is an example of how the `required` argument works:
-
-        >>> tree = CommandTree()
-        ...
-        >>> @tree.command()
-        ... def f1(a: int):
-        ...     # this function can be called because one of the children (f2) is not required
-        ...     return dict(f1=dict(a=a))
-        ...
-        >>> @f1.subcommand(required=False)
-        ... def f2(a:int, b: bool):
-        ...     return dict(f2=dict(b=b))
-        ...
-        >>> @f1.subcommand()
-        ... def f3(a: int, c: str):
-        ...     return dict(f3=dict(c=c))
-
-        Now we invoke `tree` without calling `f2` or `f3`:
-        >>> tree("-a", "1")
-        {'f1': {'a': 1}}
         """
         return self._decorator(
             flip_bools=flip_bools,
             help=help,
-            required=required,
+            can_run=can_run,
             types=types,
             strings=strings,
             subcommand=True,
