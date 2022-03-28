@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L1-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6323031b02c5f124ede61fbb128a13a110a34aea/dollar_lambda/result.py#L1-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Result` dataclass, representing success or failure, output by parsers.
@@ -158,7 +158,7 @@ class Result(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L21-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6323031b02c5f124ede61fbb128a13a110a34aea/dollar_lambda/result.py#L21-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Result(MonadPlus[A_co]):
@@ -253,7 +253,7 @@ class Result(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L79-L81" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6323031b02c5f124ede61fbb128a13a110a34aea/dollar_lambda/result.py#L79-L81" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
@@ -268,7 +268,7 @@ def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L83-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6323031b02c5f124ede61fbb128a13a110a34aea/dollar_lambda/result.py#L83-L87" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(
@@ -288,7 +288,7 @@ def zero(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/fa5db6604c82ee54d4a809f35e6ddef6c9ea0a71/dollar_lambda/result.py#L54-L77" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6323031b02c5f124ede61fbb128a13a110a34aea/dollar_lambda/result.py#L54-L77" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; &#34;Result[B]&#34;:
     x = self.get

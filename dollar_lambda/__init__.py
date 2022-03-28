@@ -194,8 +194,6 @@ Let's walk through this step by step.
 ## High-Level Parsers
 So far we've seen a few different parser constructors.
 `flag` binds a boolean value to a variable whereas `option` binds an arbitrary value to a variable.
-`done` does not bind any values to variables, but only
-succeeds on the end of input.
 
 ### `flag`
 >>> p = flag("verbose")
@@ -254,20 +252,13 @@ by using `optional`, as we saw earlier, or we can supply a default value:
 >>> (flag("verbose") | flag("quiet", default=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
 {'quiet': False}
 
-This is just sugar for
-
->>> (flag("verbose") | flag("quiet") | defaults(quiet=False)).parse_args() # flag("verbose") fails but flag("quiet", default=False) succeeds
-{'quiet': False}
-
-Users should note that unlike logical "or" but like Python `or`, the `|` operator is not commutative:
+Users should note that unlike logical "or" but like Python `or`, the [`|`](#dollar_lambda.Parser.__or__) operator is not commutative:
 
 >>> (flag("verbose") | argument("x")).parse_args("--verbose")
 {'verbose': True}
 
 >>> (argument("x") | flag("verbose")).parse_args("--verbose")
 {'x': '--verbose'}
-
-Users may therefore prefer
 
 ### [`>>`](#dollar_lambda.Parser.__rshift__)
 
@@ -277,10 +268,16 @@ hands the output of the first parser to the second parser. If either parser fail
 >>> p = flag("verbose")
 >>> p.parse_args("--verbose")
 {'verbose': True}
->>> p.parse_args("--something-else")  # first parser will fail
+
+The first parser will fail here:
+
+>>> p.parse_args("--something-else")
 usage: --verbose
 Expected '--verbose'. Got '--something-else'
->>> p.parse_args("--verbose", "--something-else")  # second parser will fail
+
+The second parser will fail here:
+
+>>> p.parse_args("--verbose", "--something-else")
 usage: --verbose
 Unrecognized argument: --something-else
 
@@ -372,7 +369,7 @@ This is also a case where you might want to use `CommandTree`:
 ...
 >>> @tree.command(help=dict(x="the base", y="the exponent"))
 ... def base_function(x: int, y: int):
-...     raise RuntimeError("This function will not execute.")
+...     print(dict(x=x, y=y))
 ...
 >>> @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
