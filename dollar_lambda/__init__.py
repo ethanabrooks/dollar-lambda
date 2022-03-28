@@ -47,13 +47,14 @@ And here it is in action:
 `command` takes arguments that allow you to supply
 help strings and custom types:
 
->>> @command(types=dict(x=lambda x: int(x) + 1, help=dict(x="A number that gets incremented.")))
+>>> @command(types=dict(x=lambda x: int(x) + 1), help=dict(x="A number that gets incremented."))
 ... def main(x: int, dev: bool = False, prod: bool = False):
 ...     return dict(x=x, dev=dev, prod=prod)
 ...
 
 >>> main("-h")
 usage: -x X --dev --prod
+x: A number that gets incremented.
 
 >>> main("-x", "1", "--dev")
 {'x': 2, 'dev': True, 'prod': False}

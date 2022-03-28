@@ -67,7 +67,7 @@ main("-x", "1", "--dev")
 
 # %%
 @command(
-    types=dict(x=lambda x: int(x) + 1, help=dict(x="A number that gets incremented."))
+    types=dict(x=lambda x: int(x) + 1), help=dict(x="A number that gets incremented.")
 )
 def main(x: int, dev: bool = False, prod: bool = False):
     return dict(x=x, dev=dev, prod=prod)
