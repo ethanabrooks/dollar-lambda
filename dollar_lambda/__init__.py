@@ -42,7 +42,11 @@ And here it is in action:
 
         main(*sys.argv[1:])
 
-    In this document, the string arguments are for demonstration purposes only.
+    Throughout this document, we provide explicit string arguments to
+    various functions for parsing arguments. In production you would
+    provide no arguments and the functions would get them automatically
+    from the command line via `sys.argv[1:]`.
+
 
 `command` takes arguments that allow you to supply
 help strings and custom types:
@@ -167,12 +171,18 @@ Here is the exact equivalent in this package:
 >>> def main(x, y, verbose=False, quiet=False):
 ...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
 
-Here is the help text:
+Here is the help text for the `p` parser:
 
 >>> p.parse_args("-h")
 usage: [--verbose | --quiet] -x X -y Y
 x: the base
 y: the exponent
+
+.. Note::
+    As noted earlier in the [Highlights](#highlights) section, we will
+    supply explicit string arguments to functions like `parse_args` but in
+    production you would provide no arguments and the functions would get the
+    arguments from the command line via `sys.argv[1:]`.
 
 As indicated, this succeeds given `--verbose`
 
@@ -464,6 +474,12 @@ exposing some of the underlying logic and covering all
 the variations in functionality that `CommandTree`
 offers.
 
+`CommandTree` draws inspiration for the dynamic dispatch concept
+from the [`Click`](https://click.palletsprojects.com/) library.
+`CommandTree.subcommand` (discussed [here](#commandtreesubcommand)) closely
+approximates the functionality described in [this section](https://click.palletsprojects.com/en/8.1.x/commands/#command)
+of the `Click` documentation.
+
 ## `CommandTree.command`
 
 First let's walk through the use of the `CommandTree.command` decorator, one step
@@ -517,7 +533,7 @@ as follows:
 ...
 >>> @tree.command()
 ... def f1(a: int):
-...     raise RuntimeError("This function will not execute.")
+...     return dict(f1=dict(a=a))
 
 And a child function, `g1`:
 
@@ -557,6 +573,8 @@ Also, note that `tree` can have arbitrary depth:
 ... def h1(a: int, b: bool, d: float):
 ...    return dict(h1=dict(d=d))
 
+Note the additional `-d D` argument on the left side of the `|` pipe:
+
 >>> tree("-h")
 usage: -a A [-b -d D | -c C]
 
@@ -564,6 +582,7 @@ usage: -a A [-b -d D | -c C]
 Often we want to explicitly specify which function to execute by naming it on the command line.
 This would implement functionality similar to
 [`ArgumentParser.add_subparsers`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_subparsers)
+or [`Click.command`](https://click.palletsprojects.com/en/8.1.x/commands/#command).
 
 For this we would use the `CommandTree.subcommand` decorator:
 
@@ -571,7 +590,7 @@ For this we would use the `CommandTree.subcommand` decorator:
 ...
 >>> @tree.command()
 ... def f1(a: int):
-...     raise RuntimeError("This function should not be called")
+...     return dict(f1=dict(a=a))
 ...
 >>> @f1.subcommand()  # note subcommand, not command
 ... def g1(a:int, b: bool):
@@ -592,6 +611,27 @@ Now we would select g1 as follows:
 And g2 as follows:
 >>> tree("-a", "1", "g2", "-c", "foo")
 {'g2': {'c': 'foo'}}
+
+You can freely mix and match `subcommand` and `command`:
+
+>>> tree = CommandTree()
+...
+>>> @tree.command()
+... def f1(a: int):
+...     return dict(f1=dict(a=a))
+...
+>>> @f1.subcommand()
+... def g1(a:int, b: bool):
+...     return dict(g1=dict(b=b))
+...
+>>> @f1.command()  # note command, not subcommand
+... def g2(a: int, c: str):
+...     return dict(g2=dict(c=c))
+
+Note that `g1` requires a `"g1"` argument to run but `g2` does not:
+
+>>> tree("-h")
+usage: -a A [g1 -b | -c C]
 
 # Why `$λ`?
 

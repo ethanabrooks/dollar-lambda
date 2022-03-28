@@ -265,7 +265,7 @@ class CommandTree:
         ----------
 
         can_run: bool
-            Whether the parser will permit the parser to run if no further arguments are supplied.
+            Whether the parser will permit the decorated function to run if no further arguments are supplied.
 
         flip_bools: bool
             Whether to add `--no-<argument>` before arguments that default to `True`.
@@ -303,6 +303,47 @@ class CommandTree:
         >>> tree("-h")
         usage: -b
         b: (default: True)
+
+
+        With `can_run` set to `True` (the default), we can run `f1` by not passing arguments
+        for the `f1`'s children:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command(can_run=True)  # <-
+        ... def f1(b: bool):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> @f1.command()
+        ... def g1(n: int):
+        ...     return dict(g1=dict(b=b, n=n))
+        ...
+        >>> tree("-h")
+        usage: -b -n N
+
+        >>> tree("-b")
+        {'f1': {'b': True}}
+
+        With `can_run` set to `False`, the parser will fail if the child function arguments
+        are not supplied:
+
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.command(can_run=False)  # <-
+        ... def f1(b: bool):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> @f1.command()
+        ... def g1(n: int):
+        ...     return dict(g1=dict(b=b, n=n))
+        ...
+        >>> tree("-h")
+        usage: -b -n N
+
+        >>> tree("f1", "-b")
+        usage: -b -n N
+        Expected '-b'. Got 'f1'
         """
         return self._decorator(
             flip_bools=flip_bools,
@@ -380,7 +421,7 @@ class CommandTree:
         ----------
 
         can_run: bool
-            Whether the parser will permit the parser to run if no further arguments are supplied.
+            Whether the parser will permit the decorated function to run if no further arguments are supplied.
 
         flip_bools: bool
             Whether to add `--no-<argument>` before arguments that default to `True`.
@@ -418,6 +459,46 @@ class CommandTree:
         >>> tree("-h")
         usage: f1 -b
         b: (default: True)
+
+        With `can_run` set to `True` (the default), we can run `f1` by not passing arguments
+        for the `f1`'s children:
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.subcommand(can_run=True)  # <-
+        ... def f1(b: bool):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> @f1.subcommand()
+        ... def g1(n: int):
+        ...     return dict(g1=dict(b=b, n=n))
+        ...
+        >>> tree("-h")
+        usage: f1 -b g1 -n N
+
+        >>> tree("f1", "-b")
+        {'f1': {'b': True}}
+
+        With `can_run` set to `False`, the parser will fail if the child function arguments
+        are not supplied:
+
+
+        >>> tree = CommandTree()
+        ...
+        >>> @tree.subcommand(can_run=False)  # <-
+        ... def f1(b: bool):
+        ...     return dict(f1=dict(b=b))
+        ...
+        >>> @f1.subcommand()
+        ... def g1(n: int):
+        ...     return dict(g1=dict(b=b, n=n))
+        ...
+        >>> tree("-h")
+        usage: f1 -b g1 -n N
+
+        >>> tree("f1", "-b")
+        usage: f1 -b g1 -n N
+        The following arguments are required: g1
         """
         return self._decorator(
             flip_bools=flip_bools,

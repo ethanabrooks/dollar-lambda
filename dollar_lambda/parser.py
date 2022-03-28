@@ -616,8 +616,12 @@ class Parser(MonadPlus[A_co]):
 
 def apply(f: Callable[[str], B], description: str) -> Parser[B]:
     """
-    A shortcut for `item(description).apply(f)`
+    A shortcut for
+    ```python
+    item(description).apply(f)
+    ```
     and spares `f` the trouble of outputting a `Result` object.
+    Here is an example of usage. First we define a simple `argument` parser:
 
     >>> p1 = argument("foo")
     >>> p1.parse_args("bar", return_dict=False)
@@ -717,24 +721,6 @@ def done() -> Parser[Sequence[A]]:
 
     When `allow_unparsed=False` (the default), `parse_args` adds `>> done()`
     to the end of the parser:
-
-    >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=False)
-    usage: --verbose
-    Unrecognized argument: --quiet
-
-    >>> (flag("verbose") >> done()).parse_args("--verbose", "--quiet", allow_unparsed=True)
-    usage: --verbose
-    Unrecognized argument: --quiet
-
-    `--quiet` is not parsed here but this does not cause the parser to fail.
-    If we want to prevent leftover inputs, we can use `done`:
-
-    >>> (flag("verbose") >> done()).parse_args("--verbose", "--quiet")
-    usage: --verbose
-    Unrecognized argument: --quiet
-
-    `done` is usually necessary to get `nonpositional` to behave in the way that you expect.
-    See `nonpositional` API docs for details.
     """
 
     def f(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
