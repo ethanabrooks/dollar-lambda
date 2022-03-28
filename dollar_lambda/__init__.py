@@ -1,46 +1,18 @@
 """
-# Why `$λ`?
-
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
-based on functional first principles. This means that this package can handle many kinds of argument-parsing patterns
-that are either very awkward, difficult, or impossible with `argparse`.
-
-### Versatile
-`$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
-it permits low-level customization to handle arbitrarily complex parsing patterns. As we'll see in the tutorial,
-there are many parsing patterns that `$λ` can handle which are not possible with other parsing libraries.
-
-### Type-safe
-`$λ` uses type annotations as much as Python allows. Types are checked using [`MyPy`](
-https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package so that users can also benefit from
-the type system. Furthermore, with rare exceptions, `$λ` avoids mutations and side-effects and preserves [referential
-transparency](https://en.wikipedia.org/wiki/Referential_transparency). This makes it easier for the type-checker _and
-for the user_ to reason about the code.
-
-### Concise
-As we'll demonstrate in the tutorial, `$λ` provides three main
-syntactic shortcuts for cutting down boilerplate:
-
-- operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
-- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
-- the `Args` syntax built on top of python `dataclasses`.
-
-
-As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing. Arguably, `$λ` is way more expressive than any reasonable
+based on parser combinators and functional first principles. Arguably, `$λ` is way more expressive than any reasonable
 person would ever need... but even if it's not the parser that we need, it's the parser we deserve.
 
 # Installation
-You guessed it:
 ```
 pip install dollar-lambda
 ```
 
 # Highlights
 `$λ` comes with syntactic sugar that came make building parsers completely boilerplate-free.
-However, with more concise syntax comes less flexibility. As we go we will demonstrate the
-building blocks that lie behind the syntactic sugar and which enable users to build much more
-logically complex parsers.
+However, with more concise syntax comes less flexibility. For more complex parsing situations,
+there are modular building blocks that lie behind the syntactic sugar which enable parsers to
+handle any reasonable amount of logical complexity.
 
 ## The `command` decorator
 This syntax is best for simple parsers that take a set of unordered arguments:
@@ -62,6 +34,11 @@ And here it is in action:
 
 >>> main("-x", "1", "-y", "2", "--verbose")
 {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
+
+Note that the supplied string arguments are for demonstration only:
+```
+main() # this would get arguments from the command line / sys.argv[1:]
+```
 
 `command` takes arguments that allow you to supply
 help strings and custom types:
@@ -694,6 +671,35 @@ Now we would select g1 as follows:
 And g2 as follows:
 >>> tree("-a", "1", "g2", "-c", "foo")
 {'g2': {'c': 'foo'}}
+
+# Why `$λ`?
+
+`$λ` can handle many kinds of argument-parsing patterns
+that are either very awkward, difficult, or impossible with other parsing libraries.
+In particular, we emphasize the following qualities:
+
+### Versatile
+`$λ` provides high-level functionality equivalent to other parsers. But unlike other parsers,
+it permits low-level customization to handle arbitrarily complex parsing patterns.
+There are many parsing patterns that `$λ` can handle which are not possible with other parsing libraries.
+
+### Type-safe
+`$λ` uses type annotations as much as Python allows. Types are checked using [`MyPy`](
+https://mypy.readthedocs.io/en/stable/index.html#) and exported with the package so that users can also benefit from
+the type system. Furthermore, with rare exceptions, `$λ` avoids mutations and side-effects and preserves [referential
+transparency](https://en.wikipedia.org/wiki/Referential_transparency). This makes it easier for the type-checker _and
+for the user_ to reason about the code.
+
+### Concise
+`$λ` provides many syntactic shortcuts for cutting down boilerplate:
+
+- operators like `>>`, `|`, and `+` (and `>=` if you want to get fancy)
+- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
+- the `Args` syntax built on top of python `dataclasses`.
+
+
+As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
+an argument parser: parsing.
 """
 
 
