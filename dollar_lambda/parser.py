@@ -389,7 +389,7 @@ class Parser(MonadPlus[A_co]):
         """
         _args = args if args or TESTING else sys.argv[1:]
         if check_help:
-            return wrap_help(self).parse_args(
+            return self.wrap_help().parse_args(
                 *_args, return_dict=return_dict, check_help=False
             )
         result = self.parse(Sequence(list(_args))).get
@@ -447,6 +447,33 @@ class Parser(MonadPlus[A_co]):
             return Result.return_(Sequence([*tail, head]))
 
         p = self.apply(g)
+        return replace(p, usage=self.usage, helps=self.helps)
+
+    def wrap_help(self: "Parser[A]") -> "Parser[A]":
+        """
+        This checks for the `--help` or `-h` flag before applying `parser`.
+        If either of the flags is present, returns the usage message for `parser`.
+
+        >>> p = flag("help", help="Print this help message.").wrap_help()
+        >>> p.parse_args("--help")
+        usage: --help
+        help: Print this help message.
+        >>> p.parse_args("-h")
+        usage: --help
+        help: Print this help message.
+
+        We can use `wrap_help` to print partial usage messages, e.g. for subcommands:
+        >>> subcommand1 = equals("subcommand1") >> option("option1").wrap_help()
+        >>> subcommand2 = equals("subcommand2") >> option("option2").wrap_help()
+        >>> p = subcommand1 | subcommand2
+        >>> p.parse_args("subcommand1", "-h")
+        usage: --option1 OPTION1
+        >>> p.parse_args("subcommand2", "-h")
+        usage: --option2 OPTION2
+        """
+        _help_parser: Parser[Sequence[A]] = help_parser(self.usage, Sequence([]))
+
+        p = _help_parser >= (lambda _: self)
         return replace(p, usage=self.usage, helps=self.helps)
 
     @classmethod
@@ -749,34 +776,6 @@ def help_parser(usage: Optional[str], parsed: A) -> Parser[A]:
         return Result(HelpError(usage=usage or "Usage not provided."))
 
     return Parser(f, usage=None, helps={})
-
-
-def wrap_help(parser: Parser[A]) -> Parser[A]:
-    """
-    This checks for the `--help` or `-h` flag before applying `parser`.
-    If either of the flags is present, returns the usage message for `parser`.
-
-    >>> p = wrap_help(flag("help", help="Print this help message."))
-    >>> p.parse_args("--help")
-    usage: --help
-    help: Print this help message.
-    >>> p.parse_args("-h")
-    usage: --help
-    help: Print this help message.
-
-    We can use `wrap_help` to print partial usage messages, e.g. for subcommands:
-    >>> subcommand1 = equals("subcommand1") >> wrap_help(option("option1"))
-    >>> subcommand2 = equals("subcommand2") >> wrap_help(option("option2"))
-    >>> p = subcommand1 | subcommand2
-    >>> p.parse_args("subcommand1", "-h")
-    usage: --option1 OPTION1
-    >>> p.parse_args("subcommand2", "-h")
-    usage: --option2 OPTION2
-    """
-    _help_parser: Parser[Sequence[A]] = help_parser(parser.usage, Sequence([]))
-
-    p = _help_parser >= (lambda _: parser)
-    return replace(p, usage=parser.usage, helps=parser.helps)
 
 
 def item(

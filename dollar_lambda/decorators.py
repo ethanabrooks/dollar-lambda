@@ -14,7 +14,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, equals, wrap_help
+from dollar_lambda.parser import Parse, Parser, done, equals
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -145,7 +145,7 @@ def command(
             )
             >> done()
         )
-        p = wrap_help(p)
+        p = p.wrap_help()
 
         def wrapped(*args) -> Any:
             parsed = p.parse_args(*args)
@@ -344,8 +344,7 @@ class CommandTree:
                     )
                 yield parser
 
-        parser = reduce(operator.or_, get_alternatives())
-        return wrap_help(parser)
+        return reduce(operator.or_, get_alternatives()).wrap_help()
 
     def __call__(self, *args: str) -> Any:
         """
