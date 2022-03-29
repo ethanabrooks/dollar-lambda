@@ -1,3 +1,4 @@
-- fix `@command` help print out
-- can we infer the `base_function`?
-- add `__xor__`
+- handle postponed type evaluation (https://peps.python.org/pep-0563/#implementation)
+- add file IO unit tests
+- add Monad law tests
+- add `parsers` arg to `command` and `CommandTree`
