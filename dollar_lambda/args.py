@@ -1,6 +1,8 @@
 """
 Defines the `Args` dataclass and associated functions.
 """
+from __future__ import annotations
+
 import dataclasses
 import typing
 from dataclasses import Field, dataclass, fields
@@ -182,9 +184,14 @@ class Args:
         >>> MyArgs.parse_args("--tests", flip_bools=False)
         {'tests': False}
         """
-        return _ArgsField.nonpositional(
-            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
-        )
+
+        def get_fields():
+            types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
+            for field in fields(cls):
+                field.type = types[field.name]
+                yield _ArgsField.parse(field)
+
+        return _ArgsField.nonpositional(*get_fields(), flip_bools=flip_bools)
 
     @classmethod
     def parse_args(

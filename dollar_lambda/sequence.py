@@ -1,6 +1,8 @@
 """
 Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 """
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from typing import Callable, Generator, Iterator, Type, TypeVar, overload

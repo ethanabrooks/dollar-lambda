@@ -1,6 +1,8 @@
 """
 Defines the `Result` dataclass, representing success or failure, output by parsers.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Optional, Type, TypeVar

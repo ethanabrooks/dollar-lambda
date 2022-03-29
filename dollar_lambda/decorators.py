@@ -1,8 +1,11 @@
 """
 Defines the `command` decorator and the `CommandTree` class.
 """
+from __future__ import annotations
+
 import operator
 import sys
+import typing
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
@@ -36,13 +39,14 @@ def _func_to_parser(
     _strings = {} if strings is None else strings
     _types = {} if types is None else types
 
+    types = typing.get_type_hints(func)  # see https://peps.python.org/pep-0563/
     parsers = [
         _ArgsField(
             name=k,
             default=None if v.default == Parameter.empty else v.default,
             help=_help.get(k),
             string=_strings.get(k),
-            type=_types.get(k, v.annotation),
+            type=_types.get(k, types[k]),
         )
         for k, v in signature(func).parameters.items()
         if k not in _exclude

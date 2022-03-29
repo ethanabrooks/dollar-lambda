@@ -2,6 +2,8 @@
 Defines parsing functions and the `Parser` class that they instantiate.
 """
 # pyright: reportGeneralTypeIssues=false
+from __future__ import annotations
+
 import operator
 import os
 import sys
