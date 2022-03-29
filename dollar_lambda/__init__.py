@@ -31,22 +31,17 @@ And here it is in action:
 >>> main("-x", "1", "--dev")
 {'x': 1, 'dev': True, 'prod': False}
 
-.. Note::
+Ordinarily you would provide `main` no arguments and
+it would get them from the command line.
 
-    Ordinarily you would provide `main` no arguments and
-    it would get them from the command line, as in:
+>>> parser.TESTING = False  # False by default but needs to be true for doctests
+>>> import sys
+>>> sys.argv[1:] = ["-x", "1", "--dev"]
+>>> main()
+{'x': 1, 'dev': True, 'prod': False}
 
-        main()
-
-    which would be equivalent to:
-
-        main(*sys.argv[1:])
-
-    Throughout this document, we provide explicit string arguments to
-    various functions for parsing arguments. In production you would
-    provide no arguments and the functions would get them automatically
-    from the command line via `sys.argv[1:]`.
-
+In this document we'll feed the strings directly for the sake of brevity.
+>>> parser.TESTING = True
 
 `command` takes arguments that allow you to supply
 help strings and custom types:
@@ -101,6 +96,9 @@ With this configuration, the parser will run `base_function` if neither
 >>> tree("-x", "1")
 Ran base_function with arguments: {'x': 1}
 
+As with `main` in the previous example, you would ordinarily provide `tree` no arguments and it would get them
+from the command line.
+
 There are many other ways to use `CommandTree`,
 including some that make use of the `base_function`.
 To learn more, we recommend the [`CommandTree` tutorial](#commandtree-tutorial).
@@ -136,6 +134,14 @@ And this succeeds:
 
 >>> p.parse_args("1", "2", "3", return_dict=False)
 [('y', 1.0), ('y', 2.0), ('y', 3.0)]
+
+Again, you would ordinarily provide `parse_args` no arguments and it would get them
+from the command line:
+>>> parser.TESTING = False
+>>> sys.argv[1:] = ["-x", "1"]
+>>> p.parse_args()
+{'x': 1}
+>>> parser.TESTING = True
 
 # Tutorial
 
@@ -178,12 +184,6 @@ usage: [--verbose | --quiet] -x X -y Y
 x: the base
 y: the exponent
 
-.. Note::
-    As noted earlier in the [Highlights](#highlights) section, we will
-    supply explicit string arguments to functions like `parse_args` but in
-    production you would provide no arguments and the functions would get the
-    arguments from the command line via `sys.argv[1:]`.
-
 As indicated, this succeeds given `--verbose`
 
 >>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
@@ -198,6 +198,15 @@ or neither
 
 >>> main(**p.parse_args("-x", "1", "-y", "2"))
 {'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
+
+Ordinarily , we would not feed `parse_args` any arguments, and it would get them from
+the command line:
+
+>>> parser.TESTING = False  # False by default but needs to be True for doctests
+>>> sys.argv[1:] = ["-x", "1", "-y", "2"]
+>>> main(**p.parse_args())
+{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
+>>> parser.TESTING = True
 
 Let's walk through this step by step.
 

@@ -54,12 +54,22 @@ def main(x: int, dev: bool = False, prod: bool = False):
 # %%
 main("-h")
 
-# %% [markdown]
-# Note that ordinarily you would call `main` with no arguments and it would get arguments from the command line (`sys.argv[1:]`).
-# In this tutorial we feed arguments explicitly for demonstration purposes only.
-
 # %%
 main("-x", "1", "--dev")
+
+# %% [markdown]
+# Ordinarily you would call `main` with no arguments and it would get arguments from the command line:
+
+# %%
+from dollar_lambda import parser
+
+parser.TESTING = False  # False by default but needs to be true for doctests
+import sys
+
+sys.argv[1:] = ["-x", "1", "--dev"]
+main()
+# %%
+parser.TESTING = True
 
 # %% [markdown]
 # `command` takes arguments that allow you to supply
@@ -128,6 +138,9 @@ tree("-x", "1", "--dev")
 tree("-x", "1")
 
 # %% [markdown]
+# As with `main` in the previous example, you would ordinarily provide `tree` no arguments and it would get them
+# from the command line.
+#
 # There are many other ways to use `CommandTree`,
 # including some that make use of the `base_function`.
 # To learn more, we recommend the [`CommandTree` tutorial](#commandtree-tutorial).
@@ -169,6 +182,10 @@ p.parse_args("-x", "1")
 
 # %%
 p.parse_args("1", "2", "3", return_dict=False)
+
+# %% [markdown]
+# Again, you would ordinarily provide `parse_args` no arguments and it would get the.
+# from the command line.
 
 # %% [markdown]
 # ### Thanks
