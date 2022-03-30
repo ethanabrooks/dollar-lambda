@@ -337,7 +337,9 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
-    def many(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
+    def many(
+        self: "Parser[Sequence[A]]", max: Optional[int] = None
+    ) -> "Parser[Sequence[A]]":
         """
         Applies `self` zero or more times (like `*` in regexes).
 
@@ -359,10 +361,18 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("--verbose", "--quiet", return_dict=False) # mix --verbose and --quiet
         [('verbose', True), ('quiet', True)]
         """
-        p = self.many1() | self.empty()
+        if max == 0:
+            p = self.empty()
+        else:
+            if max is not None:
+                max -= 1
+                assert max >= 0, max
+            p = self.many1(max=max) | self.empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
-    def many1(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
+    def many1(
+        self: "Parser[Sequence[A]]", max: Optional[int] = None
+    ) -> "Parser[Sequence[A]]":
         """
         Applies `self` one or more times (like `+` in regexes).
 
@@ -379,7 +389,7 @@ class Parser(MonadPlus[A_co]):
 
         @lru_cache()
         def f(cs: tuple):
-            y = self >> self.many()
+            y = self >> self.many(max=max)
             return y.parse(Sequence(list(cs)))
 
         return Parser(
