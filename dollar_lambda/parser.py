@@ -337,6 +337,31 @@ class Parser(MonadPlus[A_co]):
             if error.usage:
                 print(error.usage)
 
+    def ignore(self: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
+        """
+        Ignores the output from a parser. This is useful when you expect
+        to give arguments to the command line that some other utility will
+        handle.
+
+        >>> p = flag("hello").ignore()
+
+        This will not bind any value to `"hello"`:
+        >>> p.parse_args("--hello")
+        {}
+
+        But `--hello` is still required:
+        >>> p.parse_args()
+        The following arguments are required: --hello
+        """
+
+        def g(keep: Parse[Sequence[A]]) -> Result[Parse[Sequence[A]]]:
+            return Result(NonemptyList(Parse(Sequence([]), keep.unparsed)))
+
+        def f(cs: Sequence[str]) -> Result[Parse[Sequence[A]]]:
+            return self.parse(cs) >= g
+
+        return Parser(f, usage=None, helps={})
+
     def many(
         self: "Parser[Sequence[A]]", max: Optional[int] = None
     ) -> "Parser[Sequence[A]]":
