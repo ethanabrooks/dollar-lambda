@@ -10,7 +10,7 @@ import sys
 import typing
 from dataclasses import asdict, dataclass, replace
 from functools import lru_cache, partial, reduce
-from typing import Any, Callable, Dict, Generator, Generic, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus
 from pytypeclass.nonempty_list import NonemptyList
@@ -266,7 +266,7 @@ class Parser(MonadPlus[A_co]):
 
         Now let's use the `equals` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
-        >>> def f(kvs: Sequence(KeyValue[str])) -> Parser[Sequence[KeyValue[str]]]:
+        >>> def f(kvs: Sequence[KeyValue[str]]) -> Parser[Sequence[KeyValue[str]]]:
         ...     [kv] = kvs
         ...     return equals(kv.value)
 
@@ -377,17 +377,9 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         """
 
-        def g() -> Generator["Parser[Sequence[A]]", Sequence[A], None]:
-            # noinspection PyTypeChecker
-            r1: Sequence[A] = yield self
-            # noinspection PyTypeChecker
-            r2: Sequence[A] = yield self.many()
-            yield Parser[Sequence[A]].return_(r1 + r2)
-
         @lru_cache()
         def f(cs: tuple):
-            y = Parser.do(g)
-            assert isinstance(y, Parser), y
+            y = self >> self.many()
             return y.parse(Sequence(list(cs)))
 
         return Parser(
