@@ -1,2 +1,6 @@
-- add Monad law tests
+- add Monad law tests with hypothesis
 - add `parsers` arg to `command` and `CommandTree`
+- add `prefix` parser (per chris's rc)
+- add `ignore` parser
+- add config functionality
+- faciliate args hierarchy
