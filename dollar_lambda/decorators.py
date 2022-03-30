@@ -17,7 +17,7 @@ from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, equals
+from dollar_lambda.parser import Parse, Parser, done, matches
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import Sequence
 
@@ -205,7 +205,7 @@ class _FunctionPair(Sequence[A]):
                 Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
             )
 
-        eq = equals(func.__name__)
+        eq = matches(func.__name__)
         p = eq >= (
             lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
         )

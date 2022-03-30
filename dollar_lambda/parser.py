@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import operator
 import os
+import re
 import sys
 import typing
 from dataclasses import asdict, dataclass, replace
@@ -264,11 +265,11 @@ class Parser(MonadPlus[A_co]):
         Let's start with our simplest parser, `argument`:
         >>> p1 = argument("some_dest")
 
-        Now let's use the `equals` parser to write a function that takes the output of `p1` and fails unless
+        Now let's use the `matches` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
         >>> def f(kvs: Sequence[KeyValue[str]]) -> Parser[Sequence[KeyValue[str]]]:
         ...     [kv] = kvs
-        ...     return equals(kv.value)
+        ...     return matches(kv.value)
 
         >>> p = p1 >= f
         >>> p.parse_args("a", "a")
@@ -610,8 +611,8 @@ class Parser(MonadPlus[A_co]):
         help: Print this help message.
 
         We can use `wrap_help` to print partial usage messages, e.g. for subcommands:
-        >>> subcommand1 = equals("subcommand1") >> option("option1").wrap_help()
-        >>> subcommand2 = equals("subcommand2") >> option("option2").wrap_help()
+        >>> subcommand1 = matches("subcommand1") >> option("option1").wrap_help()
+        >>> subcommand2 = matches("subcommand2") >> option("option2").wrap_help()
         >>> p = subcommand1 | subcommand2
         >>> p.parse_args("subcommand1", "-h")
         usage: --option1 OPTION1
@@ -763,13 +764,15 @@ def done() -> Parser[Sequence[A]]:
     return Parser(f, usage=None, helps={})
 
 
-def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
+def matches(
+    s: str, peak: bool = False, regex: bool = True
+) -> Parser[Sequence[KeyValue[str]]]:
     """
     Checks if the next word is `s`.
 
-    >>> equals("hello").parse_args("hello")
+    >>> matches("hello").parse_args("hello")
     {'hello': 'hello'}
-    >>> equals("hello").parse_args("goodbye")
+    >>> matches("hello").parse_args("goodbye")
     usage: hello
     Expected 'hello'. Got 'goodbye'
 
@@ -781,28 +784,39 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
         If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
         If `True`, then the parser leaves the `unparsed` component unchanged.
 
+    regex : bool
+        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
+        string equality.
+
     Examples
     --------
 
-    >>> p = equals("hello") >> equals("goodbye")
+    >>> p = matches("hello") >> matches("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
 
     Look what happens when `peak=True`:
-    >>> p = equals("hello", peak=True) >> equals("goodbye")
+    >>> p = matches("hello", peak=True) >> matches("goodbye")
     >>> p.parse_args("hello", "goodbye")
     usage: hello goodbye
     Expected 'goodbye'. Got 'hello'
 
     The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
     But this would work:
-    >>> p = equals("hello", peak=True) >> equals("hello") >>equals("goodbye")
+    >>> p = matches("hello", peak=True) >> matches("hello") >>matches("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
     """
+
+    def predicate(_s: str) -> bool:
+        if regex:
+            return bool(re.match(s, _s))
+        else:
+            return s == _s
+
     if peak:
         return sat_peak(
-            predicate=lambda _s: _s == s,
+            predicate=predicate,
             on_fail=lambda _s: UnequalError(
                 left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
             ),
@@ -810,7 +824,7 @@ def equals(s: str, peak=False) -> Parser[Sequence[KeyValue[str]]]:
         )
     else:
         return sat(
-            predicate=lambda _s: _s == s,
+            predicate=predicate,
             on_fail=lambda _s: UnequalError(
                 left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
             ),
@@ -895,7 +909,7 @@ def flag(
         cs: Sequence[str],
         s: str,
     ) -> Result[Parse[Sequence[KeyValue[bool]]]]:
-        parser = equals(s) >= (lambda _: defaults(**{dest: not default}))
+        parser = matches(s) >= (lambda _: defaults(**{dest: not default}))
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
@@ -914,7 +928,7 @@ def help_parser(usage: Optional[str], parsed: A) -> Parser[A]:
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[A]]:
-        result = (equals("--help", peak=True) | equals("-h", peak=True)).parse(cs)
+        result = (matches("--help", peak=True) | matches("-h", peak=True)).parse(cs)
         if isinstance(result.get, ArgumentError):
             return Result.return_(Parse(parsed=parsed, unparsed=cs))
         return Result(HelpError(usage=usage or "Usage not provided."))
@@ -1074,7 +1088,7 @@ def option(
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Sequence[KeyValue[str]]]]:
-        parser = equals(_flag) >= (lambda _: item(dest, help_name=dest.upper()))
+        parser = matches(_flag) >= (lambda _: item(dest, help_name=dest.upper()))
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
