@@ -43,20 +43,23 @@ it would get them from the command line.
 In this document we'll feed the strings directly for the sake of brevity.
 >>> parser.TESTING = True
 
-`command` takes arguments that allow you to supply
-help strings:
+Use the `parsers` argument do add custom logic to this parser:
 
->>> @command(help=dict(x="A number"))
-... def main(x: int, dev: bool = False, prod: bool = False):
-...     return dict(x=x, dev=dev, prod=prod)
-...
+>>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+... def main(x: int, **kwargs):
+...     return dict(x=x, **kwargs)
 
+This parser requires either a `--dev` or `--prod` flag and maps them to the `kwargs` argument:
 >>> main("-h")
-usage: -x X --dev --prod
-x: A number
+usage: -x X [--dev | --prod]
 
 >>> main("-x", "1", "--dev")
-{'x': 1, 'dev': True, 'prod': False}
+{'x': 1, 'dev': True}
+>>> main("-x", "1", "--prod")
+{'x': 1, 'prod': True}
+>>> main("-x", "1")
+usage: -x X [--dev | --prod]
+The following arguments are required: --dev
 
 ## `CommandTree` for dynamic dispatch
 For many programs, a user will want to use one entrypoint for one set of

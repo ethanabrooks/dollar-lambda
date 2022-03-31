@@ -58,18 +58,28 @@ main("-h")
 main("-x", "1", "--dev")
 
 # %% [markdown]
-# Ordinarily you would call `main` with no arguments and it would get arguments from the command line:
+# Use the `parsers` argument do add custom logic to this parser:
+# %%
+from dollar_lambda import flag
+
+
+@command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+def main(x: int, **kwargs):
+    return dict(x=x, **kwargs)
+
+
+main("-h")
+
+# %% [markdown]
+# This parser requires either a `--dev` or `--prod` flag and maps them to the `kwargs` argument:
 
 # %%
-from dollar_lambda import parser
-
-parser.TESTING = False  # False by default but needs to be true for doctests
-import sys
-
-sys.argv[1:] = ["-x", "1", "--dev"]
-main()
+main("-x", "1", "--dev")
 # %%
-parser.TESTING = True
+main("-x", "1", "--prod")
+
+# %%
+main("-x", "1")
 
 # %% [markdown]
 # ## `CommandTree` for dynamic dispatch

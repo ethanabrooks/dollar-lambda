@@ -54,30 +54,58 @@ main("-x", "1", "--dev")
 
 
 
-Ordinarily you would call `main` with no arguments and it would get arguments from the command line:
+Use the `parsers` argument do add custom logic to this parser:
 
 
 ```python
-from dollar_lambda import parser
+from dollar_lambda import flag
 
-parser.TESTING = False  # False by default but needs to be true for doctests
-import sys
 
-sys.argv[1:] = ["-x", "1", "--dev"]
-main()
+@command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+def main(x: int, **kwargs):
+    return dict(x=x, **kwargs)
+
+
+main("-h")
+```
+
+    usage: -x X [--dev | --prod]
+
+
+This parser requires either a `--dev` or `--prod` flag and maps them to the `kwargs` argument:
+
+
+```python
+main("-x", "1", "--dev")
 ```
 
 
 
 
-    {'x': 1, 'dev': True, 'prod': False}
+    {'x': 1, 'dev': True}
 
 
 
 
 ```python
-parser.TESTING = True
+main("-x", "1", "--prod")
 ```
+
+
+
+
+    {'x': 1, 'prod': True}
+
+
+
+
+```python
+main("-x", "1")
+```
+
+    usage: -x X [--dev | --prod]
+    The following arguments are required: --dev
+
 
 ## `CommandTree` for dynamic dispatch
 For many programs, a user will want to use one entrypoint for one set of
