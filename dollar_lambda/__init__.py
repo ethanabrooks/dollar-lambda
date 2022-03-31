@@ -642,6 +642,37 @@ Note that `g1` requires a `"g1"` argument to run but `g2` does not:
 >>> tree("-h")
 usage: -a A [g1 -b | -c C]
 
+# Use with config files
+A common use case is to have a config file with default values that arguments should
+fall back to if not provided on the command line. Instead of implementing specific functionality
+itself, `$λ` accommodates this situation by simply getting out of the way, thereby affording the
+user the most flexibility in terms of implementing the config file. Here is a simple example.
+
+```
+# example-config.json
+.. include:: ../example-config.json
+```
+
+Define a parser with optional values:
+>>> p = option("x", type=int).optional()
+
+Inside main, load the config and update with any arguments provided on the command line:
+>>> import json
+>>> def main(**kwargs):
+...     with open("example-config.json") as f:
+...         config = json.load(f)
+...
+...     config.update(kwargs)
+...     return config
+
+Overwrite the value in the config:
+>>> main(**p.parse_args("-x", "0"))
+{'x': 0}
+
+Fallback to the value in the config
+>>> main(**p.parse_args())
+{'x': 1}
+
 # Why `$λ`?
 
 `$λ` can handle many kinds of argument-parsing patterns
