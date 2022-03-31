@@ -194,7 +194,7 @@ class Args:
         def get_fields():
             types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
             for field in fields(cls):
-                field.type = types[field.name]
+                field.type = types.get(field.name, str)
                 yield _ArgsField.parse(field)
 
         return _ArgsField.nonpositional(

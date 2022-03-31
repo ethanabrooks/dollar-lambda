@@ -47,7 +47,7 @@ def _func_to_parser(
             default=None if v.default == Parameter.empty else v.default,
             help=_help.get(k),
             string=_strings.get(k),
-            type=_types.get(k, types[k]),
+            type=_types.get(k, types.get(k, str)),
         )
         for k, v in signature(func).parameters.items()
         if k not in _exclude
