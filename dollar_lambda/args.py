@@ -79,7 +79,9 @@ class _ArgsField:
 
     @staticmethod
     def nonpositional(
-        *fields: "_ArgsField", flip_bools: bool = True
+        *fields: "_ArgsField",
+        flip_bools: bool,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
     ) -> Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
@@ -103,7 +105,7 @@ class _ArgsField:
                     )
                     yield opt.type(field.type)
 
-        return nonpositional(*get_parsers())
+        return nonpositional(*get_parsers(), repeated=repeated)
 
 
 @dataclass
@@ -157,7 +159,11 @@ class Args:
     """
 
     @classmethod
-    def parser(cls, flip_bools: bool = True) -> Parser[Sequence[KeyValue[Any]]]:
+    def parser(
+        cls,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    ) -> Parser[Sequence[KeyValue[Any]]]:
         """
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
@@ -191,13 +197,20 @@ class Args:
                 field.type = types[field.name]
                 yield _ArgsField.parse(field)
 
-        return _ArgsField.nonpositional(*get_fields(), flip_bools=flip_bools)
+        return _ArgsField.nonpositional(
+            *get_fields(), flip_bools=flip_bools, repeated=repeated
+        )
 
     @classmethod
     def parse_args(
-        cls, *args, flip_bools: bool = True
+        cls,
+        *args,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     ) -> "typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]":
         """
         Parses the arguments and returns a dictionary of the parsed values.
         """
-        return (cls.parser(flip_bools=flip_bools) >> done()).parse_args(*args)
+        return (
+            cls.parser(flip_bools=flip_bools, repeated=repeated) >> done()
+        ).parse_args(*args)

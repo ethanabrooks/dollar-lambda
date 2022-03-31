@@ -49,11 +49,13 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/sequence.py#L1-L86" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/sequence.py#L1-L88" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 &#34;&#34;&#34;
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from typing import Callable, Generator, Iterator, Type, TypeVar, overload
@@ -150,7 +152,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 <dl>
 <dt id="dollar_lambda.sequence.Sequence"><code class="flex name class">
 <span>class <span class="ident">Sequence</span></span>
-<span>(</span><span>get: <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A_co])</span>
+<span>(</span><span>get: typing.Sequence[A_co])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This class combines the functionality of <a href="https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24"><code>MonadPlus</code></a>
@@ -172,7 +174,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/sequence.py#L14-L86" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/sequence.py#L16-L88" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
@@ -275,7 +277,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.sequence.Sequence.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: ~A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
+<span>def <span class="ident">return_</span></span>(<span>a: A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Sequence.return_(1)
@@ -284,7 +286,7 @@ Sequence(get=[1])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/sequence.py#L76-L82" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/sequence.py#L78-L84" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
 def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
@@ -303,7 +305,7 @@ def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/sequence.py#L84-L86" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/sequence.py#L86-L88" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
@@ -314,7 +316,7 @@ def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.sequence.Sequence.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[+A_co], pytypeclass.monad.Monad[~A]]) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], Monad[A]]) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; Sequence([1, 2]) &gt;= (lambda x: Sequence([x, -x]))
@@ -323,7 +325,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/sequence.py#L62-L74" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/sequence.py#L64-L76" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; &#34;Sequence[A]&#34;:
     &#34;&#34;&#34;

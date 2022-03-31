@@ -28,11 +28,12 @@ A_co = TypeVar("A_co", covariant=True)
 
 def _func_to_parser(
     func: Callable,
-    exclude: Optional[List[str]] = None,
-    flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    strings: Optional[Dict[str, str]] = None,
-    types: Optional[Dict[str, Callable[[str], Any]]] = None,
+    exclude: Optional[List[str]],
+    flip_bools: bool,
+    help: Optional[Dict[str, str]],
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
+    strings: Optional[Dict[str, str]],
+    types: Optional[Dict[str, Callable[[str], Any]]],
 ) -> Parser[Sequence[KeyValue[Any]]]:
     _exclude = [] if exclude is None else exclude
     _help = {} if help is None else help
@@ -51,15 +52,13 @@ def _func_to_parser(
         for k, v in signature(func).parameters.items()
         if k not in _exclude
     ]
-    return _ArgsField.nonpositional(
-        *parsers,
-        flip_bools=flip_bools,
-    )
+    return _ArgsField.nonpositional(*parsers, flip_bools=flip_bools, repeated=repeated)
 
 
 def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     strings: Optional[Dict[str, str]] = None,
     types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -> Callable[[Callable], Callable]:
@@ -87,6 +86,9 @@ def command(
 
     help : dict[str, str]
         A dictionary of help strings for the arguments.
+
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+        If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
     strings : dict[str, str]
         This dictionary maps variable names to the strings that the parser will look for in the input.
@@ -144,7 +146,13 @@ def command(
 
     def wrapper(func: Callable) -> Callable:
         p = _func_to_parser(
-            func, flip_bools=flip_bools, help=help, strings=strings, types=types
+            func,
+            exclude=None,
+            flip_bools=flip_bools,
+            help=help,
+            repeated=repeated,
+            strings=strings,
+            types=types,
         )
         p = p.wrap_help()
 
@@ -218,6 +226,7 @@ class _Node:
     function: Callable
     flip_bools: bool
     help: Optional[Dict[str, str]]
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
     strings: Optional[Dict[str, str]]
     types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
@@ -234,6 +243,7 @@ class _Node:
             exclude=list(exclude),
             flip_bools=self.flip_bools,
             help=self.help,
+            repeated=self.repeated,
             strings=self.strings,
             types=self.types,
         )
@@ -256,9 +266,10 @@ class CommandTree:
 
     def command(
         self,
+        can_run: bool = True,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        can_run: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
@@ -276,6 +287,9 @@ class CommandTree:
 
         help: dict
             A dictionary of help strings for the arguments.
+
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
         strings: dict
             A dictionary of strings to use for the arguments.
@@ -350,9 +364,10 @@ class CommandTree:
         Expected '-b'. Got 'f1'
         """
         return self._decorator(
+            can_run=can_run,
             flip_bools=flip_bools,
             help=help,
-            can_run=can_run,
+            repeated=repeated,
             strings=strings,
             subcommand=False,
             types=types,
@@ -410,9 +425,10 @@ class CommandTree:
 
     def subcommand(
         self,
+        can_run: bool = True,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
-        can_run: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
         strings: Optional[Dict[str, str]] = None,
         types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
@@ -432,6 +448,9 @@ class CommandTree:
 
         help: dict
             A dictionary of help strings for the arguments.
+
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
         strings: dict
             A dictionary of strings to use for the arguments.
@@ -505,10 +524,11 @@ class CommandTree:
         The following arguments are required: g1
         """
         return self._decorator(
+            can_run=can_run,
             flip_bools=flip_bools,
             help=help,
-            can_run=can_run,
-            types=types,
+            repeated=repeated,
             strings=strings,
             subcommand=True,
+            types=types,
         )

@@ -49,11 +49,13 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/result.py#L1-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/result.py#L1-L89" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Result` dataclass, representing success or failure, output by parsers.
 &#34;&#34;&#34;
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import reduce
 from typing import Callable, Optional, Type, TypeVar
@@ -151,14 +153,14 @@ class Result(MonadPlus[A_co]):
 <dl>
 <dt id="dollar_lambda.result.Result"><code class="flex name class">
 <span>class <span class="ident">Result</span></span>
-<span>(</span><span>get: NonemptyList[A_co] | ArgumentError)</span>
+<span>(</span><span>get: "'NonemptyList[A_co] | ArgumentError'")</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Result(get: 'NonemptyList[A_co] | ArgumentError')</p></div>
+<div class="desc"><p>Result(get: "'NonemptyList[A_co] | ArgumentError'")</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/result.py#L21-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/result.py#L23-L89" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Result(MonadPlus[A_co]):
@@ -245,7 +247,7 @@ class Result(MonadPlus[A_co]):
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.result.Result.return_"><code class="name flex">
-<span>def <span class="ident">return_</span></span>(<span>a: ~A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~A]</span>
+<span>def <span class="ident">return_</span></span>(<span>a: A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~A]</span>
 </code></dt>
 <dd>
 <div class="desc"><pre><code class="language-haskell">return :: a -&gt; m a
@@ -253,7 +255,7 @@ class Result(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/result.py#L79-L81" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/result.py#L81-L83" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
@@ -261,14 +263,14 @@ def return_(cls: &#34;Type[Result[A]]&#34;, a: A) -&gt; &#34;Result[A]&#34;:
 </details>
 </dd>
 <dt id="dollar_lambda.result.Result.zero"><code class="name flex">
-<span>def <span class="ident">zero</span></span>(<span>error: Optional[<a title="dollar_lambda.error.ArgumentError" href="error.html#dollar_lambda.error.ArgumentError">ArgumentError</a>] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[+Monoid_co]</span>
+<span>def <span class="ident">zero</span></span>(<span>error: Optional[ArgumentError] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[+Monoid_co]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/result.py#L83-L87" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/result.py#L85-L89" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(
@@ -281,14 +283,14 @@ def zero(
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.result.Result.bind"><code class="name flex">
-<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[+A_co], pytypeclass.monad.Monad[~B]]) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~B]</span>
+<span>def <span class="ident">bind</span></span>(<span>self, f: Callable[[A_co], Monad[B]]) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.result.Result" href="#dollar_lambda.result.Result">Result</a>[~B]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/result.py#L54-L77" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/result.py#L56-L79" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; &#34;Result[B]&#34;:
     x = self.get

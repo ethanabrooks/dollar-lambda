@@ -983,7 +983,9 @@ def item(
     return Parser(f, usage=name, helps={})
 
 
-def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
+def nonpositional(
+    *parsers: "Parser[Sequence[A]]", repeated: Optional[Parser[Sequence[A]]] = None
+) -> "Parser[Sequence[A]]":
     """
     `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
     returning the first permutations that is successful:
@@ -993,18 +995,71 @@ def nonpositional(*parsers: "Parser[Sequence[A]]") -> "Parser[Sequence[A]]":
     {'verbose': True, 'quiet': True}
     >>> p.parse_args("--quiet", "--verbose")  # reverse order also works
     {'quiet': True, 'verbose': True}
+
+    Parameters
+    ----------
+    repeated : Optional[Parser[Sequence[A]]]
+        If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+
+    Examples
+    --------
+    >>> p = nonpositional(repeated=flag("x"))
+    >>> p.parse_args(return_dict=False)
+    []
+    >>> p.parse_args("-x", return_dict=False)
+    [('x', True)]
+    >>> p.parse_args("-x", "-x", return_dict=False)
+    [('x', True), ('x', True)]
+
+    >>> p = nonpositional(flag("y"), repeated=flag("x"))
+    >>> p.parse_args("-y", return_dict=False)
+    [('y', True)]
+    >>> p.parse_args("-y", "-x", return_dict=False)
+    [('y', True), ('x', True)]
+    >>> p.parse_args("-x", "-y", return_dict=False)
+    [('x', True), ('y', True)]
+    >>> p.parse_args("-y", "-x", "-x", return_dict=False)
+    [('y', True), ('x', True), ('x', True)]
+    >>> p.parse_args("-x", "-y", "-x", return_dict=False)
+    [('x', True), ('y', True), ('x', True)]
+    >>> p.parse_args("-x", "-x", "-y", return_dict=False)
+    [('x', True), ('x', True), ('y', True)]
+
+    >>> p = nonpositional(flag("y"), repeated=(flag("x") | flag("z")).ignore())
+    >>> p.parse_args("-x", "-y", "-z", return_dict=False)
+    [('y', True)]
     """
+    sep = " " if len(parsers) <= 3 else "\n"
+    _parsers = [*parsers] if repeated is None else [*parsers, repeated]
+    usage = sep.join([p.usage or "" for p in _parsers])
+    repeat_parser = None
+    if repeated is not None:
+        _repeated = repeated  # for mypy's benefit
+
+        def f(cs: Sequence[str]):
+            p = _repeated >> nonpositional(*parsers, repeated=repeated)
+            return p.parse(cs)
+
+        repeat_parser = Parser(f, usage=None, helps={})
+
     if not parsers:
-        return empty()
+        if repeat_parser is None:
+            return empty()
+        else:
+            return repeat_parser | empty()
 
     def get_alternatives():
+        if repeat_parser is not None:
+            yield repeat_parser
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail)
+            yield head >> nonpositional(*tail, repeated=repeated)
 
     parser = reduce(operator.or_, get_alternatives())
-    sep = " " if len(parsers) <= 3 else "\n"
-    return replace(parser, usage=sep.join([p.usage or "" for p in parsers]))
+    helps = parser.helps
+    if repeated is not None:
+        helps = {**helps, **repeated.helps}
+    return replace(parser, usage=usage, helps=helps)
 
 
 def option(

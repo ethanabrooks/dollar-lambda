@@ -49,11 +49,13 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/args.py#L1-L196" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/args.py#L1-L216" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Args` dataclass and associated functions.
 &#34;&#34;&#34;
+from __future__ import annotations
+
 import dataclasses
 import typing
 from dataclasses import Field, dataclass, fields
@@ -130,7 +132,9 @@ class _ArgsField:
 
     @staticmethod
     def nonpositional(
-        *fields: &#34;_ArgsField&#34;, flip_bools: bool = True
+        *fields: &#34;_ArgsField&#34;,
+        flip_bools: bool,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
     ) -&gt; Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
@@ -154,7 +158,7 @@ class _ArgsField:
                     )
                     yield opt.type(field.type)
 
-        return nonpositional(*get_parsers())
+        return nonpositional(*get_parsers(), repeated=repeated)
 
 
 @dataclass
@@ -208,7 +212,11 @@ class Args:
     &#34;&#34;&#34;
 
     @classmethod
-    def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    def parser(
+        cls,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    ) -&gt; Parser[Sequence[KeyValue[Any]]]:
         &#34;&#34;&#34;
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
@@ -235,18 +243,30 @@ class Args:
         &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
         {&#39;tests&#39;: False}
         &#34;&#34;&#34;
+
+        def get_fields():
+            types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
+            for field in fields(cls):
+                field.type = types[field.name]
+                yield _ArgsField.parse(field)
+
         return _ArgsField.nonpositional(
-            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+            *get_fields(), flip_bools=flip_bools, repeated=repeated
         )
 
     @classmethod
     def parse_args(
-        cls, *args, flip_bools: bool = True
+        cls,
+        *args,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     ) -&gt; &#34;typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]&#34;:
         &#34;&#34;&#34;
         Parses the arguments and returns a dictionary of the parsed values.
         &#34;&#34;&#34;
-        return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
+        return (
+            cls.parser(flip_bools=flip_bools, repeated=repeated) &gt;&gt; done()
+        ).parse_args(*args)</code></pre>
 </details>
 </section>
 <section>
@@ -257,7 +277,7 @@ class Args:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.args.field"><code class="name flex">
-<span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, type: Optional[ForwardRef('type | Callable[[str], Any]')] = None, **kwargs) <span style="white-space: nowrap;">-></span> dataclasses.Field</span>
+<span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, type: "Optional['type | Callable[[str], Any]']" = None, **kwargs) <span style="white-space: nowrap;">-></span> dataclasses.Field</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This is a thin wrapper around <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</p>
@@ -277,7 +297,7 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/args.py#L14-L45" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/args.py#L16-L47" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def field(
     help: Optional[str] = None,
@@ -369,7 +389,7 @@ combinators as other parsers:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/args.py#L107-L196" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/args.py#L111-L216" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Args:
@@ -422,7 +442,11 @@ class Args:
     &#34;&#34;&#34;
 
     @classmethod
-    def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    def parser(
+        cls,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    ) -&gt; Parser[Sequence[KeyValue[Any]]]:
         &#34;&#34;&#34;
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
@@ -449,43 +473,60 @@ class Args:
         &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
         {&#39;tests&#39;: False}
         &#34;&#34;&#34;
+
+        def get_fields():
+            types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
+            for field in fields(cls):
+                field.type = types[field.name]
+                yield _ArgsField.parse(field)
+
         return _ArgsField.nonpositional(
-            *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+            *get_fields(), flip_bools=flip_bools, repeated=repeated
         )
 
     @classmethod
     def parse_args(
-        cls, *args, flip_bools: bool = True
+        cls,
+        *args,
+        flip_bools: bool = True,
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     ) -&gt; &#34;typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]&#34;:
         &#34;&#34;&#34;
         Parses the arguments and returns a dictionary of the parsed values.
         &#34;&#34;&#34;
-        return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
+        return (
+            cls.parser(flip_bools=flip_bools, repeated=repeated) &gt;&gt; done()
+        ).parse_args(*args)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.args.Args.parse_args"><code class="name flex">
-<span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True) <span style="white-space: nowrap;">-></span> Union[Sequence[<a title="dollar_lambda.key_value.KeyValueTuple" href="key_value.html#dollar_lambda.key_value.KeyValueTuple">KeyValueTuple</a>], Dict[str, Any]]</span>
+<span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True, repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None) <span style="white-space: nowrap;">-></span> Union[Sequence[<a title="dollar_lambda.key_value.KeyValueTuple" href="key_value.html#dollar_lambda.key_value.KeyValueTuple">KeyValueTuple</a>], Dict[str, Any]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parses the arguments and returns a dictionary of the parsed values.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/args.py#L189-L196" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/args.py#L204-L216" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parse_args(
-    cls, *args, flip_bools: bool = True
+    cls,
+    *args,
+    flip_bools: bool = True,
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
 ) -&gt; &#34;typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]&#34;:
     &#34;&#34;&#34;
     Parses the arguments and returns a dictionary of the parsed values.
     &#34;&#34;&#34;
-    return (cls.parser(flip_bools=flip_bools) &gt;&gt; done()).parse_args(*args)</code></pre>
+    return (
+        cls.parser(flip_bools=flip_bools, repeated=repeated) &gt;&gt; done()
+    ).parse_args(*args)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.args.Args.parser"><code class="name flex">
-<span>def <span class="ident">parser</span></span>(<span>flip_bools: bool = True) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
+<span>def <span class="ident">parser</span></span>(<span>flip_bools: bool = True, repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.key_value.KeyValue" href="key_value.html#dollar_lambda.key_value.KeyValue">KeyValue</a>[typing.Any]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a parser for the dataclass.
@@ -514,10 +555,14 @@ Combines these parsers using <code>nonpositional</code>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/7e423d3f1e98b7bcd0b3fa9fac8562af5ec05c8c/dollar_lambda/args.py#L157-L187" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/df9b67bda4010d8b7a2c3480eae45fdd27b6abbf/dollar_lambda/args.py#L161-L202" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
-def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
+def parser(
+    cls,
+    flip_bools: bool = True,
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
     Returns a parser for the dataclass.
     Converts each field to a parser (`option` or `flag` depending on its type).
@@ -544,8 +589,15 @@ def parser(cls, flip_bools: bool = True) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &gt;&gt;&gt; MyArgs.parse_args(&#34;--tests&#34;, flip_bools=False)
     {&#39;tests&#39;: False}
     &#34;&#34;&#34;
+
+    def get_fields():
+        types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
+        for field in fields(cls):
+            field.type = types[field.name]
+            yield _ArgsField.parse(field)
+
     return _ArgsField.nonpositional(
-        *[_ArgsField.parse(field) for field in fields(cls)], flip_bools=flip_bools
+        *get_fields(), flip_bools=flip_bools, repeated=repeated
     )</code></pre>
 </details>
 </dd>
