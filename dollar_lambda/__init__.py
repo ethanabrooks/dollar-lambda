@@ -10,12 +10,13 @@ pip install dollar-lambda
 
 # Highlights
 `$λ` comes with syntactic sugar that came make building parsers completely boilerplate-free.
-However, with more concise syntax comes less flexibility. For more complex parsing situations,
-there are modular building blocks that lie behind the syntactic sugar which enable parsers to
+For complex parsing situations that exceed the expressive capacity of this syntax,
+the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 handle any reasonable amount of logical complexity.
 
 ## The [`@command`](#dollar_lambda.command) decorator
-This syntax is best for simple parsers that take a set of unordered arguments:
+For the vast majority of parsing patterns, `@command` is the most concise way to
+define a parser:
 
 >>> @command()
 ... def main(x: int, dev: bool = False, prod: bool = False):
@@ -43,16 +44,15 @@ it would get them from the command line.
 In this document we'll feed the strings directly for the sake of brevity.
 >>> parser.TESTING = True
 
-Use the `parsers` argument do add custom logic to this parser:
+Use the `parsers` argument to add custom logic to this parser:
 
 >>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
 ... def main(x: int, **kwargs):
 ...     return dict(x=x, **kwargs)
 
-This parser requires either a `--dev` or `--prod` flag and maps them to the `kwargs` argument:
+This parser requires either a `--dev` or `--prod` flag and maps it to the `kwargs` argument:
 >>> main("-h")
 usage: -x X [--dev | --prod]
-
 >>> main("-x", "1", "--dev")
 {'x': 1, 'dev': True}
 >>> main("-x", "1", "--prod")
@@ -224,8 +224,8 @@ To better understand what is going on here, let's remove the syntactic sugar:
 Now let's walk through this step by step.
 
 ## High-Level Parsers
-So far we've seen a few different parser constructors.
-`flag` binds a boolean value to a variable whereas `option` binds an arbitrary value to a variable.
+In the de-sugared implementation there are two different parser constructors:
+`flag`, which binds a boolean value to a variable, and `option`, which binds an arbitrary value to a variable.
 
 ### `flag`
 >>> p = flag("verbose")
@@ -380,8 +380,10 @@ Applying the syntactic sugar:
 ... def main(x: int, y: int, **kwargs):
 ...     return dict(x=x, y=y, **kwargs)
 
-Here the `parsers` argument reserves a function argument for a custom parser using our lower-level syntax.
-The `help` argument is of course assigns help text to the arguments.
+Here the `parsers` argument reserves a function argument (in this case, `kwargs`)
+for a custom parser (in this case, `(flag("verbose") | flag("quiet")).optional()`)
+using our lower-level syntax.  The `help` argument
+assigns help text to the arguments (in this case `x` and `y`).
 
 ## Variations on the example
 ### Variable numbers of arguments
@@ -406,6 +408,17 @@ supply `--verbose` and `--verbosity` in any order.
 >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
 usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Expected '--verbose'. Got '-x'
+
+We could express the same logic with the `command` decorator:
+
+>>> @command(
+...     parsers=dict(
+...         kwargs=((flag("verbose") + option("verbosity", type=int)) | flag("quiet"))
+...     ),
+...     help=dict(x="the base", y="the exponent"),
+... )
+... def main(x: int, y: int, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
 
 This is also a case where you might want to use `CommandTree`:
 
@@ -502,17 +515,17 @@ Expected '--verbose'. Got '-x'
 # `CommandTree` Tutorial
 `CommandTree` has already shown up in the
 [Highlights section](#commandtree-for-dynamic-dispatch)
-and in the earlier [tutorial](#variations-on-the-example).
+and in the [tutorial](#variations-on-the-example).
 In this section we will give a more thorough treatment,
 exposing some of the underlying logic and covering all
 the variations in functionality that `CommandTree`
 offers.
 
-`CommandTree` draws inspiration for the dynamic dispatch concept
+`CommandTree` draws inspiration
 from the [`Click`](https://click.palletsprojects.com/) library.
 `CommandTree.subcommand` (discussed [here](#commandtreesubcommand)) closely
-approximates the functionality described in [this section](https://click.palletsprojects.com/en/8.1.x/commands/#command)
-of the `Click` documentation.
+approximates the functionality described in the [Commands and Groups](https://click.palletsprojects.com/en/8.1.x/commands/#command)
+section of the `Click` documentation.
 
 ## `CommandTree.command`
 
@@ -559,9 +572,9 @@ usage: [-a A | -b]
 The following arguments are required: -a
 
 Often in cases where there are alternative sets of argument like this,
-there is also a set of shared arguments. It would be cumbersome to have to
-repeat these for both child functions. Instead we can define a parent function
-as follows:
+there is also a set of shared arguments. We can define a parent function
+ to make our help text more concise and to allow the user to run the
+ parent function when the child arguments are not provided.
 
 >>> tree = CommandTree()
 ...
@@ -569,7 +582,7 @@ as follows:
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 
-And a child function, `g1`:
+Now define a child function, `g1`:
 
 >>> @f1.command()  # note f1, not tree
 ... def g1(a:int, b: bool):
@@ -589,7 +602,8 @@ argument sets:
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 
-Note that our usage message shows `-a A` preceding the brackets:
+Note that our usage message shows `-a A` preceding the brackets because it corresponds
+to the parent function:
 >>> tree("-h")
 usage: -a A [-b | -c C]
 
@@ -698,9 +712,8 @@ Fallback to the value in the config
 >>> main(**p.parse_args())
 {'x': 1}
 
-We can also write this succinctly with `@command` syntax:
+We can also write this with `@command` syntax:
 
->>> import json
 >>> @command(parsers=dict(kwargs=option("x", type=int).optional()))
 ... def main(**kwargs):
 ...     with open("example-config.json") as f:
@@ -738,9 +751,11 @@ for the user_ to reason about the code.
 - the `command` decorator and the `CommandTree` object for building tree-shaped parsers
 - the `Args` syntax built on top of python `dataclasses`.
 
-
-As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing.
+### Lightweight
+`$λ` is written in pure python with no dependencies
+(excepting [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass)
+which was written expressly for this library and has no dependencies).
+`$λ` will not introduce dependency conflicts and it installs in a flash.
 """
 
 

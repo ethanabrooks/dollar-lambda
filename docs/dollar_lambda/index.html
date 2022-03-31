@@ -54,11 +54,12 @@ person would ever need&hellip; but even if it's not the parser that we need, it'
 </code></pre>
 <h1 id="highlights">Highlights</h1>
 <p><code>$λ</code> comes with syntactic sugar that came make building parsers completely boilerplate-free.
-However, with more concise syntax comes less flexibility. For more complex parsing situations,
-there are modular building blocks that lie behind the syntactic sugar which enable parsers to
+For complex parsing situations that exceed the expressive capacity of this syntax,
+the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 handle any reasonable amount of logical complexity.</p>
 <h2 id="the-command-decorator">The <a href="#dollar_lambda.command"><code>@command</code></a> decorator</h2>
-<p>This syntax is best for simple parsers that take a set of unordered arguments:</p>
+<p>For the vast majority of parsing patterns, <code>@command</code> is the most concise way to
+define a parser:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command()
 ... def main(x: int, dev: bool = False, prod: bool = False):
 ...     return dict(x=x, dev=dev, prod=prod)
@@ -82,19 +83,21 @@ it would get them from the command line.</p>
 <p>In this document we'll feed the strings directly for the sake of brevity.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; parser.TESTING = True
 </code></pre>
-<p><code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> takes arguments that allow you to supply
-help strings:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(help=dict(x=&quot;A number&quot;))
-... def main(x: int, dev: bool = False, prod: bool = False):
-...     return dict(x=x, dev=dev, prod=prod)
-...
+<p>Use the <code>parsers</code> argument to add custom logic to this parser:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(parsers=dict(kwargs=(flag(&quot;dev&quot;) | flag(&quot;prod&quot;))))
+... def main(x: int, **kwargs):
+...     return dict(x=x, **kwargs)
 </code></pre>
+<p>This parser requires either a <code>--dev</code> or <code>--prod</code> flag and maps it to the <code>kwargs</code> argument:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; main(&quot;-h&quot;)
-usage: -x X --dev --prod
-x: A number
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;--dev&quot;)
-{'x': 1, 'dev': True, 'prod': False}
+usage: -x X [--dev | --prod]
+&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;--dev&quot;)
+{'x': 1, 'dev': True}
+&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;, &quot;--prod&quot;)
+{'x': 1, 'prod': True}
+&gt;&gt;&gt; main(&quot;-x&quot;, &quot;1&quot;)
+usage: -x X [--dev | --prod]
+The following arguments are required: --dev
 </code></pre>
 <h2 id="commandtree-for-dynamic-dispatch"><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> for dynamic dispatch</h2>
 <p>For many programs, a user will want to use one entrypoint for one set of
@@ -233,8 +236,8 @@ the command line:</p>
 </code></pre>
 <p>Now let's walk through this step by step.</p>
 <h2 id="high-level-parsers">High-Level Parsers</h2>
-<p>So far we've seen a few different parser constructors.
-<code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> binds a boolean value to a variable whereas <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code> binds an arbitrary value to a variable.</p>
+<p>In the de-sugared implementation there are two different parser constructors:
+<code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code>, which binds a boolean value to a variable, and <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>, which binds an arbitrary value to a variable.</p>
 <h3 id="flag"><code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code></h3>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
@@ -372,8 +375,11 @@ some integer, binding that integer to the variable <code>"x"</code>. Similarly f
 ... def main(x: int, y: int, **kwargs):
 ...     return dict(x=x, y=y, **kwargs)
 </code></pre>
-<p>Here the <code>parsers</code> argument reserves a function argument for a custom parser using our lower-level syntax.
-The <code>help</code> argument is of course assigns help text to the arguments.</p>
+<p>Here the <code>parsers</code> argument reserves a function argument (in this case, <code>kwargs</code>)
+for a custom parser (in this case, <code>(flag("verbose") | flag("quiet")).optional()</code>)
+using our lower-level syntax.
+The <code>help</code> argument
+assigns help text to the arguments (in this case <code>x</code> and <code>y</code>).</p>
 <h2 id="variations-on-the-example">Variations on the example</h2>
 <h3 id="variable-numbers-of-arguments">Variable numbers of arguments</h3>
 <p>What if there was a special argument, <code>verbosity</code>,
@@ -394,6 +400,16 @@ supply <code>--verbose</code> and <code>--verbosity</code> in any order.</p>
 &gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;)
 usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Expected '--verbose'. Got '-x'
+</code></pre>
+<p>We could express the same logic with the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(
+...     parsers=dict(
+...         kwargs=((flag(&quot;verbose&quot;) + option(&quot;verbosity&quot;, type=int)) | flag(&quot;quiet&quot;))
+...     ),
+...     help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;),
+... )
+... def main(x: int, y: int, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
 </code></pre>
 <p>This is also a case where you might want to use <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
@@ -481,16 +497,16 @@ Expected '--verbose'. Got '-x'
 <h1 id="commandtree-tutorial"><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> Tutorial</h1>
 <p><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> has already shown up in the
 <a href="#commandtree-for-dynamic-dispatch">Highlights section</a>
-and in the earlier <a href="#variations-on-the-example">tutorial</a>.
+and in the <a href="#variations-on-the-example">tutorial</a>.
 In this section we will give a more thorough treatment,
 exposing some of the underlying logic and covering all
 the variations in functionality that <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code>
 offers.</p>
-<p><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> draws inspiration for the dynamic dispatch concept
+<p><code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> draws inspiration
 from the <a href="https://click.palletsprojects.com/"><code>Click</code></a> library.
 <code><a title="dollar_lambda.CommandTree.subcommand" href="#dollar_lambda.CommandTree.subcommand">CommandTree.subcommand()</a></code> (discussed <a href="#commandtreesubcommand">here</a>) closely
-approximates the functionality described in <a href="https://click.palletsprojects.com/en/8.1.x/commands/#command">this section</a>
-of the <code>Click</code> documentation.</p>
+approximates the functionality described in the <a href="https://click.palletsprojects.com/en/8.1.x/commands/#command">Commands and Groups</a>
+section of the <code>Click</code> documentation.</p>
 <h2 id="commandtreecommand"><code><a title="dollar_lambda.CommandTree.command" href="#dollar_lambda.CommandTree.command">CommandTree.command()</a></code></h2>
 <p>First let's walk through the use of the <code><a title="dollar_lambda.CommandTree.command" href="#dollar_lambda.CommandTree.command">CommandTree.command()</a></code> decorator, one step
 at a time. First we define the object:</p>
@@ -528,16 +544,16 @@ usage: [-a A | -b]
 The following arguments are required: -a
 </code></pre>
 <p>Often in cases where there are alternative sets of argument like this,
-there is also a set of shared arguments. It would be cumbersome to have to
-repeat these for both child functions. Instead we can define a parent function
-as follows:</p>
+there is also a set of shared arguments. We can define a parent function
+to make our help text more concise and to allow the user to run the
+parent function when the child arguments are not provided. </p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 </code></pre>
-<p>And a child function, <code>g1</code>:</p>
+<p>Now define a child function, <code>g1</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @f1.command()  # note f1, not tree
 ... def g1(a:int, b: bool):
 ...     return dict(g1=dict(b=b))
@@ -554,7 +570,8 @@ argument sets:</p>
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 </code></pre>
-<p>Note that our usage message shows <code>-a A</code> preceding the brackets:</p>
+<p>Note that our usage message shows <code>-a A</code> preceding the brackets because it corresponds
+to the parent function:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A [-b | -c C]
 </code></pre>
@@ -630,7 +647,7 @@ usage: -a A [g1 -b | -c C]
 <p>A common use case is to have a config file with default values that arguments should
 fall back to if not provided on the command line. Instead of implementing specific functionality
 itself, <code>$λ</code> accommodates this situation by simply getting out of the way, thereby affording the
-user the most flexibility in terms of implementing the config file. Here is a simple example.</p>
+user the most flexibility in terms of accessing and using the config file. Here is a simple example.</p>
 <pre><code># example-config.json
 {
   &quot;x&quot;: 1
@@ -656,6 +673,19 @@ user the most flexibility in terms of implementing the config file. Here is a si
 <pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args())
 {'x': 1}
 </code></pre>
+<p>We can also write this with <code>@command</code> syntax:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(parsers=dict(kwargs=option(&quot;x&quot;, type=int).optional()))
+... def main(**kwargs):
+...     with open(&quot;example-config.json&quot;) as f:
+...         config = json.load(f)
+...
+...     config.update(kwargs)
+...     return config
+&gt;&gt;&gt; main(&quot;-x&quot;, &quot;0&quot;)
+{'x': 0}
+&gt;&gt;&gt; main()
+{'x': 1}
+</code></pre>
 <h1 id="why">Why <code>$λ</code>?</h1>
 <p><code>$λ</code> can handle many kinds of argument-parsing patterns
 that are either very awkward, difficult, or impossible with other parsing libraries.
@@ -676,12 +706,15 @@ for the user</em> to reason about the code.</p>
 <li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for building tree-shaped parsers</li>
 <li>the <code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> syntax built on top of python <code>dataclasses</code>.</li>
 </ul>
-<p>As a rule, <code>$λ</code> avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing.</p>
+<h3 id="lightweight">Lightweight</h3>
+<p><code>$λ</code> is written in pure python with no dependencies
+(excepting <a href="https://github.com/ethanabrooks/pytypeclass"><code>pytypeclass</code></a>
+which was written expressly for this library and has no dependencies).
+<code>$λ</code> will not introduce dependency conflicts and it installs in a flash.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/__init__.py#L1-L772" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/__init__.py#L1-L805" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
@@ -695,12 +728,13 @@ pip install dollar-lambda
 
 # Highlights
 `$λ` comes with syntactic sugar that came make building parsers completely boilerplate-free.
-However, with more concise syntax comes less flexibility. For more complex parsing situations,
-there are modular building blocks that lie behind the syntactic sugar which enable parsers to
+For complex parsing situations that exceed the expressive capacity of this syntax,
+the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 handle any reasonable amount of logical complexity.
 
 ## The [`@command`](#dollar_lambda.command) decorator
-This syntax is best for simple parsers that take a set of unordered arguments:
+For the vast majority of parsing patterns, `@command` is the most concise way to
+define a parser:
 
 &gt;&gt;&gt; @command()
 ... def main(x: int, dev: bool = False, prod: bool = False):
@@ -728,20 +762,22 @@ it would get them from the command line.
 In this document we&#39;ll feed the strings directly for the sake of brevity.
 &gt;&gt;&gt; parser.TESTING = True
 
-`command` takes arguments that allow you to supply
-help strings:
+Use the `parsers` argument to add custom logic to this parser:
 
-&gt;&gt;&gt; @command(help=dict(x=&#34;A number&#34;))
-... def main(x: int, dev: bool = False, prod: bool = False):
-...     return dict(x=x, dev=dev, prod=prod)
-...
+&gt;&gt;&gt; @command(parsers=dict(kwargs=(flag(&#34;dev&#34;) | flag(&#34;prod&#34;))))
+... def main(x: int, **kwargs):
+...     return dict(x=x, **kwargs)
 
+This parser requires either a `--dev` or `--prod` flag and maps it to the `kwargs` argument:
 &gt;&gt;&gt; main(&#34;-h&#34;)
-usage: -x X --dev --prod
-x: A number
-
+usage: -x X [--dev | --prod]
 &gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;, &#34;--dev&#34;)
-{&#39;x&#39;: 1, &#39;dev&#39;: True, &#39;prod&#39;: False}
+{&#39;x&#39;: 1, &#39;dev&#39;: True}
+&gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;, &#34;--prod&#34;)
+{&#39;x&#39;: 1, &#39;prod&#39;: True}
+&gt;&gt;&gt; main(&#34;-x&#34;, &#34;1&#34;)
+usage: -x X [--dev | --prod]
+The following arguments are required: --dev
 
 ## `CommandTree` for dynamic dispatch
 For many programs, a user will want to use one entrypoint for one set of
@@ -906,8 +942,8 @@ To better understand what is going on here, let&#39;s remove the syntactic sugar
 Now let&#39;s walk through this step by step.
 
 ## High-Level Parsers
-So far we&#39;ve seen a few different parser constructors.
-`flag` binds a boolean value to a variable whereas `option` binds an arbitrary value to a variable.
+In the de-sugared implementation there are two different parser constructors:
+`flag`, which binds a boolean value to a variable, and `option`, which binds an arbitrary value to a variable.
 
 ### `flag`
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;)
@@ -1062,8 +1098,10 @@ Applying the syntactic sugar:
 ... def main(x: int, y: int, **kwargs):
 ...     return dict(x=x, y=y, **kwargs)
 
-Here the `parsers` argument reserves a function argument for a custom parser using our lower-level syntax.
-The `help` argument is of course assigns help text to the arguments.
+Here the `parsers` argument reserves a function argument (in this case, `kwargs`)
+for a custom parser (in this case, `(flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)).optional()`)
+using our lower-level syntax.  The `help` argument
+assigns help text to the arguments (in this case `x` and `y`).
 
 ## Variations on the example
 ### Variable numbers of arguments
@@ -1088,6 +1126,17 @@ supply `--verbose` and `--verbosity` in any order.
 &gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;)
 usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Expected &#39;--verbose&#39;. Got &#39;-x&#39;
+
+We could express the same logic with the `command` decorator:
+
+&gt;&gt;&gt; @command(
+...     parsers=dict(
+...         kwargs=((flag(&#34;verbose&#34;) + option(&#34;verbosity&#34;, type=int)) | flag(&#34;quiet&#34;))
+...     ),
+...     help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;),
+... )
+... def main(x: int, y: int, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
 
 This is also a case where you might want to use `CommandTree`:
 
@@ -1184,17 +1233,17 @@ Expected &#39;--verbose&#39;. Got &#39;-x&#39;
 # `CommandTree` Tutorial
 `CommandTree` has already shown up in the
 [Highlights section](#commandtree-for-dynamic-dispatch)
-and in the earlier [tutorial](#variations-on-the-example).
+and in the [tutorial](#variations-on-the-example).
 In this section we will give a more thorough treatment,
 exposing some of the underlying logic and covering all
 the variations in functionality that `CommandTree`
 offers.
 
-`CommandTree` draws inspiration for the dynamic dispatch concept
+`CommandTree` draws inspiration
 from the [`Click`](https://click.palletsprojects.com/) library.
 `CommandTree.subcommand` (discussed [here](#commandtreesubcommand)) closely
-approximates the functionality described in [this section](https://click.palletsprojects.com/en/8.1.x/commands/#command)
-of the `Click` documentation.
+approximates the functionality described in the [Commands and Groups](https://click.palletsprojects.com/en/8.1.x/commands/#command)
+section of the `Click` documentation.
 
 ## `CommandTree.command`
 
@@ -1241,9 +1290,9 @@ usage: [-a A | -b]
 The following arguments are required: -a
 
 Often in cases where there are alternative sets of argument like this,
-there is also a set of shared arguments. It would be cumbersome to have to
-repeat these for both child functions. Instead we can define a parent function
-as follows:
+there is also a set of shared arguments. We can define a parent function
+ to make our help text more concise and to allow the user to run the
+ parent function when the child arguments are not provided.
 
 &gt;&gt;&gt; tree = CommandTree()
 ...
@@ -1251,7 +1300,7 @@ as follows:
 ... def f1(a: int):
 ...     return dict(f1=dict(a=a))
 
-And a child function, `g1`:
+Now define a child function, `g1`:
 
 &gt;&gt;&gt; @f1.command()  # note f1, not tree
 ... def g1(a:int, b: bool):
@@ -1271,7 +1320,8 @@ argument sets:
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 
-Note that our usage message shows `-a A` preceding the brackets:
+Note that our usage message shows `-a A` preceding the brackets because it corresponds
+to the parent function:
 &gt;&gt;&gt; tree(&#34;-h&#34;)
 usage: -a A [-b | -c C]
 
@@ -1353,7 +1403,7 @@ usage: -a A [g1 -b | -c C]
 A common use case is to have a config file with default values that arguments should
 fall back to if not provided on the command line. Instead of implementing specific functionality
 itself, `$λ` accommodates this situation by simply getting out of the way, thereby affording the
-user the most flexibility in terms of implementing the config file. Here is a simple example.
+user the most flexibility in terms of accessing and using the config file. Here is a simple example.
 
 ```
 # example-config.json
@@ -1378,6 +1428,20 @@ Overwrite the value in the config:
 
 Fallback to the value in the config
 &gt;&gt;&gt; main(**p.parse_args())
+{&#39;x&#39;: 1}
+
+We can also write this with `@command` syntax:
+
+&gt;&gt;&gt; @command(parsers=dict(kwargs=option(&#34;x&#34;, type=int).optional()))
+... def main(**kwargs):
+...     with open(&#34;example-config.json&#34;) as f:
+...         config = json.load(f)
+...
+...     config.update(kwargs)
+...     return config
+&gt;&gt;&gt; main(&#34;-x&#34;, &#34;0&#34;)
+{&#39;x&#39;: 0}
+&gt;&gt;&gt; main()
 {&#39;x&#39;: 1}
 
 # Why `$λ`?
@@ -1405,9 +1469,11 @@ for the user_ to reason about the code.
 - the `command` decorator and the `CommandTree` object for building tree-shaped parsers
 - the `Args` syntax built on top of python `dataclasses`.
 
-
-As a rule, `$λ` avoids reproducing python functionality and focuses on the main job of
-an argument parser: parsing.
+### Lightweight
+`$λ` is written in pure python with no dependencies
+(excepting [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass)
+which was written expressly for this library and has no dependencies).
+`$λ` will not introduce dependency conflicts and it installs in a flash.
 &#34;&#34;&#34;
 
 
@@ -1516,7 +1582,7 @@ Here is an example of usage. First we define a simple <code><a title="dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L647-L675" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L647-L675" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(f: Callable[[str], B], description: str) -&gt; Parser[B]:
     &#34;&#34;&#34;
@@ -1576,7 +1642,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L678-L708" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L678-L708" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def argument(
     dest: str, help: Optional[str] = None, type: Optional[Callable[[str], Any]] = None
@@ -1668,7 +1734,7 @@ quiet: Be quiet
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/decorators.py#L58-L148" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L58-L148" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     flip_bools: bool = True,
@@ -1791,7 +1857,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L711-L736" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L711-L736" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def defaults(**kwargs: Any) -&gt; Parser[Sequence[KeyValue[Any]]]:
     &#34;&#34;&#34;
@@ -1840,7 +1906,7 @@ to the end of the parser:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L739-L764" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L739-L764" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def done() -&gt; Parser[Sequence[A]]:
     &#34;&#34;&#34;
@@ -1881,7 +1947,7 @@ to the end of the parser:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L62-L68" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L62-L68" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def empty() -&gt; &#34;Parser[Sequence]&#34;:
     &#34;&#34;&#34;
@@ -1913,7 +1979,7 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/args.py#L16-L47" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/args.py#L16-L47" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def field(
     help: Optional[str] = None,
@@ -2004,7 +2070,7 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L835-L924" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L835-L924" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def flag(
     dest: str,
@@ -2120,7 +2186,7 @@ The following arguments are required: Your first name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L939-L983" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L939-L983" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def item(
     name: str,
@@ -2211,7 +2277,7 @@ But this would work:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L767-L832" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L767-L832" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def matches(
     s: str, peak: bool = False, regex: bool = True
@@ -2328,7 +2394,7 @@ returning the first permutations that is successful:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L986-L1062" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L986-L1062" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nonpositional(
     *parsers: &#34;Parser[Sequence[A]]&#34;, repeated: Optional[Parser[Sequence[A]]] = None
@@ -2466,7 +2532,7 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L1065-L1157" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L1065-L1157" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def option(
     dest: str,
@@ -2588,7 +2654,7 @@ Takes the output of <code><a title="dollar_lambda.item" href="#dollar_lambda.ite
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L1187-L1221" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L1187-L1221" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     predicate: Callable[[str], bool],
@@ -2696,7 +2762,7 @@ y: a number to increment
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/args.py#L109-L227" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/args.py#L109-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Args:
@@ -2828,7 +2894,7 @@ class Args:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/args.py#L215-L227" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/args.py#L215-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parse_args(
@@ -2875,7 +2941,7 @@ Combines these parsers using <code><a title="dollar_lambda.nonpositional" href="
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/args.py#L172-L213" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/args.py#L172-L213" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parser(
@@ -2932,7 +2998,7 @@ see the <a href="#commandtree-tutorial"><code>CommandTree</code> tutorial</a>.</
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/decorators.py#L235-L503" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L235-L503" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class CommandTree:
@@ -3287,7 +3353,7 @@ Expected '-b'. Got 'f1'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/decorators.py#L245-L347" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L245-L347" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     self,
@@ -3479,7 +3545,7 @@ The following arguments are required: g1
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/decorators.py#L399-L503" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L399-L503" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def subcommand(
     self,
@@ -3599,7 +3665,7 @@ The following arguments are required: g1
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L82-L644" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L82-L644" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parser(MonadPlus[A_co]):
@@ -4200,7 +4266,7 @@ class Parser(MonadPlus[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L291-L298" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L291-L298" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def empty(cls: Type[&#34;Parser[Sequence[A]]&#34;]) -&gt; &#34;Parser[Sequence[A]]&#34;:
@@ -4226,7 +4292,7 @@ this method unless building custom parsers.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L518-L534" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L518-L534" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -4273,7 +4339,7 @@ This is a test.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L627-L644" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L627-L644" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34;:
@@ -4331,7 +4397,7 @@ Expected '-b'. Got '-c'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L92-L124" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L92-L124" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __add__(
     self: &#34;Parser[Sequence[A]]&#34;, other: &#34;Parser[Sequence[B]]&#34;
@@ -4376,7 +4442,7 @@ Expected '-b'. Got '-c'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L126-L127" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L126-L127" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __ge__(self, f: Callable[[A_co], Monad[B]]) -&gt; &#34;Parser[B]&#34;:
     return self.bind(f)</code></pre>
@@ -4407,7 +4473,7 @@ Unrecognized argument: --option
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L129-L162" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L129-L162" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __or__(  # type: ignore[override]
     self: &#34;Parser[A_co]&#34;,
@@ -4465,7 +4531,7 @@ The following arguments are required: second
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L164-L197" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L164-L197" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __rshift__(
     self: &#34;Parser[typing.Sequence[A]]&#34;, p: &#34;Parser[typing.Sequence[B]]&#34;
@@ -4519,7 +4585,7 @@ Both parsers succeeded. This causes ^ to fail.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L199-L220" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L199-L220" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __xor__(
     self: &#34;Parser[Sequence[A]]&#34;, other: &#34;Parser[Sequence[B]]&#34;
@@ -4562,7 +4628,7 @@ Both parsers succeeded. This causes ^ to fail.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L222-L249" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L222-L249" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(self: &#34;Parser[A]&#34;, f: Callable[[A], Result[B]]) -&gt; &#34;Parser[B]&#34;:  # type: ignore[misc]
     &#34;&#34;&#34;
@@ -4626,7 +4692,7 @@ Expected 'a'. Got 'b'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L251-L289" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L251-L289" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B]]) -&gt; &#34;Parser[B]&#34;:
     &#34;&#34;&#34;
@@ -4682,7 +4748,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L300-L321" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L300-L321" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def fails(self: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Sequence[A]]&#34;:
     &#34;&#34;&#34;
@@ -4716,7 +4782,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L323-L339" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L323-L339" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
     def print_usage(usage: str):
@@ -4757,7 +4823,7 @@ The following arguments are required: --hello
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L341-L364" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L341-L364" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def ignore(self: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Sequence[A]]&#34;:
     &#34;&#34;&#34;
@@ -4811,7 +4877,7 @@ heterogenous:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L366-L397" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L366-L397" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many(
     self: &#34;Parser[Sequence[A]]&#34;, max: Optional[int] = None
@@ -4865,7 +4931,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L399-L425" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L399-L425" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many1(
     self: &#34;Parser[Sequence[A]]&#34;, max: Optional[int] = None
@@ -4904,7 +4970,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L427-L435" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L427-L435" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def map_error(self, f: Callable[[ArgumentError], ArgumentError]) -&gt; &#34;Parser[A_co]&#34;:
     def g(cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -4935,7 +5001,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L437-L450" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L437-L450" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def optional(self: &#34;Parser[Sequence[A]]&#34;) -&gt; &#34;Parser[Sequence[A]]&#34;:
     &#34;&#34;&#34;
@@ -4961,7 +5027,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L452-L456" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L452-L456" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
     &#34;&#34;&#34;
@@ -4998,7 +5064,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L458-L516" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L458-L516" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse_args(
     self: &#34;Parser[Sequence[KeyValue]]&#34;,
@@ -5090,7 +5156,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L536-L569" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L536-L569" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     self: &#34;Parser[A]&#34;,
@@ -5141,7 +5207,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L571-L595" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L571-L595" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def type(
     self: &#34;Parser[Sequence[KeyValue[str]]]&#34;, f: Callable[[str], Any]
@@ -5178,7 +5244,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L597-L598" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L597-L598" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_error(self, error: ArgumentError) -&gt; &#34;Parser[A_co]&#34;:
     return self.map_error(lambda _: error)</code></pre>
@@ -5210,7 +5276,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/abcaa723774d7a0ad13a8183d5ad3909a4ef5b6e/dollar_lambda/parser.py#L600-L625" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/parser.py#L600-L625" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_help(self: &#34;Parser[A]&#34;) -&gt; &#34;Parser[A]&#34;:
     &#34;&#34;&#34;
@@ -5340,6 +5406,7 @@ setTimeout(() => input.focus(), 100);
 <li><a href="#versatile">Versatile</a></li>
 <li><a href="#type-safe">Type-safe</a></li>
 <li><a href="#concise">Concise</a></li>
+<li><a href="#lightweight">Lightweight</a></li>
 </ul>
 </li>
 </ul>
