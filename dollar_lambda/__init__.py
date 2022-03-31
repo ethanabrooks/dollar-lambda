@@ -668,7 +668,7 @@ usage: -a A [g1 -b | -c C]
 A common use case is to have a config file with default values that arguments should
 fall back to if not provided on the command line. Instead of implementing specific functionality
 itself, `$λ` accommodates this situation by simply getting out of the way, thereby affording the
-user the most flexibility in terms of implementing the config file. Here is a simple example.
+user the most flexibility in terms of accessing and using the config file. Here is a simple example.
 
 ```
 # example-config.json
@@ -693,6 +693,21 @@ Overwrite the value in the config:
 
 Fallback to the value in the config
 >>> main(**p.parse_args())
+{'x': 1}
+
+We can also write this succinctly with `@command` syntax:
+
+>>> import json
+>>> @command(parsers=dict(kwargs=option("x", type=int).optional()))
+... def main(**kwargs):
+...     with open("example-config.json") as f:
+...         config = json.load(f)
+...
+...     config.update(kwargs)
+...     return config
+>>> main("-x", "0")
+{'x': 0}
+>>> main()
 {'x': 1}
 
 # Why `$λ`?
