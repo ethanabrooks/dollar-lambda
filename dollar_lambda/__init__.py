@@ -168,47 +168,57 @@ args = parser.parse_args()
 
 Here is the exact equivalent in this package:
 
+>>> @command(
+...     parsers=dict(kwargs=(flag("verbose") | flag("quiet")).optional()),
+...     help=dict(x="the base", y="the exponent"),
+... )
+... def main(x: int, y: int, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
+
+Here is the help text for the `p` parser:
+
+>>> main("-h")
+usage: -x X -y Y [--verbose | --quiet]
+x: the base
+y: the exponent
+
+As indicated, this succeeds given `--verbose`
+
+>>> main("-x", "1", "-y", "2", "--verbose")
+{'x': 1, 'y': 2, 'verbose': True}
+
+or `--quiet`
+
+>>> main("-x", "1", "-y", "2", "--quiet")
+{'x': 1, 'y': 2, 'quiet': True}
+
+or neither
+
+>>> main("-x", "1", "-y", "2")
+{'x': 1, 'y': 2}
+
+Ordinarily , we would not feed `main` any arguments, and it would get them from
+the command line:
+
+>>> parser.TESTING = False  # False by default but needs to be True for doctests
+>>> sys.argv[1:] = ["-x", "1", "-y", "2"]
+>>> main()
+{'x': 1, 'y': 2}
+>>> parser.TESTING = True
+
+## Equivalent in lower-level syntax
+To better understand what is going on here, let's remove the syntactic sugar:
+
 >>> p = nonpositional(
 ...     (flag("verbose") | flag("quiet")).optional(),
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
 ... )
 ...
->>> def main(x, y, verbose=False, quiet=False):
-...     return dict(x=x, y=y, verbose=verbose, quiet=quiet)
+>>> def main(x, y, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
 
-Here is the help text for the `p` parser:
-
->>> p.parse_args("-h")
-usage: [--verbose | --quiet] -x X -y Y
-x: the base
-y: the exponent
-
-As indicated, this succeeds given `--verbose`
-
->>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
-{'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
-
-or `--quiet`
-
->>> main(**p.parse_args("-x", "1", "-y", "2", "--quiet"))
-{'x': 1, 'y': 2, 'verbose': False, 'quiet': True}
-
-or neither
-
->>> main(**p.parse_args("-x", "1", "-y", "2"))
-{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
-
-Ordinarily , we would not feed `parse_args` any arguments, and it would get them from
-the command line:
-
->>> parser.TESTING = False  # False by default but needs to be True for doctests
->>> sys.argv[1:] = ["-x", "1", "-y", "2"]
->>> main(**p.parse_args())
-{'x': 1, 'y': 2, 'verbose': False, 'quiet': False}
->>> parser.TESTING = True
-
-Let's walk through this step by step.
+Now let's walk through this step by step.
 
 ## High-Level Parsers
 So far we've seen a few different parser constructors.
@@ -333,7 +343,7 @@ use `nonpositional`:
 {'verbose': True, 'x': '1', 'quiet': True}
 
 ## Putting it all together
-Let's recall the original example:
+Let's recall the original example without the syntactic sugar:
 
 >>> p = nonpositional(
 ...     (flag("verbose") | flag("quiet")).optional(),
@@ -357,6 +367,18 @@ some integer, binding that integer to the variable `"x"`. Similarly for `option(
 - `option("y", type=int)`
 
 and applies them in every order, until some order succeeds.
+
+Applying the syntactic sugar:
+
+>>> @command(
+...     parsers=dict(kwargs=(flag("verbose") | flag("quiet")).optional()),
+...     help=dict(x="the base", y="the exponent"),
+... )
+... def main(x: int, y: int, **kwargs):
+...     return dict(x=x, y=y, **kwargs)
+
+Here the `parsers` argument reserves a function argument for a custom parser using our lower-level syntax.
+The `help` argument is of course assigns help text to the arguments.
 
 ## Variations on the example
 ### Variable numbers of arguments
