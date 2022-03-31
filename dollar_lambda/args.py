@@ -6,17 +6,17 @@ from __future__ import annotations
 import dataclasses
 import typing
 from dataclasses import Field, dataclass, fields
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.key_value import KeyValue, KeyValueTuple
-from dollar_lambda.parser import Parser, done, flag, nonpositional, option
+from dollar_lambda.parser import Parser, defaults, done, flag, nonpositional, option
 from dollar_lambda.sequence import Sequence
 
 
 def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
-    type: Optional["type | Callable[[str], Any]"] = None,
+    parser: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     **kwargs,
 ) -> Field:
     """
@@ -40,8 +40,8 @@ def field(
     """
     if metadata is None:
         metadata = {}
-    if type is not None:
-        metadata.update(type=type)
+    if parser is not None:
+        metadata.update(parser=parser)
     if help is not None:
         metadata.update(help=help)
     return dataclasses.field(metadata=metadata, **kwargs)
@@ -52,44 +52,42 @@ class _ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
-    string: Optional[str] = None
     type: Callable[[str], Any] = str
 
     @staticmethod
-    def parse(field: Field) -> "_ArgsField":
+    def parse(field: Field) -> Union["_ArgsField", Parser[Sequence[KeyValue[Any]]]]:
         if "help" in field.metadata:
             help_ = field.metadata["help"]
         else:
             help_ = None
-        if "string" in field.metadata:
-            string = field.metadata["string"]
-        else:
-            string = None
-        if "type" in field.metadata:
-            type_ = field.metadata["type"]
-        else:
-            type_ = field.type
         default = field.default
         if field.default is dataclasses.MISSING:
             default = None
+        if "parser" in field.metadata:
+            parser = field.metadata["parser"]
+            assert isinstance(parser, Parser), parser
+            if default is None:
+                return parser
+            else:
+                return parser | defaults(**{field.name: default})
 
-        return _ArgsField(
-            name=field.name, default=default, help=help_, string=string, type=type_
-        )
+        return _ArgsField(name=field.name, default=default, help=help_, type=field.type)
 
     @staticmethod
-    def nonpositional(
-        *fields: "_ArgsField",
+    def parser(
+        *fields: Union["_ArgsField", Parser[Sequence[KeyValue[Any]]]],
         flip_bools: bool,
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
     ) -> Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
+                if isinstance(field, Parser):
+                    yield field
+                    continue
+                string: Optional[str] = None
                 if field.type == bool:
-                    if field.string is None and field.default is True and flip_bools:
-                        string: Optional[str] = f"--no-{field.name}"
-                    else:
-                        string = field.string
+                    if field.default is True and flip_bools:
+                        string = f"--no-{field.name}"
                     yield flag(
                         dest=field.name,
                         string=string,
@@ -100,7 +98,7 @@ class _ArgsField:
                     opt = option(
                         dest=field.name,
                         default=field.default,
-                        flag=field.string,
+                        flag=string,
                         help=field.help,
                     )
                     yield opt.type(field.type)
@@ -148,14 +146,27 @@ class Args:
     >>> p1.parse_args("--no-tests", "hello")
     {'tests': False, 'a': 'hello'}
 
-    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
+    To supply other metadata, like `help` text or custom parsers, use `field`:
+    @dataclass
     >>> @dataclass
     ... class MyArgs(Args):
-    ...     n: int = field(default=0, help="a number to increment", type=lambda x: 1 + int(x))
-    >>> MyArgs.parse_args("-n", "1")
-    {'n': 2}
+    ...     x: int = field(default=0, help="a number")
+    ...     y: int = field(
+    ...         default=1,
+    ...         parser=option("y", type=lambda s: int(s) + 1, help="a number to increment"),
+    ...     )
+    >>> MyArgs.parse_args("-h")
+    usage: -x X -y Y
+    x: a number
+    y: a number to increment
+
+    This supplies defaults for `y` when omitted:
+    >>> MyArgs.parse_args("-x", "10")
+    {'x': 10, 'y': 1}
+
+    It also applies the custom type to `y` when `"-y"` is given
     >>> MyArgs.parse_args()
-    {'n': 1}
+    {'x': 0, 'y': 1}
     """
 
     @classmethod
@@ -197,7 +208,7 @@ class Args:
                 field.type = types.get(field.name, str)
                 yield _ArgsField.parse(field)
 
-        return _ArgsField.nonpositional(
+        return _ArgsField.parser(
             *get_fields(), flip_bools=flip_bools, repeated=repeated
         )
 

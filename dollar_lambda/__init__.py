@@ -44,19 +44,19 @@ In this document we'll feed the strings directly for the sake of brevity.
 >>> parser.TESTING = True
 
 `command` takes arguments that allow you to supply
-help strings and custom types:
+help strings:
 
->>> @command(types=dict(x=lambda x: int(x) + 1), help=dict(x="A number that gets incremented."))
+>>> @command(help=dict(x="A number"))
 ... def main(x: int, dev: bool = False, prod: bool = False):
 ...     return dict(x=x, dev=dev, prod=prod)
 ...
 
 >>> main("-h")
 usage: -x X --dev --prod
-x: A number that gets incremented.
+x: A number
 
 >>> main("-x", "1", "--dev")
-{'x': 2, 'dev': True, 'prod': False}
+{'x': 1, 'dev': True, 'prod': False}
 
 ## `CommandTree` for dynamic dispatch
 For many programs, a user will want to use one entrypoint for one set of

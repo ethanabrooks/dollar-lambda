@@ -31,47 +31,46 @@ def _func_to_parser(
     exclude: Optional[List[str]],
     flip_bools: bool,
     help: Optional[Dict[str, str]],
+    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]],
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
-    strings: Optional[Dict[str, str]],
-    types: Optional[Dict[str, Callable[[str], Any]]],
 ) -> Parser[Sequence[KeyValue[Any]]]:
     _exclude = [] if exclude is None else exclude
     _help = {} if help is None else help
-    _strings = {} if strings is None else strings
-    _types = {} if types is None else types
+    _parsers = {} if parsers is None else parsers
 
     types = typing.get_type_hints(func)  # see https://peps.python.org/pep-0563/
-    parsers = [
-        _ArgsField(
-            name=k,
-            default=None if v.default == Parameter.empty else v.default,
-            help=_help.get(k),
-            string=_strings.get(k),
-            type=_types.get(k, types.get(k, str)),
+    p = [
+        _parsers.get(
+            k,
+            _ArgsField(
+                name=k,
+                default=None if v.default == Parameter.empty else v.default,
+                help=_help.get(k),
+                type=types.get(k, str),
+            ),
         )
         for k, v in signature(func).parameters.items()
         if k not in _exclude
     ]
-    return _ArgsField.nonpositional(*parsers, flip_bools=flip_bools, repeated=repeated)
+    return _ArgsField.parser(*p, flip_bools=flip_bools, repeated=repeated)
 
 
 def command(
     flip_bools: bool = True,
     help: Optional[Dict[str, str]] = None,
+    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
-    strings: Optional[Dict[str, str]] = None,
-    types: Optional[Dict[str, Callable[[str], Any]]] = None,
 ) -> Callable[[Callable], Callable]:
     """
     A succinct way to generate a simple `nonpositional` parser. `@command` derives the
     component parsers from the function's signature and automatically executes the function with
     the parsed arguments, if parsing succeeds:
 
-    >>> @command(help=dict(a="something about a"), types=dict(a=lambda x: int(x) + 1))
+    >>> @command(help=dict(a="something about a"))
     ... def f(a: int = 1, b: bool = False):
     ...     return dict(a=a, b=b)
     >>> f("-a", "2", "-b")
-    {'a': 3, 'b': True}
+    {'a': 2, 'b': True}
 
     If the wrapped function receives no arguments (as in `f()`), the parser will take
     `sys.argv[1:]` as the input.
@@ -92,9 +91,6 @@ def command(
 
     strings : dict[str, str]
         This dictionary maps variable names to the strings that the parser will look for in the input.
-
-    types: dict[str, Callable[[str], Any]]
-        This dictionary maps variable names to custom type converters.
 
     Examples
     --------
@@ -124,24 +120,9 @@ def command(
     usage: --quiet
     quiet: Be quiet
 
-    Here is an example using the `strings` parameter:
+    Here is an example using the `parser` parameter:
 
-    >>> @command(strings=dict(quiet="--quiet-mode"))
-    ... def f(quiet: bool):
-    ...     return dict(quiet=quiet)
-    >>> f("--quiet-mode")
-    {'quiet': True}
-    >>> f("--quiet")
-    usage: --quiet-mode
-    Expected '--quiet-mode'. Got '--quiet'
-
-    Here is an example using the `type` parameter:
-
-    >>> @command(types=dict(x=lambda x: int(x) + 1))
-    ... def f(x: int):
-    ...     return dict(x=x)
-    >>> f("-x", "0")
-    {'x': 1}
+    TODO!
     """
 
     def wrapper(func: Callable) -> Callable:
@@ -150,9 +131,8 @@ def command(
             exclude=None,
             flip_bools=flip_bools,
             help=help,
+            parsers=parsers,
             repeated=repeated,
-            strings=strings,
-            types=types,
         )
         p = p.wrap_help()
 
@@ -226,9 +206,8 @@ class _Node:
     function: Callable
     flip_bools: bool
     help: Optional[Dict[str, str]]
+    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]]
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
-    strings: Optional[Dict[str, str]]
-    types: Optional[Dict[str, Callable[[str], Any]]]
     subcommand: bool
     tree: Optional["CommandTree"]
 
@@ -243,9 +222,8 @@ class _Node:
             exclude=list(exclude),
             flip_bools=self.flip_bools,
             help=self.help,
+            parsers=self.parsers,
             repeated=self.repeated,
-            strings=self.strings,
-            types=self.types,
         )
         p = p1 >> p2
         return p  # type: ignore[return-value]
@@ -269,9 +247,8 @@ class CommandTree:
         can_run: bool = True,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
+        parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
-        strings: Optional[Dict[str, str]] = None,
-        types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -291,11 +268,8 @@ class CommandTree:
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
-        strings: dict
-            A dictionary of strings to use for the arguments.
-
-        types: dict
-            A dictionary of types to use for the arguments.
+        parsers: dict
+            TODO
 
         Examples
         --------
@@ -367,10 +341,9 @@ class CommandTree:
             can_run=can_run,
             flip_bools=flip_bools,
             help=help,
+            parsers=parsers,
             repeated=repeated,
-            strings=strings,
             subcommand=False,
-            types=types,
         )
 
     def _decorator(self, **kwargs) -> Callable:
@@ -428,9 +401,8 @@ class CommandTree:
         can_run: bool = True,
         flip_bools: bool = True,
         help: Optional[Dict[str, str]] = None,
+        parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None,
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
-        strings: Optional[Dict[str, str]] = None,
-        types: Optional[Dict[str, Callable[[str], Any]]] = None,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -446,17 +418,16 @@ class CommandTree:
         flip_bools: bool
             Whether to add `--no-<argument>` before arguments that default to `True`.
 
-        help: dict
+        help: Dict[str, str]
             A dictionary of help strings for the arguments.
 
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+            See `nonpositional` for examples.
 
-        strings: dict
-            A dictionary of strings to use for the arguments.
-
-        types: dict
-            A dictionary of types to use for the arguments.
+        parsers: Dict[str, Parser]
+            A dictionary reserving arguments for custom parsers. See below for examples.
+            See `command` for examples.
 
         Examples
         --------
@@ -505,7 +476,6 @@ class CommandTree:
         With `can_run` set to `False`, the parser will fail if the child function arguments
         are not supplied:
 
-
         >>> tree = CommandTree()
         ...
         >>> @tree.subcommand(can_run=False)  # <-
@@ -528,7 +498,6 @@ class CommandTree:
             flip_bools=flip_bools,
             help=help,
             repeated=repeated,
-            strings=strings,
+            parsers=parsers,
             subcommand=True,
-            types=types,
         )

@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/f428485445a4a1eab6d7e8df829bf36b62ce118a/dollar_lambda/args.py#L1-L216" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/e4ebf73f1dd7929593364a17409f0bbf85d8aca0/dollar_lambda/args.py#L1-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Args` dataclass and associated functions.
@@ -59,17 +59,17 @@ from __future__ import annotations
 import dataclasses
 import typing
 from dataclasses import Field, dataclass, fields
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.key_value import KeyValue, KeyValueTuple
-from dollar_lambda.parser import Parser, done, flag, nonpositional, option
+from dollar_lambda.parser import Parser, defaults, done, flag, nonpositional, option
 from dollar_lambda.sequence import Sequence
 
 
 def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
-    type: Optional[&#34;type | Callable[[str], Any]&#34;] = None,
+    parser: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     **kwargs,
 ) -&gt; Field:
     &#34;&#34;&#34;
@@ -93,8 +93,8 @@ def field(
     &#34;&#34;&#34;
     if metadata is None:
         metadata = {}
-    if type is not None:
-        metadata.update(type=type)
+    if parser is not None:
+        metadata.update(parser=parser)
     if help is not None:
         metadata.update(help=help)
     return dataclasses.field(metadata=metadata, **kwargs)
@@ -105,44 +105,42 @@ class _ArgsField:
     name: str
     default: Any = None
     help: Optional[str] = None
-    string: Optional[str] = None
     type: Callable[[str], Any] = str
 
     @staticmethod
-    def parse(field: Field) -&gt; &#34;_ArgsField&#34;:
+    def parse(field: Field) -&gt; Union[&#34;_ArgsField&#34;, Parser[Sequence[KeyValue[Any]]]]:
         if &#34;help&#34; in field.metadata:
             help_ = field.metadata[&#34;help&#34;]
         else:
             help_ = None
-        if &#34;string&#34; in field.metadata:
-            string = field.metadata[&#34;string&#34;]
-        else:
-            string = None
-        if &#34;type&#34; in field.metadata:
-            type_ = field.metadata[&#34;type&#34;]
-        else:
-            type_ = field.type
         default = field.default
         if field.default is dataclasses.MISSING:
             default = None
+        if &#34;parser&#34; in field.metadata:
+            parser = field.metadata[&#34;parser&#34;]
+            assert isinstance(parser, Parser), parser
+            if default is None:
+                return parser
+            else:
+                return parser | defaults(**{field.name: default})
 
-        return _ArgsField(
-            name=field.name, default=default, help=help_, string=string, type=type_
-        )
+        return _ArgsField(name=field.name, default=default, help=help_, type=field.type)
 
     @staticmethod
-    def nonpositional(
-        *fields: &#34;_ArgsField&#34;,
+    def parser(
+        *fields: Union[&#34;_ArgsField&#34;, Parser[Sequence[KeyValue[Any]]]],
         flip_bools: bool,
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
     ) -&gt; Parser[Sequence[KeyValue[Any]]]:
         def get_parsers() -&gt; Iterator[Parser[Sequence[KeyValue[Any]]]]:
             for field in fields:
+                if isinstance(field, Parser):
+                    yield field
+                    continue
+                string: Optional[str] = None
                 if field.type == bool:
-                    if field.string is None and field.default is True and flip_bools:
-                        string: Optional[str] = f&#34;--no-{field.name}&#34;
-                    else:
-                        string = field.string
+                    if field.default is True and flip_bools:
+                        string = f&#34;--no-{field.name}&#34;
                     yield flag(
                         dest=field.name,
                         string=string,
@@ -153,7 +151,7 @@ class _ArgsField:
                     opt = option(
                         dest=field.name,
                         default=field.default,
-                        flag=field.string,
+                        flag=string,
                         help=field.help,
                     )
                     yield opt.type(field.type)
@@ -201,14 +199,27 @@ class Args:
     &gt;&gt;&gt; p1.parse_args(&#34;--no-tests&#34;, &#34;hello&#34;)
     {&#39;tests&#39;: False, &#39;a&#39;: &#39;hello&#39;}
 
-    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
+    To supply other metadata, like `help` text or custom parsers, use `field`:
+    @dataclass
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     n: int = field(default=0, help=&#34;a number to increment&#34;, type=lambda x: 1 + int(x))
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
-    {&#39;n&#39;: 2}
+    ...     x: int = field(default=0, help=&#34;a number&#34;)
+    ...     y: int = field(
+    ...         default=1,
+    ...         parser=option(&#34;y&#34;, type=lambda s: int(s) + 1, help=&#34;a number to increment&#34;),
+    ...     )
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;-h&#34;)
+    usage: -x X -y Y
+    x: a number
+    y: a number to increment
+
+    This supplies defaults for `y` when omitted:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;-x&#34;, &#34;10&#34;)
+    {&#39;x&#39;: 10, &#39;y&#39;: 1}
+
+    It also applies the custom type to `y` when `&#34;-y&#34;` is given
     &gt;&gt;&gt; MyArgs.parse_args()
-    {&#39;n&#39;: 1}
+    {&#39;x&#39;: 0, &#39;y&#39;: 1}
     &#34;&#34;&#34;
 
     @classmethod
@@ -247,10 +258,10 @@ class Args:
         def get_fields():
             types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
             for field in fields(cls):
-                field.type = types[field.name]
+                field.type = types.get(field.name, str)
                 yield _ArgsField.parse(field)
 
-        return _ArgsField.nonpositional(
+        return _ArgsField.parser(
             *get_fields(), flip_bools=flip_bools, repeated=repeated
         )
 
@@ -277,7 +288,7 @@ class Args:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.args.field"><code class="name flex">
-<span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, type: "Optional['type | Callable[[str], Any]']" = None, **kwargs) <span style="white-space: nowrap;">-></span> dataclasses.Field</span>
+<span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, parser: Optional[Parser[Sequence[KeyValue[Any]]]] = None, **kwargs) <span style="white-space: nowrap;">-></span> dataclasses.Field</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This is a thin wrapper around <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</p>
@@ -297,12 +308,12 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/f428485445a4a1eab6d7e8df829bf36b62ce118a/dollar_lambda/args.py#L16-L47" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/e4ebf73f1dd7929593364a17409f0bbf85d8aca0/dollar_lambda/args.py#L16-L47" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
-    type: Optional[&#34;type | Callable[[str], Any]&#34;] = None,
+    parser: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
     **kwargs,
 ) -&gt; Field:
     &#34;&#34;&#34;
@@ -326,8 +337,8 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
     &#34;&#34;&#34;
     if metadata is None:
         metadata = {}
-    if type is not None:
-        metadata.update(type=type)
+    if parser is not None:
+        metadata.update(parser=parser)
     if help is not None:
         metadata.update(help=help)
     return dataclasses.field(metadata=metadata, **kwargs)</code></pre>
@@ -377,19 +388,32 @@ combinators as other parsers:</p>
 &gt;&gt;&gt; p1.parse_args(&quot;--no-tests&quot;, &quot;hello&quot;)
 {'tests': False, 'a': 'hello'}
 </code></pre>
-<p>To supply other metadata, like <code>help</code> text and more complex <code>type</code> converters, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:</p>
+<p>To supply other metadata, like <code>help</code> text or custom parsers, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:
+@dataclass</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
-...     n: int = field(default=0, help=&quot;a number to increment&quot;, type=lambda x: 1 + int(x))
-&gt;&gt;&gt; MyArgs.parse_args(&quot;-n&quot;, &quot;1&quot;)
-{'n': 2}
-&gt;&gt;&gt; MyArgs.parse_args()
-{'n': 1}
+...     x: int = field(default=0, help=&quot;a number&quot;)
+...     y: int = field(
+...         default=1,
+...         parser=option(&quot;y&quot;, type=lambda s: int(s) + 1, help=&quot;a number to increment&quot;),
+...     )
+&gt;&gt;&gt; MyArgs.parse_args(&quot;-h&quot;)
+usage: -x X -y Y
+x: a number
+y: a number to increment
+</code></pre>
+<p>This supplies defaults for <code>y</code> when omitted:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;-x&quot;, &quot;10&quot;)
+{'x': 10, 'y': 1}
+</code></pre>
+<p>It also applies the custom type to <code>y</code> when <code>"-y"</code> is given</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args()
+{'x': 0, 'y': 1}
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/f428485445a4a1eab6d7e8df829bf36b62ce118a/dollar_lambda/args.py#L111-L216" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/e4ebf73f1dd7929593364a17409f0bbf85d8aca0/dollar_lambda/args.py#L109-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Args:
@@ -431,14 +455,27 @@ class Args:
     &gt;&gt;&gt; p1.parse_args(&#34;--no-tests&#34;, &#34;hello&#34;)
     {&#39;tests&#39;: False, &#39;a&#39;: &#39;hello&#39;}
 
-    To supply other metadata, like `help` text and more complex `type` converters, use `field`:
+    To supply other metadata, like `help` text or custom parsers, use `field`:
+    @dataclass
     &gt;&gt;&gt; @dataclass
     ... class MyArgs(Args):
-    ...     n: int = field(default=0, help=&#34;a number to increment&#34;, type=lambda x: 1 + int(x))
-    &gt;&gt;&gt; MyArgs.parse_args(&#34;-n&#34;, &#34;1&#34;)
-    {&#39;n&#39;: 2}
+    ...     x: int = field(default=0, help=&#34;a number&#34;)
+    ...     y: int = field(
+    ...         default=1,
+    ...         parser=option(&#34;y&#34;, type=lambda s: int(s) + 1, help=&#34;a number to increment&#34;),
+    ...     )
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;-h&#34;)
+    usage: -x X -y Y
+    x: a number
+    y: a number to increment
+
+    This supplies defaults for `y` when omitted:
+    &gt;&gt;&gt; MyArgs.parse_args(&#34;-x&#34;, &#34;10&#34;)
+    {&#39;x&#39;: 10, &#39;y&#39;: 1}
+
+    It also applies the custom type to `y` when `&#34;-y&#34;` is given
     &gt;&gt;&gt; MyArgs.parse_args()
-    {&#39;n&#39;: 1}
+    {&#39;x&#39;: 0, &#39;y&#39;: 1}
     &#34;&#34;&#34;
 
     @classmethod
@@ -477,10 +514,10 @@ class Args:
         def get_fields():
             types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
             for field in fields(cls):
-                field.type = types[field.name]
+                field.type = types.get(field.name, str)
                 yield _ArgsField.parse(field)
 
-        return _ArgsField.nonpositional(
+        return _ArgsField.parser(
             *get_fields(), flip_bools=flip_bools, repeated=repeated
         )
 
@@ -508,7 +545,7 @@ class Args:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/f428485445a4a1eab6d7e8df829bf36b62ce118a/dollar_lambda/args.py#L204-L216" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/e4ebf73f1dd7929593364a17409f0bbf85d8aca0/dollar_lambda/args.py#L215-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parse_args(
@@ -555,7 +592,7 @@ Combines these parsers using <code>nonpositional</code>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/f428485445a4a1eab6d7e8df829bf36b62ce118a/dollar_lambda/args.py#L161-L202" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/e4ebf73f1dd7929593364a17409f0bbf85d8aca0/dollar_lambda/args.py#L172-L213" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parser(
@@ -593,10 +630,10 @@ def parser(
     def get_fields():
         types = typing.get_type_hints(cls)  # see https://peps.python.org/pep-0563/
         for field in fields(cls):
-            field.type = types[field.name]
+            field.type = types.get(field.name, str)
             yield _ArgsField.parse(field)
 
-    return _ArgsField.nonpositional(
+    return _ArgsField.parser(
         *get_fields(), flip_bools=flip_bools, repeated=repeated
     )</code></pre>
 </details>
