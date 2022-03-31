@@ -35,7 +35,7 @@
 # there are modular building blocks that lie behind the syntactic sugar which enable parsers to
 # handle any reasonable amount of logical complexity.
 #
-# ## The [`@command`](#dollar_lambda.command) decorator
+# ## The [`@command`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.command) decorator
 # This syntax is best for simple parsers that take a set of unordered arguments:
 
 
@@ -70,23 +70,6 @@ sys.argv[1:] = ["-x", "1", "--dev"]
 main()
 # %%
 parser.TESTING = True
-
-# %% [markdown]
-# `command` takes arguments that allow you to supply
-# help strings and custom types:
-
-# %%
-@command(
-    types=dict(x=lambda x: int(x) + 1), help=dict(x="A number that gets incremented.")
-)
-def main(x: int, dev: bool = False, prod: bool = False):
-    return dict(x=x, dev=dev, prod=prod)
-
-
-main("-h")
-
-# %%
-main("-x", "1", "--dev")
 
 # %% [markdown]
 # ## `CommandTree` for dynamic dispatch
@@ -143,10 +126,10 @@ tree("-x", "1")
 #
 # There are many other ways to use `CommandTree`,
 # including some that make use of the `base_function`.
-# To learn more, we recommend the [`CommandTree` tutorial](#commandtree-tutorial).
+# To learn more, we recommend the [`CommandTree` tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#commandtree-tutorial).
 #
 # ## Lower-level syntax
-# [`@command`](#dollar_lambda.command) and `CommandTree` cover many use cases,
+# [`@command`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.command) and `CommandTree` cover many use cases,
 # but they are both syntactic sugar for a lower-level interface that is far
 # more expressive.
 #
@@ -161,10 +144,10 @@ from dollar_lambda import argument, option
 p = option("x", type=int) | argument("y", type=float).many()
 
 # %% [markdown]
-# We go over this syntax in greater detail in the [tutorial](#tutorial).
+# We go over this syntax in greater detail in the [tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#tutorial).
 # For now, suffice to say that `argument` defines a positional argument,
-# [`many`](#dollar_lambda.Parser.many) allows parsers to be applied
-# zero or more times, and [`|`](#dollar_lambda.Parser.__or__) expresses alternatives.
+# [`many`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.many) allows parsers to be applied
+# zero or more times, and [`|`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.__or__) expresses alternatives.
 #
 # Here is the help text:
 
