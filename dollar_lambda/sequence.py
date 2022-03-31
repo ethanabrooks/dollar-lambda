@@ -3,11 +3,26 @@ Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 """
 from __future__ import annotations
 
+import operator
 import typing
+from collections import UserDict
+from copy import copy
 from dataclasses import dataclass
-from typing import Callable, Generator, Iterator, Type, TypeVar, overload
+from functools import reduce
+from typing import (
+    Callable,
+    Generator,
+    Iterator,
+    Tuple,
+    Type,
+    TypeAlias,
+    TypeVar,
+    overload,
+)
 
 from pytypeclass import Monad, MonadPlus
+from pytypeclass.monad import C
+from pytypeclass.monoid import B
 
 A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
@@ -86,3 +101,81 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     @classmethod
     def zero(cls: Type["Sequence[A_co]"]) -> "Sequence[A_co]":
         return Sequence([])
+
+
+Key: TypeAlias = "str | int"
+Value: TypeAlias = "A_co | CollisionDict[A_co]"
+
+
+class CollisionDict(MonadPlus[A_co], UserDict[Key, Value]):
+    """
+    >>> d = CollisionDict[int]({})
+    >>> d = d.set("a", 1)
+    >>> d
+    {'a': 1}
+    >>> d = d.set("a", 2)
+    >>> d
+    {'a': {0: 1, 1: 2}}
+    >>> d = d.set("a", d)
+    >>> d
+    {'a': {0: 1, 1: 2, 'a': {0: 1, 1: 2}}}
+    >>> d.to_json()
+    {'a': [1, 2, {'a': [1, 2]}]}
+    """
+
+    def bind(  # type: ignore[override]
+        self: "CollisionDict[B]",
+        f: Callable[[Tuple[Key, UserDict[Key, Value]]], "CollisionDict[C]"],
+    ) -> "CollisionDict[C]":
+        return reduce(operator.add, [f((k, v)) for k, v in self.items()])
+
+    @classmethod
+    def return_(  # type: ignore[override]
+        cls: Type[CollisionDict[A]], a: Tuple[Key, UserDict[str, A]]
+    ) -> CollisionDict[A]:
+        return CollisionDict(dict([a]))
+
+    def __add__(
+        self: CollisionDict[A], other: CollisionDict[B]
+    ) -> CollisionDict[A | B]:
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                if isinstance(cd[k], CollisionDict):
+                    if isinstance(v, CollisionDict):
+                        _v = v
+                    else:
+                        _v = CollisionDict({len(cd): v})
+                        assert len(cd) not in cd[k]
+                    cd[k] = cd[k] + _v  # recurse
+                else:
+                    cd[k] = CollisionDict({0: cd[k], 1: v})
+            else:
+                cd[k] = v
+        return cd
+
+    def __or__(self: CollisionDict[A], other: CollisionDict[B]) -> CollisionDict[A | B]:  # type: ignore[override]
+        return self + other
+
+    def set(self, key: str, value: Value[A_co]) -> "CollisionDict[A_co]":
+        assert isinstance(key, str)
+        return self + CollisionDict({key: value})
+
+    def to_json(self):
+        cd = {
+            k: v.to_json() if isinstance(v, CollisionDict) else v
+            for k, v in self.items()
+        }
+        int_keys = [(k, v) for k, v in cd.items() if isinstance(k, int)]
+        int_keys = [v for k, v in sorted(int_keys)]
+        str_keys = {k: v for k, v in cd.items() if isinstance(k, str)}
+        if int_keys and str_keys:
+            return [*int_keys, str_keys]
+        elif int_keys:
+            return int_keys
+        else:
+            return str_keys
+
+    @classmethod
+    def zero(cls: Type[CollisionDict[A]]) -> CollisionDict[A]:
+        return CollisionDict({})
