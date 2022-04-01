@@ -8,15 +8,14 @@ import typing
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
-from dollar_lambda.key_value import KeyValue, KeyValueTuple
-from dollar_lambda.parser import Parser, defaults, done, flag, nonpositional, option
-from dollar_lambda.sequence import Sequence
+from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
+from dollar_lambda.sequence import Output, Tree
 
 
 def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
-    parser: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    parser: Optional[Parser[Output]] = None,
     **kwargs,
 ) -> Field:
     """
@@ -55,7 +54,7 @@ class _ArgsField:
     type: Callable[[str], Any] = str
 
     @staticmethod
-    def parse(field: Field) -> Union["_ArgsField", Parser[Sequence[KeyValue[Any]]]]:
+    def parse(field: Field) -> Union["_ArgsField", Parser[Output]]:
         if "help" in field.metadata:
             help_ = field.metadata["help"]
         else:
@@ -75,11 +74,11 @@ class _ArgsField:
 
     @staticmethod
     def parser(
-        *fields: Union["_ArgsField", Parser[Sequence[KeyValue[Any]]]],
+        *fields: Union["_ArgsField", Parser[Output]],
         flip_bools: bool,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
-    ) -> Parser[Sequence[KeyValue[Any]]]:
-        def get_parsers() -> Iterator[Parser[Sequence[KeyValue[Any]]]]:
+        repeated: Optional[Parser[Output]],
+    ) -> Parser[Output]:
+        def get_parsers() -> Iterator[Parser[Output]]:
             for field in fields:
                 if isinstance(field, Parser):
                     yield field
@@ -173,8 +172,8 @@ class Args:
     def parser(
         cls,
         flip_bools: bool = True,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
-    ) -> Parser[Sequence[KeyValue[Any]]]:
+        repeated: Optional[Parser[Output]] = None,
+    ) -> Parser[Output]:
         """
         Returns a parser for the dataclass.
         Converts each field to a parser (`option` or `flag` depending on its type).
@@ -217,11 +216,14 @@ class Args:
         cls,
         *args,
         flip_bools: bool = True,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
-    ) -> "typing.Sequence[KeyValueTuple] | typing.Dict[str, Any]":
+        repeated: Optional[Parser[Output]] = None,
+    ) -> typing.Dict[str, Any]:
         """
         Parses the arguments and returns a dictionary of the parsed values.
         """
-        return (
-            cls.parser(flip_bools=flip_bools, repeated=repeated) >> done()
-        ).parse_args(*args)
+        parser = typing.cast(
+            Parser[Output[Any]],
+            cls.parser(flip_bools=flip_bools, repeated=repeated)
+            >> Parser[Output[Tree[Any]]].done(),
+        )
+        return parser.parse_args(*args)

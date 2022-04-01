@@ -12,13 +12,13 @@ repos:
         entry: /usr/bin/make
         args: [mypy]
         language: script
-  - repo: local
-    hooks:
-      - id: test
-        name: test
-        entry: /usr/bin/make
-        args: [test]
-        language: script
+  #- repo: local
+    #hooks:
+      #- id: test
+        #name: test
+        #entry: /usr/bin/make
+        #args: [test]
+        #language: script
   - repo: https://github.com/pycqa/flake8
     rev: 4.0.1
     hooks:

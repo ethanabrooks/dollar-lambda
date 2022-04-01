@@ -3,26 +3,29 @@ Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 """
 from __future__ import annotations
 
-import operator
 import typing
 from collections import UserDict
 from copy import copy
-from dataclasses import dataclass
-from functools import reduce
+from dataclasses import astuple, dataclass
 from typing import (
+    Any,
     Callable,
     Generator,
     Iterator,
+    List,
+    Optional,
     Tuple,
     Type,
     TypeAlias,
     TypeVar,
+    cast,
     overload,
 )
 
 from pytypeclass import Monad, MonadPlus
 from pytypeclass.monad import C
-from pytypeclass.monoid import B
+from pytypeclass.monoid import B, Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
@@ -103,20 +106,47 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence([])
 
 
+A_monoid = TypeVar("A_monoid", covariant=True, bound=Monoid)
+B_monoid = TypeVar("B_monoid", bound=Monoid)
+
+
+@dataclass
+class Output(Monoid[A_monoid]):
+    get: A_monoid
+
+    def __or__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -> Output[A_monoid | B_monoid]:
+        c = cast(A_monoid | B_monoid, self.get | other.get)
+        return Output(c)
+
+    def __add__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -> Output[A_monoid | B_monoid]:
+        return self | other
+
+    @classmethod
+    def zero(
+        cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
+    ) -> Output[A_monoid]:
+        zero = cast(A_monoid, Tree.zero() if a is None else a.zero())
+        return Output(zero)
+
+
 Key: TypeAlias = "str | int"
-Value: TypeAlias = "A_co | CollisionDict[A_co]"
+Value: TypeAlias = "A_co | Tree[A_co]"
 
 
-class CollisionDict(MonadPlus[A_co], UserDict[Key, Value]):
+class Tree(Monoid[A_co], UserDict[Key, Value]):
     """
-    >>> d = CollisionDict[int]({})
-    >>> d = d.set("a", 1)
+    >>> d = Tree[int]({})
+    >>> d = d + Tree({"a": 1})
     >>> d
     {'a': 1}
-    >>> d = d.set("a", 2)
+    >>> d = d + Tree({"a": 2})
     >>> d
     {'a': {0: 1, 1: 2}}
-    >>> d = d.set("a", d)
+    >>> d = d + Tree({"a": d})
     >>> d
     {'a': {0: 1, 1: 2, 'a': {0: 1, 1: 2}}}
     >>> d.to_json()
@@ -124,48 +154,79 @@ class CollisionDict(MonadPlus[A_co], UserDict[Key, Value]):
     """
 
     def bind(  # type: ignore[override]
-        self: "CollisionDict[B]",
-        f: Callable[[Tuple[Key, UserDict[Key, Value]]], "CollisionDict[C]"],
-    ) -> "CollisionDict[C]":
-        return reduce(operator.add, [f((k, v)) for k, v in self.items()])
+        self: "Tree[B]",
+        f: Callable[[Tuple[Sequence[Key], B]], "Tree[C]"],
+    ) -> "Tree[C]":
+        raise NotImplementedError
 
     @classmethod
     def return_(  # type: ignore[override]
-        cls: Type[CollisionDict[A]], a: Tuple[Key, UserDict[str, A]]
-    ) -> CollisionDict[A]:
-        return CollisionDict(dict([a]))
+        cls: Type[Tree[A]], a: Tuple[Key, UserDict[str, A]]
+    ) -> Tree[A]:
+        raise NotImplementedError
+        # return Tree(dict([a]))
 
-    def __add__(
-        self: CollisionDict[A], other: CollisionDict[B]
-    ) -> CollisionDict[A | B]:
+    def __add__(self: Tree[A], other: Tree[B]) -> Tree[A | B]:
         cd = copy(self)
         for k, v in other.items():
             if k in cd:
-                if isinstance(cd[k], CollisionDict):
-                    if isinstance(v, CollisionDict):
+                inner = cd[k]
+                if isinstance(inner, Tree):
+                    if isinstance(v, Tree):
                         _v = v
                     else:
-                        _v = CollisionDict({len(cd): v})
-                        assert len(cd) not in cd[k]
-                    cd[k] = cd[k] + _v  # recurse
+                        _v = Tree({len(cd): v})
+                        assert len(cd) not in inner
+                    cd[k] = inner + _v  # recurse
                 else:
-                    cd[k] = CollisionDict({0: cd[k], 1: v})
+                    cd[k] = Tree({0: cd[k], 1: v})
             else:
                 cd[k] = v
         return cd
 
-    def __or__(self: CollisionDict[A], other: CollisionDict[B]) -> CollisionDict[A | B]:  # type: ignore[override]
+    def __or__(self: Tree[A], other: Tree[B]) -> Tree[A | B]:  # type: ignore[override]
         return self + other
 
-    def set(self, key: str, value: Value[A_co]) -> "CollisionDict[A_co]":
-        assert isinstance(key, str)
-        return self + CollisionDict({key: value})
+    @classmethod
+    def from_path(cls: Type["Tree[A]"], path: NonemptyList[Key], leaf: A) -> "Tree[A]":
+        head, tail = astuple(path)
+        if tail:
+            return Tree({head: cls.from_path(tail, leaf)})
+        else:
+            return Tree({head: leaf})
+
+    def last_leaf(self) -> "A_co | None":
+        if not self:
+            return None
+        *_, (_, v) = super().items()
+        return v.last_leaf() if isinstance(v, Tree) else v
+
+    def path_to_last_leaf(self) -> "Sequence[Key]":
+        if not self:
+            return Sequence([])
+        *_, (k, v) = super().items()
+        if isinstance(v, Tree):
+            return Sequence([k, *v.path_to_last_leaf()])
+        else:
+            return Sequence([k])
+
+    def set(self, other: "Tree[A_co]") -> "Tree[A_co]":
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                inner = cd[k]
+                if isinstance(v, Tree) and isinstance(inner, Tree):
+                    cd[k] = inner.set(v)  # recurse
+                else:
+                    # clobber the existing value
+                    cd[k] = v
+            else:
+                # k is a new key so just add to cd
+                cd[k] = v
+        return cd
 
     def to_json(self):
-        cd = {
-            k: v.to_json() if isinstance(v, CollisionDict) else v
-            for k, v in self.items()
-        }
+        cd = {k: v.to_json() if isinstance(v, Tree) else v for k, v in super().items()}
         int_keys = [(k, v) for k, v in cd.items() if isinstance(k, int)]
         int_keys = [v for k, v in sorted(int_keys)]
         str_keys = {k: v for k, v in cd.items() if isinstance(k, str)}
@@ -176,6 +237,15 @@ class CollisionDict(MonadPlus[A_co], UserDict[Key, Value]):
         else:
             return str_keys
 
+    def leaves(self) -> "Iterator[A_co]":
+        if not self:
+            return
+        for v in super().values():
+            if isinstance(v, Tree):
+                yield from v.leaves()
+            else:
+                yield cast(A_co, v)
+
     @classmethod
-    def zero(cls: Type[CollisionDict[A]]) -> CollisionDict[A]:
-        return CollisionDict({})
+    def zero(cls: Type[Tree[A]]) -> Tree[A]:
+        return Tree({})
