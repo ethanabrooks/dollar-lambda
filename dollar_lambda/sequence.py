@@ -155,6 +155,7 @@ class Output(Monoid[A_co_monoid]):
         self: Output[A_monoid], other: Output[B_monoid]
     ) -> Output[A_monoid | B_monoid]:
         c = cast(A_monoid | B_monoid, self.get | other.get)
+        # cast is necessary because the type-system thinks that c has type Monoid[Unknown]
         return Output(c)
 
     def __add__(  # type: ignore[override]
@@ -173,6 +174,8 @@ class Output(Monoid[A_co_monoid]):
         cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
     ) -> Output[A_monoid]:
         zero = cast(A_monoid, Sequence.zero() if a is None else a.zero())
+        # This will break the type-system if a is not provided and A_monoid is not a Sequence.
+        # A bit of a hack to get around the lack of higher-kinded types in Python.
         return Output(zero)
 
 
