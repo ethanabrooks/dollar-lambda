@@ -76,7 +76,7 @@ usage: -x X --dev --prod
 it would get them from the command line.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be true for doctests
 &gt;&gt;&gt; import sys
-&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;, &quot;--dev&quot;]
+&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;, &quot;--dev&quot;]  # simulate command line input
 &gt;&gt;&gt; main()
 {'x': 1, 'dev': True, 'prod': False}
 </code></pre>
@@ -167,7 +167,7 @@ usage: [-x X | [Y ...]]
 <p>Again, you would ordinarily provide <code>parse_args</code> no arguments and it would get them
 from the command line:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; parser.TESTING = False
-&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;]
+&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;]  # simulate command line input
 &gt;&gt;&gt; p.parse_args()
 {'x': 1}
 &gt;&gt;&gt; parser.TESTING = True
@@ -189,15 +189,15 @@ parser.add_argument(&quot;x&quot;, type=int, help=&quot;the base&quot;)
 parser.add_argument(&quot;y&quot;, type=int, help=&quot;the exponent&quot;)
 args = parser.parse_args()
 </code></pre>
-<p>Here is the exact equivalent in this package:</p>
+<p>Here is one way to express this logic in <code>$λ</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(
 ...     parsers=dict(kwargs=(flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)).optional()),
 ...     help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     return dict(x=x, y=y, **kwargs)  # Run program. Return can be whatever.
 </code></pre>
-<p>Here is the help text for the <code>p</code> parser:</p>
+<p>Here is the help text for this parser:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; main(&quot;-h&quot;)
 usage: -x X -y Y [--verbose | --quiet]
 x: the base
@@ -218,7 +218,7 @@ y: the exponent
 <p>Ordinarily , we would not feed <code>main</code> any arguments, and it would get them from
 the command line:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be True for doctests
-&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;]
+&gt;&gt;&gt; sys.argv[1:] = [&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;]  # simulate command line input
 &gt;&gt;&gt; main()
 {'x': 1, 'y': 2}
 &gt;&gt;&gt; parser.TESTING = True
@@ -267,8 +267,7 @@ as opposed to <code>--</code> for longer names (as in <code>--xenophon</code>):<
 </code></pre>
 <h2 id="parser-combinators">Parser Combinators</h2>
 <p>Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code>, <a href="#dollar_lambda.Parser.__or__"><code>|</code></a>
-and <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a>.</p>
+Our example uses two such functions: <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> and <a href="#dollar_lambda.Parser.__or__"><code>|</code></a>.</p>
 <h3 id="_1"><a href="#dollar_lambda.Parser.__or__"><code>|</code></a></h3>
 <p>The <a href="#dollar_lambda.Parser.__or__"><code>|</code></a> operator is used for alternatives. Specifically, it will try the first parser,
 and if that fails, try the second:</p>
@@ -294,25 +293,10 @@ by using <code>optional</code>, as we saw earlier, or we can supply a default va
 <pre><code class="language-python-repl">&gt;&gt;&gt; (flag(&quot;verbose&quot;) | argument(&quot;x&quot;)).parse_args(&quot;--verbose&quot;)
 {'verbose': True}
 </code></pre>
+<p><code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code> binds to positional arguments. If it comes first, it will think that <code>"--verbose"</code> is
+the expression that we want to bind to <code>x</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; (argument(&quot;x&quot;) | flag(&quot;verbose&quot;)).parse_args(&quot;--verbose&quot;)
 {'x': '--verbose'}
-</code></pre>
-<h3 id="_2"><a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a></h3>
-<p>The <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a> operator is used for sequential composition. It applies the first parser and then
-hands the output of the first parser to the second parser. If either parser fails, the composition fails:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;)
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)
-{'verbose': True}
-</code></pre>
-<p>The first parser will fail here:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--something-else&quot;)
-usage: --verbose
-Expected '--verbose'. Got '--something-else'
-</code></pre>
-<p>The second parser will fail here:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--something-else&quot;)
-usage: --verbose
-Unrecognized argument: --something-else
 </code></pre>
 <h3 id="nonpositional-and"><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> and <a href="#dollar_lambda.Parser.__add__"><code>+</code></a></h3>
 <p><code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> takes a sequence of parsers as arguments and attempts all permutations of them,
@@ -373,7 +357,7 @@ some integer, binding that integer to the variable <code>"x"</code>. Similarly f
 ...     help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 </code></pre>
 <p>Here the <code>parsers</code> argument reserves a function argument (in this case, <code>kwargs</code>)
 for a custom parser (in this case, <code>(flag("verbose") | flag("quiet")).optional()</code>)
@@ -381,6 +365,42 @@ using our lower-level syntax.
 The <code>help</code> argument
 assigns help text to the arguments (in this case <code>x</code> and <code>y</code>).</p>
 <h2 id="variations-on-the-example">Variations on the example</h2>
+<h3 id="positional-arguments">Positional arguments</h3>
+<p>What if we wanted to supply <code>x</code> and <code>y</code> as positional arguments?</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; flags = flag(&quot;verbose&quot;) | flag(&quot;quiet&quot;)
+&gt;&gt;&gt; p =  option(&quot;x&quot;, type=int) &gt;&gt; option(&quot;y&quot;, type=int) &gt;&gt; flags
+&gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
+usage: -x X -y Y [--verbose | --quiet]
+</code></pre>
+<p>This introduces a new parser combinator: <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a> which evaluates
+parsers in sequence. In this example, it would first evaluate the <code>option("x", type=int)</code> parser,
+and if that succeeded, it would hand the unparsed remainder on to the <code>option("y", type=int)</code> parser,
+and so on until all parsers have been evaluated or no more input remains.
+If any of the parsers fail, the combined parser fails:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--quiet&quot;)   # succeeds
+{'x': 1, 'y': 2, 'quiet': True}
+&gt;&gt;&gt; p.parse_args(&quot;-typo&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--quiet&quot;)   # first parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '-x'. Got '-typo'
+&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--typo&quot;)   # third parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '--verbose'. Got '--typo'
+</code></pre>
+<p>Unlike with <code><a title="dollar_lambda.nonpositional" href="#dollar_lambda.nonpositional">nonpositional()</a></code> in the previous section, <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a> requires the user to provide
+arguments in a fixed order:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-y&quot;, &quot;2&quot;, &quot;-x&quot;, &quot;1&quot;, &quot;--quiet&quot;)   # fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '-x'. Got '-y'
+</code></pre>
+<p>When using positional arguments, it might make sense to drop the <code>-x</code> and <code>-y</code> flags:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = argument(&quot;x&quot;, type=int) &gt;&gt; argument(&quot;y&quot;, type=int) &gt;&gt; flags
+&gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
+usage: X Y [--verbose | --quiet]
+&gt;&gt;&gt; p.parse_args(&quot;1&quot;, &quot;2&quot;, &quot;--quiet&quot;)
+{'x': 1, 'y': 2, 'quiet': True}
+</code></pre>
+<p><code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code> will bind input to a variable without checking for any special flag strings like
+<code>-x</code> or <code>-y</code> preceding the input.</p>
 <h3 id="variable-numbers-of-arguments">Variable numbers of arguments</h3>
 <p>What if there was a special argument, <code>verbosity</code>,
 that only makes sense if the user chooses <code>--verbose</code>?</p>
@@ -404,30 +424,31 @@ Expected '--verbose'. Got '-x'
 <p>We could express the same logic with the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(
 ...     parsers=dict(
-...         kwargs=((flag(&quot;verbose&quot;) + option(&quot;verbosity&quot;, type=int)) | flag(&quot;quiet&quot;))
+...         kwargs=flag(&quot;verbose&quot;) + option(&quot;verbosity&quot;, type=int) | flag(&quot;quiet&quot;)
 ...     ),
 ...     help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 </code></pre>
 <p>This is also a case where you might want to use <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&quot;the base&quot;, y=&quot;the exponent&quot;))
 ... def base_function(x: int, y: int):
-...     print(dict(x=x, y=y))
+...     pass  # do work
 ...
 &gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
-...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
+...     args = dict(x=x, y=y, verbose=verbose, verbosity=verbosity)
+...     print(&quot;invoked verbose_function with args&quot;, args)
 ...
 &gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
-...     print(dict(x=x, y=y, quiet=quiet))
+...     pass  # do work
 ...
 &gt;&gt;&gt; tree(&quot;-x&quot;, &quot;1&quot;, &quot;-y&quot;, &quot;2&quot;, &quot;--verbose&quot;, &quot;--verbosity&quot;, &quot;3&quot;)
-{'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 </code></pre>
 <h3 id="many"><a href="#dollar_lambda.Parser.many"><code>many</code></a></h3>
 <p>What if we want to specify verbosity by the number of times that <code>--verbose</code> appears?
@@ -441,7 +462,7 @@ let's look at how it works.</p>
 {}
 &gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;)  # still succeeds
 {'verbose': True}
-&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;)
+&gt;&gt;&gt; p.parse_args(&quot;--verbose&quot;, &quot;--verbose&quot;)  # succeeds, binding list to 'verbose'
 {'verbose': [True, True]}
 </code></pre>
 <p>Now returning to the original example:</p>
@@ -469,7 +490,7 @@ is like regex <code>*</code>, <code><a title="dollar_lambda.Parser.many1" href="
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;verbose&quot;).many()
 &gt;&gt;&gt; p.parse_args()  # succeeds
 {}
-&gt;&gt;&gt; p = flag(&quot;verbose&quot;).many1()
+&gt;&gt;&gt; p = flag(&quot;verbose&quot;).many1()  # note many1(), not many()
 &gt;&gt;&gt; p.parse_args()  # fails
 usage: --verbose [--verbose ...]
 The following arguments are required: --verbose
@@ -513,18 +534,30 @@ at a time. First we define the object:</p>
 <p>Now we define at least one child function:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
-...     return dict(f1=dict(a=a))
+...     return dict(f1=dict(a=a)) # this can be whatever
 </code></pre>
-<p>At this point <code>tree</code> is just a parser that takes a single option <code>-a</code>:</p>
+<p><code><a title="dollar_lambda.CommandTree.command" href="#dollar_lambda.CommandTree.command">CommandTree.command()</a></code> automatically converts the function arguments into a parser.
+We can run the parser and pass its output to our function <code>f1</code> by calling <code>tree</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A
+</code></pre>
+<p>At this point the parser takes a single option <code>-a</code> that binds an <code>int</code> to <code>'a'</code>:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-a&quot;, &quot;1&quot;)
+{'f1': {'a': 1}}
+</code></pre>
+<p>Usually we would call <code>tree</code> with no arguments, and it would get its input from <code>sys.argv[1:]</code>.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be true for doctests
+&gt;&gt;&gt; sys.argv[1:] = [&quot;-a&quot;, &quot;1&quot;]  # simulate command line input
+&gt;&gt;&gt; tree()
+{'f1': {'a': 1}}
+&gt;&gt;&gt; parser.TESTING = True
 </code></pre>
 <p>Now let's add a second child function:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @tree.command()
 ... def f2(b: bool):
-...     return dict(f2=dict(b=b))
-...
-&gt;&gt;&gt; tree(&quot;-h&quot;)
+...     return dict(f2=dict(b=b))  # this can also be whatever
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: [-a A | -b]
 </code></pre>
 <p><code>tree</code> will execute either <code>f1</code> or <code>f2</code> based on which of the parsers succeeds.
@@ -548,7 +581,7 @@ parent function when the child arguments are not provided.</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
-... def f1(a: int):
+... def f1(a: int):  # this will be the parent function
 ...     return dict(f1=dict(a=a))
 </code></pre>
 <p>Now define a child function, <code>g1</code>:</p>
@@ -590,6 +623,7 @@ usage: -a A [-b | -c C]
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A [-b -d D | -c C]
 </code></pre>
+<p>That comes from the third argument of <code>h1</code>.</p>
 <h2 id="commandtreesubcommand"><code><a title="dollar_lambda.CommandTree.subcommand" href="#dollar_lambda.CommandTree.subcommand">CommandTree.subcommand()</a></code></h2>
 <p>Often we want to explicitly specify which function to execute by naming it on the command line.
 This would implement functionality similar to
@@ -637,7 +671,9 @@ usage: -a A [g1 -b | g2 -c C]
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 </code></pre>
-<p>Note that <code>g1</code> requires a <code>"g1"</code> argument to run but <code>g2</code> does not:</p>
+<p>Note that the left side of the pipe (corresponding to the <code>g1</code> function)
+requires a <code>"g1"</code> argument to run but the right side (corresponding to the <code>g2</code> function)
+does not:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; tree(&quot;-h&quot;)
 usage: -a A [g1 -b | -c C]
 </code></pre>
@@ -651,11 +687,15 @@ user the most flexibility in terms of accessing and using the config file. Here 
   &quot;x&quot;: 1
 }
 </code></pre>
-<p>Define a parser with optional values:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p = option(&quot;x&quot;, type=int).optional()
+<p>Define a parser with optional values where you want to be able to fall back to the config file:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; p = option(&quot;x&quot;, type=int).optional() &gt;&gt; argument(&quot;y&quot;, type=int)
+&gt;&gt;&gt; p.parse_args(&quot;-h&quot;)
+usage: -x X Y
 </code></pre>
-<p>Note that parsers must be optional (so that the arguments can be ommitted on the command line) but not default
-(or else the config value will always be overwritten).
+<p>In this example, <code>-x X</code> can be omitted, falling back to the config, but the positional argument
+<code>Y</code> will be required.</p>
+<p>Make sure that the optional arguments do not have default values or else the config value will
+always be overridden.
 Inside main, load the config and update with any arguments provided on the command line:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; import json
 &gt;&gt;&gt; def main(**kwargs):
@@ -665,27 +705,55 @@ Inside main, load the config and update with any arguments provided on the comma
 ...     config.update(kwargs)
 ...     return config
 </code></pre>
-<p>Overwrite the value in the config by providing an explicit argument:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;0&quot;))
-{'x': 0}
+<p>Override the value in the config by providing an explicit argument:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args(&quot;-x&quot;, &quot;0&quot;, &quot;1&quot;))
+{'x': 0, 'y': 1}
 </code></pre>
 <p>Fall back to the value in the config by not providing an argument for <code>x</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args())
-{'x': 1}
+<pre><code class="language-python-repl">&gt;&gt;&gt; main(**p.parse_args(&quot;2&quot;))
+{'x': 1, 'y': 2}
 </code></pre>
 <p>We can also write this with <code>@command</code> syntax:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @command(parsers=dict(kwargs=option(&quot;x&quot;, type=int).optional()))
-... def main(**kwargs):
+<pre><code class="language-python-repl">&gt;&gt;&gt; @command(
+...     parsers=dict(
+...         y=argument(&quot;y&quot;, type=int),
+...         kwargs=option(&quot;x&quot;, type=int).optional(),
+...     )
+... )
+... def main(y: int, **kwargs):
 ...     with open(&quot;example-config.json&quot;) as f:
 ...         config = json.load(f)
 ...
-...     config.update(kwargs)
+...     config.update(**kwargs, y=y)
 ...     return config
-&gt;&gt;&gt; main(&quot;-x&quot;, &quot;0&quot;)
-{'x': 0}
-&gt;&gt;&gt; main()
-{'x': 1}
+&gt;&gt;&gt; main(&quot;-x&quot;, &quot;0&quot;, &quot;1&quot;)  # override config value
+{'x': 0, 'y': 1}
+&gt;&gt;&gt; main(2)  # fall back to config value
+{'x': 1, 'y': 2}
 </code></pre>
+<h1 id="nesting-output">Nesting output</h1>
+<p>By default introducing a <code>.</code> character into the name of an <code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code>, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>, or <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> will
+induce nested output:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a.b&quot;, type=int).parse_args(&quot;1&quot;)
+{'a': {'b': 1}}
+&gt;&gt;&gt; option(&quot;a.b&quot;, type=int).parse_args(&quot;--a.b&quot;, &quot;1&quot;)
+{'a': {'b': 1}}
+&gt;&gt;&gt; flag(&quot;a.b&quot;).parse_args(&quot;--a.b&quot;)
+{'a': {'b': True}}
+</code></pre>
+<p>This mechanism handles collisions:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a.b&quot;), flag(&quot;a.c&quot;)).parse_args(&quot;--a.b&quot;, &quot;--a.c&quot;)
+{'a': {'b': True, 'c': True}}
+</code></pre>
+<p>even when mixing nested and unnested output:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a&quot;), flag(&quot;a.b&quot;)).parse_args(&quot;-a&quot;, &quot;--a.b&quot;)
+{'a': [True, {'b': True}]}
+</code></pre>
+<p>It can also go arbitrarily deep:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a.b.c&quot;), flag(&quot;a.b.d&quot;)).parse_args(&quot;--a.b.c&quot;, &quot;--a.b.d&quot;)
+{'a': {'b': {'c': True, 'd': True}}}
+</code></pre>
+<p>This behavior can always be disabled by setting <code>nesting=False</code> (or just not using <code>.</code> in the name).</p>
 <h1 id="ignoring-arguments">Ignoring arguments</h1>
 <p>There may be cases in which a user wants to provide certain arguments on the
 command line that <code>$λ</code> should ignore (not return in the output of <code><a title="dollar_lambda.Parser.parse_args" href="#dollar_lambda.Parser.parse_args">Parser.parse_args()</a></code>
@@ -697,11 +765,11 @@ with the <code>--config-</code> prefix:</p>
 <p>In the case of ordered arguments, we simply use the <code>ignore</code> method:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p = flag(&quot;x&quot;) &gt;&gt; config_parsers.ignore() &gt;&gt; flag(&quot;y&quot;)
 </code></pre>
-<p>This will ignore any arguments that start with <code>--config-</code> and come between <code>x</code> and <code>y</code>:</p>
+<p>This will ignore any argument that starts with <code>--config-</code> and comes between <code>x</code> and <code>y</code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;--config-foo&quot;, &quot;-y&quot;)
 {'x': True, 'y': True}
 </code></pre>
-<p>It also works with <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>:</p>
+<p>Because of the way we defined <code>config_parsers</code>, this also works with <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;-x&quot;, &quot;--config-bar&quot;, &quot;1&quot;, &quot;-y&quot;)
 {'x': True, 'y': True}
 </code></pre>
@@ -717,10 +785,19 @@ with the <code>--config-</code> prefix:</p>
 {'y': True, 'x': True}
 </code></pre>
 <p>And no matter how many matches are found:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(&quot;--config-baz&quot;, &quot;1&quot;, &quot;--config-blah&quot;, &quot;-y&quot;, &quot;--config-foz&quot;, &quot;-x&quot;, &quot;--config-foosh&quot;)
+<pre><code class="language-python-repl">&gt;&gt;&gt; p.parse_args(
+...     &quot;--config-foo&quot;,
+...     &quot;1&quot;,
+...     &quot;--config-bar&quot;,
+...     &quot;-y&quot;,
+...     &quot;--config-baz&quot;,
+...     &quot;2&quot;,
+...     &quot;-x&quot;,
+...     &quot;--config-foz&quot;,
+... )
 {'y': True, 'x': True}
 </code></pre>
-<p>The same strategy can be used with decorators:</p>
+<p>The same technique can be used with decorators:</p>
 <pre><code class="language-python-repl">&gt;&gt;&gt; @command(repeated=config_parsers.ignore())
 ... def f(x: bool, y: bool):
 ...    return dict(x=x, y=y)
@@ -728,29 +805,6 @@ with the <code>--config-</code> prefix:</p>
 {'x': True, 'y': True}
 </code></pre>
 <p>And similarly with <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code>.</p>
-<h1 id="nesting-output">Nesting output</h1>
-<p>By default introducing a <code>.</code> character into the name of an <code><a title="dollar_lambda.argument" href="#dollar_lambda.argument">argument()</a></code>, <code><a title="dollar_lambda.option" href="#dollar_lambda.option">option()</a></code>, or <code><a title="dollar_lambda.flag" href="#dollar_lambda.flag">flag()</a></code> will
-induce nested output:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; argument(&quot;a.b&quot;, type=int).parse_args(&quot;1&quot;)
-{'a': {'b': 1}}
-&gt;&gt;&gt; option(&quot;a.b&quot;, type=int).parse_args(&quot;--a.b&quot;, &quot;1&quot;)
-{'a': {'b': 1}}
-&gt;&gt;&gt; flag(&quot;a.b&quot;).parse_args(&quot;--a.b&quot;)
-{'a': {'b': True}}
-</code></pre>
-<p>This mechanism handles collisions:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a.b&quot;), flag(&quot;a.c&quot;)).parse_args(&quot;--a.b&quot;, &quot;--a.c&quot;)
-{'a': {'b': True, 'c': True}}
-</code></pre>
-<p>Even when mixing nested and unnested output:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a&quot;), flag(&quot;a.b&quot;)).parse_args(&quot;-a&quot;, &quot;--a.b&quot;)
-{'a': [True, {'b': True}]}
-</code></pre>
-<p>It can also go arbitrarily deep:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; nonpositional(flag(&quot;a.b.c&quot;), flag(&quot;a.b.d&quot;)).parse_args(&quot;--a.b.c&quot;, &quot;--a.b.d&quot;)
-{'a': {'b': {'c': True, 'd': True}}}
-</code></pre>
-<p>This behavior can always be disabled by setting <code>nesting=False</code> (or just not using <code>.</code> in the name).</p>
 <h1 id="why">Why <code>$λ</code>?</h1>
 <p><code>$λ</code> can handle many kinds of argument-parsing patterns
 that are either very awkward, difficult, or impossible with other parsing libraries.
@@ -767,9 +821,10 @@ for the user</em> to reason about the code.</p>
 <h3 id="concise">Concise</h3>
 <p><code>$λ</code> provides many syntactic shortcuts for cutting down boilerplate:</p>
 <ul>
-<li>operators like <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a>, <a href="#dollar_lambda.Parser.__or__"><code>|</code></a>, and <a href="#dollar_lambda.Parser.__add__"><code>+</code></a> (and <a href="#dollar_lambda.Parser.__ge__"><code>&gt;=</code></a> if you want to get fancy)</li>
-<li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for building tree-shaped parsers</li>
-<li>the <code><a title="dollar_lambda.Args" href="#dollar_lambda.Args">Args</a></code> syntax built on top of python <code>dataclasses</code>.</li>
+<li>the <code><a title="dollar_lambda.command" href="#dollar_lambda.command">command()</a></code> decorator and the <code><a title="dollar_lambda.CommandTree" href="#dollar_lambda.CommandTree">CommandTree</a></code> object for automatically building parsers from function signatures.</li>
+<li>operators like <a href="#dollar_lambda.Parser.__rshift__"><code>&gt;&gt;</code></a>,
+<a href="#dollar_lambda.Parser.__or__"><code>|</code></a>, <a href="#dollar_lambda.Parser.__xor__"><code>^</code></a>,
+and <a href="#dollar_lambda.Parser.__add__"><code>+</code></a> (and <a href="#dollar_lambda.Parser.__ge__"><code>&gt;=</code></a> if you want to get fancy)</li>
 </ul>
 <h3 id="lightweight">Lightweight</h3>
 <p><code>$λ</code> is written in pure python with no dependencies
@@ -779,7 +834,7 @@ which was written expressly for this library and has no dependencies).
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/__init__.py#L1-L869" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/__init__.py#L1-L928" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 This package provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
@@ -820,7 +875,7 @@ it would get them from the command line.
 
 &gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be true for doctests
 &gt;&gt;&gt; import sys
-&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;, &#34;--dev&#34;]
+&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;, &#34;--dev&#34;]  # simulate command line input
 &gt;&gt;&gt; main()
 {&#39;x&#39;: 1, &#39;dev&#39;: True, &#39;prod&#39;: False}
 
@@ -924,7 +979,7 @@ And this succeeds:
 Again, you would ordinarily provide `parse_args` no arguments and it would get them
 from the command line:
 &gt;&gt;&gt; parser.TESTING = False
-&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;]
+&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;]  # simulate command line input
 &gt;&gt;&gt; p.parse_args()
 {&#39;x&#39;: 1}
 &gt;&gt;&gt; parser.TESTING = True
@@ -952,16 +1007,16 @@ parser.add_argument(&#34;y&#34;, type=int, help=&#34;the exponent&#34;)
 args = parser.parse_args()
 ```
 
-Here is the exact equivalent in this package:
+Here is one way to express this logic in `$λ`:
 
 &gt;&gt;&gt; @command(
 ...     parsers=dict(kwargs=(flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)).optional()),
 ...     help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     return dict(x=x, y=y, **kwargs)  # Run program. Return can be whatever.
 
-Here is the help text for the `p` parser:
+Here is the help text for this parser:
 
 &gt;&gt;&gt; main(&#34;-h&#34;)
 usage: -x X -y Y [--verbose | --quiet]
@@ -987,7 +1042,7 @@ Ordinarily , we would not feed `main` any arguments, and it would get them from
 the command line:
 
 &gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be True for doctests
-&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;]
+&gt;&gt;&gt; sys.argv[1:] = [&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;]  # simulate command line input
 &gt;&gt;&gt; main()
 {&#39;x&#39;: 1, &#39;y&#39;: 2}
 &gt;&gt;&gt; parser.TESTING = True
@@ -1040,8 +1095,7 @@ Use the `type` argument to convert the input to a different type:
 
 ## Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: `nonpositional`, [`|`](#dollar_lambda.Parser.__or__)
-and [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__).
+Our example uses two such functions: `nonpositional` and [`|`](#dollar_lambda.Parser.__or__).
 
 ### [`|`](#dollar_lambda.Parser.__or__)
 
@@ -1072,29 +1126,11 @@ Users should note that unlike logical &#34;or&#34; but like Python `or`, the [`|
 &gt;&gt;&gt; (flag(&#34;verbose&#34;) | argument(&#34;x&#34;)).parse_args(&#34;--verbose&#34;)
 {&#39;verbose&#39;: True}
 
+`argument` binds to positional arguments. If it comes first, it will think that `&#34;--verbose&#34;` is
+the expression that we want to bind to `x`:
+
 &gt;&gt;&gt; (argument(&#34;x&#34;) | flag(&#34;verbose&#34;)).parse_args(&#34;--verbose&#34;)
 {&#39;x&#39;: &#39;--verbose&#39;}
-
-### [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__)
-
-The [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__) operator is used for sequential composition. It applies the first parser and then
-hands the output of the first parser to the second parser. If either parser fails, the composition fails:
-
-&gt;&gt;&gt; p = flag(&#34;verbose&#34;)
-&gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)
-{&#39;verbose&#39;: True}
-
-The first parser will fail here:
-
-&gt;&gt;&gt; p.parse_args(&#34;--something-else&#34;)
-usage: --verbose
-Expected &#39;--verbose&#39;. Got &#39;--something-else&#39;
-
-The second parser will fail here:
-
-&gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--something-else&#34;)
-usage: --verbose
-Unrecognized argument: --something-else
 
 ### `nonpositional` and [`+`](#dollar_lambda.Parser.__add__)
 `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
@@ -1161,7 +1197,7 @@ Applying the syntactic sugar:
 ...     help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 
 Here the `parsers` argument reserves a function argument (in this case, `kwargs`)
 for a custom parser (in this case, `(flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)).optional()`)
@@ -1169,6 +1205,46 @@ using our lower-level syntax.  The `help` argument
 assigns help text to the arguments (in this case `x` and `y`).
 
 ## Variations on the example
+### Positional arguments
+What if we wanted to supply `x` and `y` as positional arguments?
+
+&gt;&gt;&gt; flags = flag(&#34;verbose&#34;) | flag(&#34;quiet&#34;)
+&gt;&gt;&gt; p =  option(&#34;x&#34;, type=int) &gt;&gt; option(&#34;y&#34;, type=int) &gt;&gt; flags
+&gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
+usage: -x X -y Y [--verbose | --quiet]
+
+This introduces a new parser combinator: [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__) which evaluates
+parsers in sequence. In this example, it would first evaluate the `option(&#34;x&#34;, type=int)` parser,
+and if that succeeded, it would hand the unparsed remainder on to the `option(&#34;y&#34;, type=int)` parser,
+and so on until all parsers have been evaluated or no more input remains.
+ If any of the parsers fail, the combined parser fails:
+
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--quiet&#34;)   # succeeds
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;quiet&#39;: True}
+&gt;&gt;&gt; p.parse_args(&#34;-typo&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--quiet&#34;)   # first parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected &#39;-x&#39;. Got &#39;-typo&#39;
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--typo&#34;)   # third parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected &#39;--verbose&#39;. Got &#39;--typo&#39;
+
+Unlike with `nonpositional` in the previous section, [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__) requires the user to provide
+arguments in a fixed order:
+&gt;&gt;&gt; p.parse_args(&#34;-y&#34;, &#34;2&#34;, &#34;-x&#34;, &#34;1&#34;, &#34;--quiet&#34;)   # fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected &#39;-x&#39;. Got &#39;-y&#39;
+
+When using positional arguments, it might make sense to drop the `-x` and `-y` flags:
+&gt;&gt;&gt; p = argument(&#34;x&#34;, type=int) &gt;&gt; argument(&#34;y&#34;, type=int) &gt;&gt; flags
+&gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
+usage: X Y [--verbose | --quiet]
+&gt;&gt;&gt; p.parse_args(&#34;1&#34;, &#34;2&#34;, &#34;--quiet&#34;)
+{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;quiet&#39;: True}
+
+`argument` will bind input to a variable without checking for any special flag strings like
+`-x` or `-y` preceding the input.
+
+
 ### Variable numbers of arguments
 
 What if there was a special argument, `verbosity`,
@@ -1196,12 +1272,12 @@ We could express the same logic with the `command` decorator:
 
 &gt;&gt;&gt; @command(
 ...     parsers=dict(
-...         kwargs=((flag(&#34;verbose&#34;) + option(&#34;verbosity&#34;, type=int)) | flag(&#34;quiet&#34;))
+...         kwargs=flag(&#34;verbose&#34;) + option(&#34;verbosity&#34;, type=int) | flag(&#34;quiet&#34;)
 ...     ),
 ...     help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 
 This is also a case where you might want to use `CommandTree`:
 
@@ -1209,18 +1285,19 @@ This is also a case where you might want to use `CommandTree`:
 ...
 &gt;&gt;&gt; @tree.command(help=dict(x=&#34;the base&#34;, y=&#34;the exponent&#34;))
 ... def base_function(x: int, y: int):
-...     print(dict(x=x, y=y))
+...     pass  # do work
 ...
 &gt;&gt;&gt; @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
-...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
+...     args = dict(x=x, y=y, verbose=verbose, verbosity=verbosity)
+...     print(&#34;invoked verbose_function with args&#34;, args)
 ...
 &gt;&gt;&gt; @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
-...     print(dict(x=x, y=y, quiet=quiet))
+...     pass  # do work
 ...
 &gt;&gt;&gt; tree(&#34;-x&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;2&#34;, &#34;--verbose&#34;, &#34;--verbosity&#34;, &#34;3&#34;)
-{&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;verbosity&#39;: 3}
+invoked verbose_function with args {&#39;x&#39;: 1, &#39;y&#39;: 2, &#39;verbose&#39;: True, &#39;verbosity&#39;: 3}
 
 ### [`many`](#dollar_lambda.Parser.many)
 
@@ -1237,7 +1314,7 @@ let&#39;s look at how it works.
 {}
 &gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;)  # still succeeds
 {&#39;verbose&#39;: True}
-&gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;)
+&gt;&gt;&gt; p.parse_args(&#34;--verbose&#34;, &#34;--verbose&#34;)  # succeeds, binding list to &#39;verbose&#39;
 {&#39;verbose&#39;: [True, True]}
 
 Now returning to the original example:
@@ -1268,7 +1345,7 @@ is like regex `*`, `Parser.many1` is like [`+`](#dollar_lambda.Parser.__add__). 
 &gt;&gt;&gt; p = flag(&#34;verbose&#34;).many()
 &gt;&gt;&gt; p.parse_args()  # succeeds
 {}
-&gt;&gt;&gt; p = flag(&#34;verbose&#34;).many1()
+&gt;&gt;&gt; p = flag(&#34;verbose&#34;).many1()  # note many1(), not many()
 &gt;&gt;&gt; p.parse_args()  # fails
 usage: --verbose [--verbose ...]
 The following arguments are required: --verbose
@@ -1318,19 +1395,32 @@ Now we define at least one child function:
 
 &gt;&gt;&gt; @tree.command()
 ... def f1(a: int):
-...     return dict(f1=dict(a=a))
+...     return dict(f1=dict(a=a)) # this can be whatever
 
-At this point `tree` is just a parser that takes a single option `-a`:
+`CommandTree.command` automatically converts the function arguments into a parser.
+We can run the parser and pass its output to our function `f1` by calling `tree`:
 
 &gt;&gt;&gt; tree(&#34;-h&#34;)
 usage: -a A
+
+At this point the parser takes a single option `-a` that binds an `int` to `&#39;a&#39;`:
+&gt;&gt;&gt; tree(&#34;-a&#34;, &#34;1&#34;)
+{&#39;f1&#39;: {&#39;a&#39;: 1}}
+
+Usually we would call `tree` with no arguments, and it would get its input from `sys.argv[1:]`.
+
+&gt;&gt;&gt; parser.TESTING = False  # False by default but needs to be true for doctests
+&gt;&gt;&gt; sys.argv[1:] = [&#34;-a&#34;, &#34;1&#34;]  # simulate command line input
+&gt;&gt;&gt; tree()
+{&#39;f1&#39;: {&#39;a&#39;: 1}}
+&gt;&gt;&gt; parser.TESTING = True
 
 Now let&#39;s add a second child function:
 
 &gt;&gt;&gt; @tree.command()
 ... def f2(b: bool):
-...     return dict(f2=dict(b=b))
-...
+...     return dict(f2=dict(b=b))  # this can also be whatever
+
 &gt;&gt;&gt; tree(&#34;-h&#34;)
 usage: [-a A | -b]
 
@@ -1359,7 +1449,7 @@ there is also a set of shared arguments. We can define a parent function
 &gt;&gt;&gt; tree = CommandTree()
 ...
 &gt;&gt;&gt; @tree.command()
-... def f1(a: int):
+... def f1(a: int):  # this will be the parent function
 ...     return dict(f1=dict(a=a))
 
 Now define a child function, `g1`:
@@ -1405,6 +1495,8 @@ Note the additional `-d D` argument on the left side of the `|` pipe:
 
 &gt;&gt;&gt; tree(&#34;-h&#34;)
 usage: -a A [-b -d D | -c C]
+
+That comes from the third argument of `h1`.
 
 ## `CommandTree.subcommand`
 Often we want to explicitly specify which function to execute by naming it on the command line.
@@ -1456,7 +1548,9 @@ You can freely mix and match `subcommand` and `command`:
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 
-Note that `g1` requires a `&#34;g1&#34;` argument to run but `g2` does not:
+Note that the left side of the pipe (corresponding to the `g1` function)
+requires a `&#34;g1&#34;` argument to run but the right side (corresponding to the `g2` function)
+does not:
 
 &gt;&gt;&gt; tree(&#34;-h&#34;)
 usage: -a A [g1 -b | -c C]
@@ -1472,11 +1566,16 @@ user the most flexibility in terms of accessing and using the config file. Here 
 .. include:: ../example-config.json
 ```
 
-Define a parser with optional values:
-&gt;&gt;&gt; p = option(&#34;x&#34;, type=int).optional()
+Define a parser with optional values where you want to be able to fall back to the config file:
+&gt;&gt;&gt; p = option(&#34;x&#34;, type=int).optional() &gt;&gt; argument(&#34;y&#34;, type=int)
+&gt;&gt;&gt; p.parse_args(&#34;-h&#34;)
+usage: -x X Y
 
-Note that parsers must be optional (so that the arguments can be ommitted on the command line) but not default
-(or else the config value will always be overwritten).
+In this example, `-x X` can be omitted, falling back to the config, but the positional argument
+`Y` will be required.
+
+Make sure that the optional arguments do not have default values or else the config value will
+always be overridden.
 Inside main, load the config and update with any arguments provided on the command line:
 &gt;&gt;&gt; import json
 &gt;&gt;&gt; def main(**kwargs):
@@ -1486,72 +1585,32 @@ Inside main, load the config and update with any arguments provided on the comma
 ...     config.update(kwargs)
 ...     return config
 
-Overwrite the value in the config by providing an explicit argument:
-&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;0&#34;))
-{&#39;x&#39;: 0}
+Override the value in the config by providing an explicit argument:
+&gt;&gt;&gt; main(**p.parse_args(&#34;-x&#34;, &#34;0&#34;, &#34;1&#34;))
+{&#39;x&#39;: 0, &#39;y&#39;: 1}
 
 Fall back to the value in the config by not providing an argument for `x`:
-&gt;&gt;&gt; main(**p.parse_args())
-{&#39;x&#39;: 1}
+&gt;&gt;&gt; main(**p.parse_args(&#34;2&#34;))
+{&#39;x&#39;: 1, &#39;y&#39;: 2}
 
 We can also write this with `@command` syntax:
 
-&gt;&gt;&gt; @command(parsers=dict(kwargs=option(&#34;x&#34;, type=int).optional()))
-... def main(**kwargs):
+&gt;&gt;&gt; @command(
+...     parsers=dict(
+...         y=argument(&#34;y&#34;, type=int),
+...         kwargs=option(&#34;x&#34;, type=int).optional(),
+...     )
+... )
+... def main(y: int, **kwargs):
 ...     with open(&#34;example-config.json&#34;) as f:
 ...         config = json.load(f)
 ...
-...     config.update(kwargs)
+...     config.update(**kwargs, y=y)
 ...     return config
-&gt;&gt;&gt; main(&#34;-x&#34;, &#34;0&#34;)
-{&#39;x&#39;: 0}
-&gt;&gt;&gt; main()
-{&#39;x&#39;: 1}
-
-# Ignoring arguments
-There may be cases in which a user wants to provide certain arguments on the
-command line that `$λ` should ignore (not return in the output of `Parser.parse_args`
-or pass to the a decorated function). Suppose we wish to ignore any arguments starting
-with the `--config-` prefix:
-
-&gt;&gt;&gt; regex = r&#34;config-\\S*&#34;
-&gt;&gt;&gt; config_parsers = flag(regex) | option(regex)
-
-In the case of ordered arguments, we simply use the `ignore` method:
-
-&gt;&gt;&gt; p = flag(&#34;x&#34;) &gt;&gt; config_parsers.ignore() &gt;&gt; flag(&#34;y&#34;)
-
-This will ignore any arguments that start with `--config-` and come between `x` and `y`:
-&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;--config-foo&#34;, &#34;-y&#34;)
-{&#39;x&#39;: True, &#39;y&#39;: True}
-
-It also works with `option`:
-&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;--config-bar&#34;, &#34;1&#34;, &#34;-y&#34;)
-{&#39;x&#39;: True, &#39;y&#39;: True}
-
-In the case of nonpositional arguments, use the `repeated` keyword:
-&gt;&gt;&gt; p = nonpositional(flag(&#34;x&#34;), flag(&#34;y&#34;), repeated=config_parsers.ignore())
-
-Now neither `config-foo` nor `config-bar` show up in the output:
-&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;-y&#34;, &#34;--config-foo&#34;, &#34;--config-bar&#34;, &#34;1&#34;)
-{&#39;x&#39;: True, &#39;y&#39;: True}
-
-This works regardless of order:
-&gt;&gt;&gt; p.parse_args(&#34;--config-baz&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;--config-foz&#34;, &#34;-x&#34;)
-{&#39;y&#39;: True, &#39;x&#39;: True}
-
-And no matter how many matches are found:
-&gt;&gt;&gt; p.parse_args(&#34;--config-baz&#34;, &#34;1&#34;, &#34;--config-blah&#34;, &#34;-y&#34;, &#34;--config-foz&#34;, &#34;-x&#34;, &#34;--config-foosh&#34;)
-{&#39;y&#39;: True, &#39;x&#39;: True}
-
-The same strategy can be used with decorators:
-&gt;&gt;&gt; @command(repeated=config_parsers.ignore())
-... def f(x: bool, y: bool):
-...    return dict(x=x, y=y)
-&gt;&gt;&gt; f(&#34;-x&#34;, &#34;-y&#34;, &#34;--config-foo&#34;, &#34;--config-bar&#34;, &#34;1&#34;)
-{&#39;x&#39;: True, &#39;y&#39;: True}
-
-And similarly with `CommandTree`.
+&gt;&gt;&gt; main(&#34;-x&#34;, &#34;0&#34;, &#34;1&#34;)  # override config value
+{&#39;x&#39;: 0, &#39;y&#39;: 1}
+&gt;&gt;&gt; main(2)  # fall back to config value
+{&#39;x&#39;: 1, &#39;y&#39;: 2}
 
 # Nesting output
 By default introducing a `.` character into the name of an `argument`, `option`, or `flag` will
@@ -1567,7 +1626,7 @@ This mechanism handles collisions:
 &gt;&gt;&gt; nonpositional(flag(&#34;a.b&#34;), flag(&#34;a.c&#34;)).parse_args(&#34;--a.b&#34;, &#34;--a.c&#34;)
 {&#39;a&#39;: {&#39;b&#39;: True, &#39;c&#39;: True}}
 
-Even when mixing nested and unnested output:
+even when mixing nested and unnested output:
 &gt;&gt;&gt; nonpositional(flag(&#34;a&#34;), flag(&#34;a.b&#34;)).parse_args(&#34;-a&#34;, &#34;--a.b&#34;)
 {&#39;a&#39;: [True, {&#39;b&#39;: True}]}
 
@@ -1576,6 +1635,60 @@ It can also go arbitrarily deep:
 {&#39;a&#39;: {&#39;b&#39;: {&#39;c&#39;: True, &#39;d&#39;: True}}}
 
 This behavior can always be disabled by setting `nesting=False` (or just not using `.` in the name).
+
+# Ignoring arguments
+There may be cases in which a user wants to provide certain arguments on the
+command line that `$λ` should ignore (not return in the output of `Parser.parse_args`
+or pass to the a decorated function). Suppose we wish to ignore any arguments starting
+with the `--config-` prefix:
+
+&gt;&gt;&gt; regex = r&#34;config-\\S*&#34;
+&gt;&gt;&gt; config_parsers = flag(regex) | option(regex)
+
+In the case of ordered arguments, we simply use the `ignore` method:
+
+&gt;&gt;&gt; p = flag(&#34;x&#34;) &gt;&gt; config_parsers.ignore() &gt;&gt; flag(&#34;y&#34;)
+
+This will ignore any argument that starts with `--config-` and comes between `x` and `y`:
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;--config-foo&#34;, &#34;-y&#34;)
+{&#39;x&#39;: True, &#39;y&#39;: True}
+
+Because of the way we defined `config_parsers`, this also works with `option`:
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;--config-bar&#34;, &#34;1&#34;, &#34;-y&#34;)
+{&#39;x&#39;: True, &#39;y&#39;: True}
+
+In the case of nonpositional arguments, use the `repeated` keyword:
+&gt;&gt;&gt; p = nonpositional(flag(&#34;x&#34;), flag(&#34;y&#34;), repeated=config_parsers.ignore())
+
+Now neither `config-foo` nor `config-bar` show up in the output:
+&gt;&gt;&gt; p.parse_args(&#34;-x&#34;, &#34;-y&#34;, &#34;--config-foo&#34;, &#34;--config-bar&#34;, &#34;1&#34;)
+{&#39;x&#39;: True, &#39;y&#39;: True}
+
+This works regardless of order:
+&gt;&gt;&gt; p.parse_args(&#34;--config-baz&#34;, &#34;1&#34;, &#34;-y&#34;, &#34;--config-foz&#34;, &#34;-x&#34;)
+{&#39;y&#39;: True, &#39;x&#39;: True}
+
+And no matter how many matches are found:
+&gt;&gt;&gt; p.parse_args(
+...     &#34;--config-foo&#34;,
+...     &#34;1&#34;,
+...     &#34;--config-bar&#34;,
+...     &#34;-y&#34;,
+...     &#34;--config-baz&#34;,
+...     &#34;2&#34;,
+...     &#34;-x&#34;,
+...     &#34;--config-foz&#34;,
+... )
+{&#39;y&#39;: True, &#39;x&#39;: True}
+
+The same technique can be used with decorators:
+&gt;&gt;&gt; @command(repeated=config_parsers.ignore())
+... def f(x: bool, y: bool):
+...    return dict(x=x, y=y)
+&gt;&gt;&gt; f(&#34;-x&#34;, &#34;-y&#34;, &#34;--config-foo&#34;, &#34;--config-bar&#34;, &#34;1&#34;)
+{&#39;x&#39;: True, &#39;y&#39;: True}
+
+And similarly with `CommandTree`.
 
 # Why `$λ`?
 
@@ -1598,9 +1711,10 @@ for the user_ to reason about the code.
 ### Concise
 `$λ` provides many syntactic shortcuts for cutting down boilerplate:
 
-- operators like [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__), [`|`](#dollar_lambda.Parser.__or__), and [`+`](#dollar_lambda.Parser.__add__) (and [`&gt;=`](#dollar_lambda.Parser.__ge__) if you want to get fancy)
-- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
-- the `Args` syntax built on top of python `dataclasses`.
+- the `command` decorator and the `CommandTree` object for automatically building parsers from function signatures.
+- operators like [`&gt;&gt;`](#dollar_lambda.Parser.__rshift__),
+[`|`](#dollar_lambda.Parser.__or__), [`^`](#dollar_lambda.Parser.__xor__),
+and [`+`](#dollar_lambda.Parser.__add__) (and [`&gt;=`](#dollar_lambda.Parser.__ge__) if you want to get fancy)
 
 ### Lightweight
 `$λ` is written in pure python with no dependencies
@@ -1707,7 +1821,7 @@ Here is an example of usage. First we define a simple <code><a title="dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L699-L728" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L699-L728" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(f: Callable[[str], B_monoid], description: str) -&gt; Parser[B_monoid]:
     &#34;&#34;&#34;
@@ -1786,7 +1900,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L731-L783" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L731-L783" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def argument(
     dest: str,
@@ -1900,7 +2014,7 @@ quiet: Be quiet
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/decorators.py#L58-L147" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/decorators.py#L58-L147" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     flip_bools: bool = True,
@@ -2022,7 +2136,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L786-L813" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L786-L813" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def defaults(**kwargs: A) -&gt; Parser[Output[Sequence[KeyValue[A]]]]:
     &#34;&#34;&#34;
@@ -2075,7 +2189,7 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/args.py#L15-L46" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/args.py#L15-L46" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def field(
     help: Optional[str] = None,
@@ -2175,7 +2289,7 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L885-L988" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L885-L988" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def flag(
     dest: str,
@@ -2305,7 +2419,7 @@ The following arguments are required: Your first name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L1003-L1047" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1003-L1047" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def item(
     name: str,
@@ -2396,7 +2510,7 @@ But this would work:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L816-L882" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L816-L882" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def matches(
     s: str, peak: bool = False, regex: bool = True
@@ -2514,7 +2628,7 @@ returning the first permutations that is successful:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L1050-L1127" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1050-L1127" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nonpositional(
     *parsers: &#34;Parser[Output[A_monoid]]&#34;,
@@ -2664,7 +2778,7 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L1130-L1238" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1130-L1238" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def option(
     dest: str,
@@ -2802,7 +2916,7 @@ Takes the output of <code><a title="dollar_lambda.item" href="#dollar_lambda.ite
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L1270-L1304" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1270-L1304" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     predicate: Callable[[str], bool],
@@ -2910,7 +3024,7 @@ y: a number to increment
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/args.py#L108-L227" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/args.py#L108-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Args:
@@ -3043,7 +3157,7 @@ class Args:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/args.py#L214-L227" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/args.py#L214-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parse_args(
@@ -3091,7 +3205,7 @@ Combines these parsers using <code><a title="dollar_lambda.nonpositional" href="
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/args.py#L171-L212" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/args.py#L171-L212" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parser(
@@ -3148,7 +3262,7 @@ see the <a href="#commandtree-tutorial"><code>CommandTree</code> tutorial</a>.</
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/decorators.py#L257-L522" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/decorators.py#L257-L522" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class CommandTree:
@@ -3500,7 +3614,7 @@ Expected '-b'. Got 'f1'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/decorators.py#L267-L369" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/decorators.py#L267-L369" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     self,
@@ -3692,7 +3806,7 @@ The following arguments are required: g1
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/decorators.py#L418-L522" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/decorators.py#L418-L522" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def subcommand(
     self,
@@ -3812,7 +3926,7 @@ The following arguments are required: g1
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L73-L696" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L73-L696" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parser(MonadPlus[A_co]):
@@ -4482,7 +4596,7 @@ to the end of the parser:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L288-L316" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L288-L316" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def done(
@@ -4526,7 +4640,7 @@ def done(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L318-L327" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L318-L327" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def empty(
@@ -4553,7 +4667,7 @@ this method unless building custom parsers.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L544-L559" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L544-L559" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -4599,7 +4713,7 @@ This is a test.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L679-L696" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L679-L696" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34;:
@@ -4657,7 +4771,7 @@ Expected '-b'. Got '-c'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L83-L115" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L83-L115" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __add__(
     self: &#34;Parser[Output[A_monoid]]&#34;, other: &#34;Parser[Output[B_monoid]]&#34;
@@ -4702,7 +4816,7 @@ Expected '-b'. Got '-c'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L117-L118" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L117-L118" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __ge__(self, f: Callable[[A_co], Monad[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[override]
     return self.bind(f)</code></pre>
@@ -4733,7 +4847,7 @@ Unrecognized argument: --option
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L120-L153" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L120-L153" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __or__(  # type: ignore[override]
     self: &#34;Parser[A_monoid]&#34;,
@@ -4791,7 +4905,7 @@ The following arguments are required: second
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L160-L193" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L160-L193" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __rshift__(
     self: &#34;Parser[Output[A_monoid]]&#34;, p: &#34;Parser[Output[B_monoid]]&#34;
@@ -4845,7 +4959,7 @@ Both parsers succeeded. This causes ^ to fail.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L195-L216" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L195-L216" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def __xor__(
     self: &#34;Parser[Output[A_monoid]]&#34;, other: &#34;Parser[Output[B_monoid]]&#34;
@@ -4888,7 +5002,7 @@ Both parsers succeeded. This causes ^ to fail.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L218-L246" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L218-L246" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(self: &#34;Parser[A_monoid]&#34;, f: Callable[[A_monoid], Result[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[misc]
     # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
@@ -4953,7 +5067,7 @@ Expected 'a'. Got 'b'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L248-L286" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L248-L286" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[override]
     &#34;&#34;&#34;
@@ -5009,7 +5123,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L329-L352" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L329-L352" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def fails(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -5045,7 +5159,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L354-L374" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L354-L374" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
     def print_usage(usage: str):
@@ -5090,7 +5204,7 @@ The following arguments are required: --hello
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L376-L401" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L376-L401" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def ignore(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -5146,7 +5260,7 @@ heterogenous:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L403-L434" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L403-L434" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many(
     self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
@@ -5200,7 +5314,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L436-L462" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L436-L462" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many1(
     self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
@@ -5239,7 +5353,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L464-L472" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L464-L472" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def map_error(self, f: Callable[[ArgumentError], ArgumentError]) -&gt; &#34;Parser[A_co]&#34;:
     def g(cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -5261,7 +5375,7 @@ section of the documentation for more information.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L596-L619" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L596-L619" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nesting(
     self: &#34;Parser[Output[Sequence[KeyValue[Any]]]]&#34;,
@@ -5307,7 +5421,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L474-L487" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L474-L487" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def optional(self: &#34;Parser[Output[A_monoid]]&#34;) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
@@ -5333,7 +5447,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L489-L493" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L489-L493" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
     &#34;&#34;&#34;
@@ -5367,7 +5481,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L495-L542" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L495-L542" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse_args(
     self: &#34;Parser[Output]&#34;,
@@ -5427,7 +5541,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L155-L158" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L155-L158" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def rshift(
     self: &#34;Parser[Output[A_monoid]]&#34;, p: &#34;Parser[Output[B_monoid]]&#34;
@@ -5464,7 +5578,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L561-L594" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L561-L594" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     self: &#34;Parser[A_monoid]&#34;,
@@ -5515,7 +5629,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L621-L645" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L621-L645" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def type(
     self: &#34;Parser[Output[Sequence[KeyValue[str]]]]&#34;, f: Callable[[str], Any]
@@ -5552,7 +5666,7 @@ Takes the output of <code><a title="dollar_lambda.parser" href="parser.html">dol
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L647-L648" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L647-L648" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_error(self, error: ArgumentError) -&gt; &#34;Parser[A_co]&#34;:
     return self.map_error(lambda _: error)</code></pre>
@@ -5584,7 +5698,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0e1374d5a13f8e523326302c5106b159be156bf4/dollar_lambda/parser.py#L650-L677" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L650-L677" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_help(
     self: &#34;Parser[A_monoid]&#34;, a: Optional[Type[A_monoid]] = None
@@ -5693,12 +5807,12 @@ setTimeout(() => input.focus(), 100);
 </li>
 <li><a href="#parser-combinators">Parser Combinators</a><ul>
 <li><a href="#_1">|</a></li>
-<li><a href="#_2">&gt;&gt;</a></li>
 <li><a href="#nonpositional-and">nonpositional and +</a></li>
 </ul>
 </li>
 <li><a href="#putting-it-all-together">Putting it all together</a></li>
 <li><a href="#variations-on-the-example">Variations on the example</a><ul>
+<li><a href="#positional-arguments">Positional arguments</a></li>
 <li><a href="#variable-numbers-of-arguments">Variable numbers of arguments</a></li>
 <li><a href="#many">many</a></li>
 <li><a href="#many1">many1</a></li>
@@ -5712,8 +5826,8 @@ setTimeout(() => input.focus(), 100);
 </ul>
 </li>
 <li><a href="#use-with-config-files">Use with config files</a></li>
-<li><a href="#ignoring-arguments">Ignoring arguments</a></li>
 <li><a href="#nesting-output">Nesting output</a></li>
+<li><a href="#ignoring-arguments">Ignoring arguments</a></li>
 <li><a href="#why">Why $λ?</a><ul>
 <li><a href="#versatile">Versatile</a></li>
 <li><a href="#type-safe">Type-safe</a></li>

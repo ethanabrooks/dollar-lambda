@@ -37,7 +37,7 @@ it would get them from the command line.
 
 >>> parser.TESTING = False  # False by default but needs to be true for doctests
 >>> import sys
->>> sys.argv[1:] = ["-x", "1", "--dev"]
+>>> sys.argv[1:] = ["-x", "1", "--dev"]  # simulate command line input
 >>> main()
 {'x': 1, 'dev': True, 'prod': False}
 
@@ -141,7 +141,7 @@ And this succeeds:
 Again, you would ordinarily provide `parse_args` no arguments and it would get them
 from the command line:
 >>> parser.TESTING = False
->>> sys.argv[1:] = ["-x", "1"]
+>>> sys.argv[1:] = ["-x", "1"]  # simulate command line input
 >>> p.parse_args()
 {'x': 1}
 >>> parser.TESTING = True
@@ -169,16 +169,16 @@ parser.add_argument("y", type=int, help="the exponent")
 args = parser.parse_args()
 ```
 
-Here is the exact equivalent in this package:
+Here is one way to express this logic in `$λ`:
 
 >>> @command(
 ...     parsers=dict(kwargs=(flag("verbose") | flag("quiet")).optional()),
 ...     help=dict(x="the base", y="the exponent"),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     return dict(x=x, y=y, **kwargs)  # Run program. Return can be whatever.
 
-Here is the help text for the `p` parser:
+Here is the help text for this parser:
 
 >>> main("-h")
 usage: -x X -y Y [--verbose | --quiet]
@@ -204,7 +204,7 @@ Ordinarily , we would not feed `main` any arguments, and it would get them from
 the command line:
 
 >>> parser.TESTING = False  # False by default but needs to be True for doctests
->>> sys.argv[1:] = ["-x", "1", "-y", "2"]
+>>> sys.argv[1:] = ["-x", "1", "-y", "2"]  # simulate command line input
 >>> main()
 {'x': 1, 'y': 2}
 >>> parser.TESTING = True
@@ -257,8 +257,7 @@ Use the `type` argument to convert the input to a different type:
 
 ## Parser Combinators
 Parser combinators are functions that combine multiple parsers into new, more complex parsers.
-Our example uses three such functions: `nonpositional`, [`|`](#dollar_lambda.Parser.__or__)
-and [`>>`](#dollar_lambda.Parser.__rshift__).
+Our example uses two such functions: `nonpositional` and [`|`](#dollar_lambda.Parser.__or__).
 
 ### [`|`](#dollar_lambda.Parser.__or__)
 
@@ -289,29 +288,11 @@ Users should note that unlike logical "or" but like Python `or`, the [`|`](#doll
 >>> (flag("verbose") | argument("x")).parse_args("--verbose")
 {'verbose': True}
 
+`argument` binds to positional arguments. If it comes first, it will think that `"--verbose"` is
+the expression that we want to bind to `x`:
+
 >>> (argument("x") | flag("verbose")).parse_args("--verbose")
 {'x': '--verbose'}
-
-### [`>>`](#dollar_lambda.Parser.__rshift__)
-
-The [`>>`](#dollar_lambda.Parser.__rshift__) operator is used for sequential composition. It applies the first parser and then
-hands the output of the first parser to the second parser. If either parser fails, the composition fails:
-
->>> p = flag("verbose")
->>> p.parse_args("--verbose")
-{'verbose': True}
-
-The first parser will fail here:
-
->>> p.parse_args("--something-else")
-usage: --verbose
-Expected '--verbose'. Got '--something-else'
-
-The second parser will fail here:
-
->>> p.parse_args("--verbose", "--something-else")
-usage: --verbose
-Unrecognized argument: --something-else
 
 ### `nonpositional` and [`+`](#dollar_lambda.Parser.__add__)
 `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
@@ -378,7 +359,7 @@ Applying the syntactic sugar:
 ...     help=dict(x="the base", y="the exponent"),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 
 Here the `parsers` argument reserves a function argument (in this case, `kwargs`)
 for a custom parser (in this case, `(flag("verbose") | flag("quiet")).optional()`)
@@ -386,6 +367,46 @@ using our lower-level syntax.  The `help` argument
 assigns help text to the arguments (in this case `x` and `y`).
 
 ## Variations on the example
+### Positional arguments
+What if we wanted to supply `x` and `y` as positional arguments?
+
+>>> flags = flag("verbose") | flag("quiet")
+>>> p =  option("x", type=int) >> option("y", type=int) >> flags
+>>> p.parse_args("-h")
+usage: -x X -y Y [--verbose | --quiet]
+
+This introduces a new parser combinator: [`>>`](#dollar_lambda.Parser.__rshift__) which evaluates
+parsers in sequence. In this example, it would first evaluate the `option("x", type=int)` parser,
+and if that succeeded, it would hand the unparsed remainder on to the `option("y", type=int)` parser,
+and so on until all parsers have been evaluated or no more input remains.
+ If any of the parsers fail, the combined parser fails:
+
+>>> p.parse_args("-x", "1", "-y", "2", "--quiet")   # succeeds
+{'x': 1, 'y': 2, 'quiet': True}
+>>> p.parse_args("-typo", "1", "-y", "2", "--quiet")   # first parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '-x'. Got '-typo'
+>>> p.parse_args("-x", "1", "-y", "2", "--typo")   # third parser fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '--verbose'. Got '--typo'
+
+Unlike with `nonpositional` in the previous section, [`>>`](#dollar_lambda.Parser.__rshift__) requires the user to provide
+arguments in a fixed order:
+>>> p.parse_args("-y", "2", "-x", "1", "--quiet")   # fails
+usage: -x X -y Y [--verbose | --quiet]
+Expected '-x'. Got '-y'
+
+When using positional arguments, it might make sense to drop the `-x` and `-y` flags:
+>>> p = argument("x", type=int) >> argument("y", type=int) >> flags
+>>> p.parse_args("-h")
+usage: X Y [--verbose | --quiet]
+>>> p.parse_args("1", "2", "--quiet")
+{'x': 1, 'y': 2, 'quiet': True}
+
+`argument` will bind input to a variable without checking for any special flag strings like
+`-x` or `-y` preceding the input.
+
+
 ### Variable numbers of arguments
 
 What if there was a special argument, `verbosity`,
@@ -413,12 +434,12 @@ We could express the same logic with the `command` decorator:
 
 >>> @command(
 ...     parsers=dict(
-...         kwargs=((flag("verbose") + option("verbosity", type=int)) | flag("quiet"))
+...         kwargs=flag("verbose") + option("verbosity", type=int) | flag("quiet")
 ...     ),
 ...     help=dict(x="the base", y="the exponent"),
 ... )
 ... def main(x: int, y: int, **kwargs):
-...     return dict(x=x, y=y, **kwargs)
+...     pass  # do work
 
 This is also a case where you might want to use `CommandTree`:
 
@@ -426,18 +447,19 @@ This is also a case where you might want to use `CommandTree`:
 ...
 >>> @tree.command(help=dict(x="the base", y="the exponent"))
 ... def base_function(x: int, y: int):
-...     print(dict(x=x, y=y))
+...     pass  # do work
 ...
 >>> @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
-...     print(dict(x=x, y=y, verbose=verbose, verbosity=verbosity))
+...     args = dict(x=x, y=y, verbose=verbose, verbosity=verbosity)
+...     print("invoked verbose_function with args", args)
 ...
 >>> @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
-...     print(dict(x=x, y=y, quiet=quiet))
+...     pass  # do work
 ...
 >>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
-{'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
 ### [`many`](#dollar_lambda.Parser.many)
 
@@ -454,7 +476,7 @@ let's look at how it works.
 {}
 >>> p.parse_args("--verbose")  # still succeeds
 {'verbose': True}
->>> p.parse_args("--verbose", "--verbose")
+>>> p.parse_args("--verbose", "--verbose")  # succeeds, binding list to 'verbose'
 {'verbose': [True, True]}
 
 Now returning to the original example:
@@ -485,7 +507,7 @@ is like regex `*`, `Parser.many1` is like [`+`](#dollar_lambda.Parser.__add__). 
 >>> p = flag("verbose").many()
 >>> p.parse_args()  # succeeds
 {}
->>> p = flag("verbose").many1()
+>>> p = flag("verbose").many1()  # note many1(), not many()
 >>> p.parse_args()  # fails
 usage: --verbose [--verbose ...]
 The following arguments are required: --verbose
@@ -535,19 +557,32 @@ Now we define at least one child function:
 
 >>> @tree.command()
 ... def f1(a: int):
-...     return dict(f1=dict(a=a))
+...     return dict(f1=dict(a=a)) # this can be whatever
 
-At this point `tree` is just a parser that takes a single option `-a`:
+`CommandTree.command` automatically converts the function arguments into a parser.
+We can run the parser and pass its output to our function `f1` by calling `tree`:
 
 >>> tree("-h")
 usage: -a A
+
+At this point the parser takes a single option `-a` that binds an `int` to `'a'`:
+>>> tree("-a", "1")
+{'f1': {'a': 1}}
+
+Usually we would call `tree` with no arguments, and it would get its input from `sys.argv[1:]`.
+
+>>> parser.TESTING = False  # False by default but needs to be true for doctests
+>>> sys.argv[1:] = ["-a", "1"]  # simulate command line input
+>>> tree()
+{'f1': {'a': 1}}
+>>> parser.TESTING = True
 
 Now let's add a second child function:
 
 >>> @tree.command()
 ... def f2(b: bool):
-...     return dict(f2=dict(b=b))
-...
+...     return dict(f2=dict(b=b))  # this can also be whatever
+
 >>> tree("-h")
 usage: [-a A | -b]
 
@@ -576,7 +611,7 @@ there is also a set of shared arguments. We can define a parent function
 >>> tree = CommandTree()
 ...
 >>> @tree.command()
-... def f1(a: int):
+... def f1(a: int):  # this will be the parent function
 ...     return dict(f1=dict(a=a))
 
 Now define a child function, `g1`:
@@ -622,6 +657,8 @@ Note the additional `-d D` argument on the left side of the `|` pipe:
 
 >>> tree("-h")
 usage: -a A [-b -d D | -c C]
+
+That comes from the third argument of `h1`.
 
 ## `CommandTree.subcommand`
 Often we want to explicitly specify which function to execute by naming it on the command line.
@@ -673,7 +710,9 @@ You can freely mix and match `subcommand` and `command`:
 ... def g2(a: int, c: str):
 ...     return dict(g2=dict(c=c))
 
-Note that `g1` requires a `"g1"` argument to run but `g2` does not:
+Note that the left side of the pipe (corresponding to the `g1` function)
+requires a `"g1"` argument to run but the right side (corresponding to the `g2` function)
+does not:
 
 >>> tree("-h")
 usage: -a A [g1 -b | -c C]
@@ -689,11 +728,16 @@ user the most flexibility in terms of accessing and using the config file. Here 
 .. include:: ../example-config.json
 ```
 
-Define a parser with optional values:
->>> p = option("x", type=int).optional()
+Define a parser with optional values where you want to be able to fall back to the config file:
+>>> p = option("x", type=int).optional() >> argument("y", type=int)
+>>> p.parse_args("-h")
+usage: -x X Y
 
-Note that parsers must be optional (so that the arguments can be ommitted on the command line) but not default
-(or else the config value will always be overwritten).
+In this example, `-x X` can be omitted, falling back to the config, but the positional argument
+`Y` will be required.
+
+Make sure that the optional arguments do not have default values or else the config value will
+always be overridden.
 Inside main, load the config and update with any arguments provided on the command line:
 >>> import json
 >>> def main(**kwargs):
@@ -703,72 +747,32 @@ Inside main, load the config and update with any arguments provided on the comma
 ...     config.update(kwargs)
 ...     return config
 
-Overwrite the value in the config by providing an explicit argument:
->>> main(**p.parse_args("-x", "0"))
-{'x': 0}
+Override the value in the config by providing an explicit argument:
+>>> main(**p.parse_args("-x", "0", "1"))
+{'x': 0, 'y': 1}
 
 Fall back to the value in the config by not providing an argument for `x`:
->>> main(**p.parse_args())
-{'x': 1}
+>>> main(**p.parse_args("2"))
+{'x': 1, 'y': 2}
 
 We can also write this with `@command` syntax:
 
->>> @command(parsers=dict(kwargs=option("x", type=int).optional()))
-... def main(**kwargs):
+>>> @command(
+...     parsers=dict(
+...         y=argument("y", type=int),
+...         kwargs=option("x", type=int).optional(),
+...     )
+... )
+... def main(y: int, **kwargs):
 ...     with open("example-config.json") as f:
 ...         config = json.load(f)
 ...
-...     config.update(kwargs)
+...     config.update(**kwargs, y=y)
 ...     return config
->>> main("-x", "0")
-{'x': 0}
->>> main()
-{'x': 1}
-
-# Ignoring arguments
-There may be cases in which a user wants to provide certain arguments on the
-command line that `$λ` should ignore (not return in the output of `Parser.parse_args`
-or pass to the a decorated function). Suppose we wish to ignore any arguments starting
-with the `--config-` prefix:
-
->>> regex = r"config-\\S*"
->>> config_parsers = flag(regex) | option(regex)
-
-In the case of ordered arguments, we simply use the `ignore` method:
-
->>> p = flag("x") >> config_parsers.ignore() >> flag("y")
-
-This will ignore any arguments that start with `--config-` and come between `x` and `y`:
->>> p.parse_args("-x", "--config-foo", "-y")
-{'x': True, 'y': True}
-
-It also works with `option`:
->>> p.parse_args("-x", "--config-bar", "1", "-y")
-{'x': True, 'y': True}
-
-In the case of nonpositional arguments, use the `repeated` keyword:
->>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
-
-Now neither `config-foo` nor `config-bar` show up in the output:
->>> p.parse_args("-x", "-y", "--config-foo", "--config-bar", "1")
-{'x': True, 'y': True}
-
-This works regardless of order:
->>> p.parse_args("--config-baz", "1", "-y", "--config-foz", "-x")
-{'y': True, 'x': True}
-
-And no matter how many matches are found:
->>> p.parse_args("--config-baz", "1", "--config-blah", "-y", "--config-foz", "-x", "--config-foosh")
-{'y': True, 'x': True}
-
-The same strategy can be used with decorators:
->>> @command(repeated=config_parsers.ignore())
-... def f(x: bool, y: bool):
-...    return dict(x=x, y=y)
->>> f("-x", "-y", "--config-foo", "--config-bar", "1")
-{'x': True, 'y': True}
-
-And similarly with `CommandTree`.
+>>> main("-x", "0", "1")  # override config value
+{'x': 0, 'y': 1}
+>>> main(2)  # fall back to config value
+{'x': 1, 'y': 2}
 
 # Nesting output
 By default introducing a `.` character into the name of an `argument`, `option`, or `flag` will
@@ -784,7 +788,7 @@ This mechanism handles collisions:
 >>> nonpositional(flag("a.b"), flag("a.c")).parse_args("--a.b", "--a.c")
 {'a': {'b': True, 'c': True}}
 
-Even when mixing nested and unnested output:
+even when mixing nested and unnested output:
 >>> nonpositional(flag("a"), flag("a.b")).parse_args("-a", "--a.b")
 {'a': [True, {'b': True}]}
 
@@ -793,6 +797,60 @@ It can also go arbitrarily deep:
 {'a': {'b': {'c': True, 'd': True}}}
 
 This behavior can always be disabled by setting `nesting=False` (or just not using `.` in the name).
+
+# Ignoring arguments
+There may be cases in which a user wants to provide certain arguments on the
+command line that `$λ` should ignore (not return in the output of `Parser.parse_args`
+or pass to the a decorated function). Suppose we wish to ignore any arguments starting
+with the `--config-` prefix:
+
+>>> regex = r"config-\\S*"
+>>> config_parsers = flag(regex) | option(regex)
+
+In the case of ordered arguments, we simply use the `ignore` method:
+
+>>> p = flag("x") >> config_parsers.ignore() >> flag("y")
+
+This will ignore any argument that starts with `--config-` and comes between `x` and `y`:
+>>> p.parse_args("-x", "--config-foo", "-y")
+{'x': True, 'y': True}
+
+Because of the way we defined `config_parsers`, this also works with `option`:
+>>> p.parse_args("-x", "--config-bar", "1", "-y")
+{'x': True, 'y': True}
+
+In the case of nonpositional arguments, use the `repeated` keyword:
+>>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
+
+Now neither `config-foo` nor `config-bar` show up in the output:
+>>> p.parse_args("-x", "-y", "--config-foo", "--config-bar", "1")
+{'x': True, 'y': True}
+
+This works regardless of order:
+>>> p.parse_args("--config-baz", "1", "-y", "--config-foz", "-x")
+{'y': True, 'x': True}
+
+And no matter how many matches are found:
+>>> p.parse_args(
+...     "--config-foo",
+...     "1",
+...     "--config-bar",
+...     "-y",
+...     "--config-baz",
+...     "2",
+...     "-x",
+...     "--config-foz",
+... )
+{'y': True, 'x': True}
+
+The same technique can be used with decorators:
+>>> @command(repeated=config_parsers.ignore())
+... def f(x: bool, y: bool):
+...    return dict(x=x, y=y)
+>>> f("-x", "-y", "--config-foo", "--config-bar", "1")
+{'x': True, 'y': True}
+
+And similarly with `CommandTree`.
 
 # Why `$λ`?
 
@@ -815,9 +873,10 @@ for the user_ to reason about the code.
 ### Concise
 `$λ` provides many syntactic shortcuts for cutting down boilerplate:
 
-- operators like [`>>`](#dollar_lambda.Parser.__rshift__), [`|`](#dollar_lambda.Parser.__or__), and [`+`](#dollar_lambda.Parser.__add__) (and [`>=`](#dollar_lambda.Parser.__ge__) if you want to get fancy)
-- the `command` decorator and the `CommandTree` object for building tree-shaped parsers
-- the `Args` syntax built on top of python `dataclasses`.
+- the `command` decorator and the `CommandTree` object for automatically building parsers from function signatures.
+- operators like [`>>`](#dollar_lambda.Parser.__rshift__),
+[`|`](#dollar_lambda.Parser.__or__), [`^`](#dollar_lambda.Parser.__xor__),
+and [`+`](#dollar_lambda.Parser.__add__) (and [`>=`](#dollar_lambda.Parser.__ge__) if you want to get fancy)
 
 ### Lightweight
 `$λ` is written in pure python with no dependencies
