@@ -597,11 +597,8 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[Sequence[KeyValue[Any]]]]",
     ) -> "Parser[Output[Sequence[KeyValue[Any]]]]":
         """
-        A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
-        >>> p1 = option("x") >> option("y")
-        >>> p = p1.type(int)
-        >>> p.parse_args("-x", "1", "-y", "2")  # converts "1" but not "2"
-        {'x': '1', 'y': 2}
+        Breaks the output of the wrapped parser into nested outputs. See the [`Nesting output`](#nesting-output)
+        section of the documentation for more information.
         """
 
         def g(out: Output[Sequence[KeyValue[str]]]) -> Result[Output]:

@@ -162,7 +162,7 @@ INDEX=[
 {
 "ref":"dollar_lambda.Parser.nesting",
 "url":0,
-"doc":"A wrapper around  apply that simply applies  f to the value of the most recently parsed input. >>> p1 = option(\"x\") >> option(\"y\") >>> p = p1.type(int) >>> p.parse_args(\"-x\", \"1\", \"-y\", \"2\")  converts \"1\" but not \"2\" {'x': '1', 'y': 2}",
+"doc":"Breaks the output of the wrapped parser into nested outputs. See the [ Nesting output ]( nesting-output) section of the documentation for more information.",
 "func":1
 },
 {
@@ -672,7 +672,7 @@ INDEX=[
 {
 "ref":"dollar_lambda.parser.Parser.nesting",
 "url":3,
-"doc":"A wrapper around  apply that simply applies  f to the value of the most recently parsed input. >>> p1 = option(\"x\") >> option(\"y\") >>> p = p1.type(int) >>> p.parse_args(\"-x\", \"1\", \"-y\", \"2\")  converts \"1\" but not \"2\" {'x': '1', 'y': 2}",
+"doc":"Breaks the output of the wrapped parser into nested outputs. See the [ Nesting output ]( nesting-output) section of the documentation for more information.",
 "func":1
 },
 {
