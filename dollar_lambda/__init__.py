@@ -135,8 +135,8 @@ As promised, this succeeds:
 
 And this succeeds:
 
->>> p.parse_args("1", "2", "3", return_dict=False)
-[('y', 1.0), ('y', 2.0), ('y', 3.0)]
+>>> p.parse_args("1", "2", "3")
+{'y': [1.0, 2.0, 3.0]}
 
 Again, you would ordinarily provide `parse_args` no arguments and it would get them
 from the command line:
@@ -454,11 +454,8 @@ let's look at how it works.
 {}
 >>> p.parse_args("--verbose")  # still succeeds
 {'verbose': True}
->>> p.parse_args("--verbose", "--verbose", return_dict=False)
-[('verbose', True), ('verbose', True)]
-
-As you can see, `return_dict=False` returns a list of tuples instead of a dict, so that you
-can have duplicate keys.
+>>> p.parse_args("--verbose", "--verbose")
+{'verbose': [True, True]}
 
 Now returning to the original example:
 
@@ -467,10 +464,10 @@ Now returning to the original example:
 ...     option("x", type=int),
 ...     option("y", type=int),
 ... )
->>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose", return_dict=False)
+>>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose")
 >>> args
-[('x', 1), ('y', 2), ('verbose', True), ('verbose', True)]
->>> verbosity = args.count(('verbose', True))
+{'x': 1, 'y': 2, 'verbose': [True, True]}
+>>> verbosity = len(args['verbose'])
 >>> verbosity
 2
 
@@ -768,8 +765,6 @@ from dollar_lambda.parser import (
     apply,
     argument,
     defaults,
-    done,
-    empty,
     flag,
     item,
     matches,
@@ -780,10 +775,8 @@ from dollar_lambda.parser import (
 
 __all__ = [
     "Parser",
-    "empty",
     "apply",
     "argument",
-    "done",
     "matches",
     "flag",
     "item",

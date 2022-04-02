@@ -9,17 +9,17 @@ import typing
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
-from typing import Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Iterator, List, Optional, Type, TypeVar
 
+from pytypeclass import Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
-from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, matches
+from dollar_lambda.parser import Parse, Parser, matches
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import Sequence
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -30,10 +30,10 @@ def _func_to_parser(
     func: Callable,
     exclude: Optional[List[str]],
     flip_bools: bool,
-    help: Optional[Dict[str, str]],
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]],
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
-) -> Parser[Sequence[KeyValue[Any]]]:
+    help: Optional[typing.Dict[str, str]],
+    parsers: Optional[typing.Dict[str, Parser[Output]]],
+    repeated: Optional[Parser[Output]],
+) -> Parser:
     _exclude = [] if exclude is None else exclude
     _help = {} if help is None else help
     _parsers = {} if parsers is None else parsers
@@ -57,9 +57,9 @@ def _func_to_parser(
 
 def command(
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
     A succinct way to generate a simple `nonpositional` parser. `@command` derives the
@@ -140,7 +140,6 @@ def command(
             parsed = p.parse_args(*args)
             if parsed is None:
                 return
-            assert isinstance(parsed, Dict), parsed
             return func(**parsed)
 
         return wrapped
@@ -149,36 +148,53 @@ def command(
 
 
 @dataclass
-class _FunctionPair(Sequence[A]):
-    function: Callable
+class _FunctionPair(Monoid[A_co]):
+    seq: Sequence[KeyValue[A_co]]
+    function: Optional[Callable]
 
-    def __or__(self, other: Sequence[B]) -> "_FunctionPair[A | B]":  # type: ignore[override]
-        function = other.function if isinstance(other, _FunctionPair) else self.function
-        return _FunctionPair(get=[*self, *other], function=function)
+    def __add__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        return self.add(other)
+
+    def __or__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        return self.add(other)
+
+    def add(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        if isinstance(other, Sequence):
+            function = self.function
+            seq = other
+        else:
+            function = self.function if other.function is None else other.function
+            seq = other.seq
+        return _FunctionPair(seq=self.seq | seq, function=function)
 
     @classmethod
     def command(
-        cls: Type["_FunctionPair[A]"],
+        cls: Type["_FunctionPair[Sequence[KeyValue[Any]]]"],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
-    ) -> Parser["_FunctionPair[A]"]:
+        help: Optional[typing.Dict[str, str]] = None,
+    ) -> Parser[Output["_FunctionPair[Any]"]]:
         _help = {} if help is None else help
-        return Parser[_FunctionPair[A]](
-            lambda cs: Result.return_(
-                Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
-            ),
-            usage=usage,
-            helps=_help,
-        )
+
+        def f(
+            cs: Sequence[str],
+        ) -> Result[Parse[Output[_FunctionPair[Sequence[KeyValue[Any]]]]]]:
+            return Result.return_(
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[Any]].zero(), func)),
+                    unparsed=cs,
+                )
+            )
+
+        return Parser(f, usage=usage, helps=_help)
 
     @classmethod
     def subcommand(
         cls: Type["_FunctionPair[A]"],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
-    ) -> Parser["_FunctionPair[KeyValue[str]]"]:
+        help: Optional[typing.Dict[str, str]] = None,
+    ) -> Parser[Output["_FunctionPair[str]"]]:
         _help = {} if help is None else help
 
         # def f(
@@ -188,16 +204,23 @@ class _FunctionPair(Sequence[A]):
 
         def g(
             cs: Sequence[str],
-        ) -> Result[Parse[_FunctionPair[KeyValue[str]]]]:
+        ) -> Result[Parse[Output[_FunctionPair[str]]]]:
             return Result.return_(
-                Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[str]].zero(), func)),
+                    unparsed=cs,
+                )
             )
 
         eq = matches(func.__name__)
         p = eq >= (
-            lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+            lambda _: Parser[Output[_FunctionPair[str]]](g, usage=usage, helps=_help)
         )
         return replace(p, usage=eq.usage, helps=eq.helps)
+
+    @classmethod
+    def zero(cls: Type[Monoid[A]]) -> Monoid[A]:
+        return _FunctionPair(Sequence[KeyValue[A]].zero(), function=None)
 
 
 @dataclass
@@ -205,19 +228,19 @@ class _Node:
     can_run: bool
     function: Callable
     flip_bools: bool
-    help: Optional[Dict[str, str]]
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]]
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+    help: Optional[typing.Dict[str, str]]
+    parsers: Optional[typing.Dict[str, Parser[Output]]]
+    repeated: Optional[Parser[Output]]
     subcommand: bool
     tree: Optional["CommandTree"]
 
-    def parser(self, *exclude: str) -> Parser[_FunctionPair[KeyValue[Any]]]:
-        p1 = (
-            _FunctionPair[KeyValue[Any]].subcommand(self.function)
+    def parser(self, *exclude: str) -> Parser[Output[_FunctionPair[Any]]]:
+        p1: Parser[Output[_FunctionPair[str]]] = (
+            _FunctionPair.subcommand(self.function)
             if self.subcommand
-            else _FunctionPair[KeyValue[Any]].command(self.function)
+            else _FunctionPair[Any].command(self.function)
         )
-        p2 = _func_to_parser(
+        p2: Parser[Output[_FunctionPair[str]]] = _func_to_parser(
             self.function,
             exclude=list(exclude),
             flip_bools=self.flip_bools,
@@ -225,8 +248,7 @@ class _Node:
             parsers=self.parsers,
             repeated=self.repeated,
         )
-        p = p1 >> p2
-        return p  # type: ignore[return-value]
+        return p1 >> p2
 
     def variable_names(self) -> Iterator[str]:
         yield from signature(self.function).parameters.keys()
@@ -246,9 +268,9 @@ class CommandTree:
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -354,24 +376,24 @@ class CommandTree:
 
         return wrapper
 
-    def _parser(self, *variables: str) -> Parser[_FunctionPair[KeyValue[Any]]]:
+    def _parser(self, *variables: str) -> Parser[Output[_FunctionPair[Any]]]:
         if not self._children:
             raise RuntimeError(
                 "You must assign children to a CommandTree object in order to use it as a parser."
             )
 
-        def get_alternatives() -> Iterator[Parser[_FunctionPair[KeyValue[Any]]]]:
+        def get_alternatives() -> Iterator[Parser[Output[_FunctionPair[Any]]]]:
             for child in self._children:
-                parser: Parser[_FunctionPair[KeyValue[Any]]] = child.parser(*variables)
+                parser: Parser[Output[_FunctionPair[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree._children:
                     child_parser = child.tree._parser(
                         *variables, *child.variable_names()
                     )
                     if child.can_run:
-                        child_parser = child_parser | done()  # type: ignore[operator]
-                    parser = cast(
-                        Parser[_FunctionPair[KeyValue[Any]]], parser >> child_parser
-                    )
+                        child_parser = (
+                            child_parser | Parser[Output[_FunctionPair[Any]]].done()
+                        )
+                    parser = parser >> child_parser
                 yield parser
 
         return reduce(operator.or_, get_alternatives()).wrap_help()
@@ -384,7 +406,7 @@ class CommandTree:
         If `args` is empty, uses `sys.argv[1:]`.
         """
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
-        p = self._parser() >> done()
+        p = self._parser() >> Parser[Output[_FunctionPair[Any]]].done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             p.handle_error(result)
@@ -393,16 +415,17 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair = cast(_FunctionPair, result.head.parsed)
-        return pair.function(**{kv.key: kv.value for kv in pair.get})
+        pair = result.head.parsed.get
+        assert pair.function is not None
+        return pair.function(**pair.seq.to_dict())
 
     def subcommand(
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -464,7 +487,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         >>> @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         >>> tree("-h")
@@ -483,7 +506,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         >>> @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         >>> tree("-h")
