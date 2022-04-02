@@ -9,7 +9,7 @@ import typing
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
-from typing import Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Iterator, List, Optional, Type, TypeVar
 
 from pytypeclass import Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -19,7 +19,7 @@ from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
 from dollar_lambda.parser import Parse, Parser, matches
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import Output, Sequence, Tree
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -30,8 +30,8 @@ def _func_to_parser(
     func: Callable,
     exclude: Optional[List[str]],
     flip_bools: bool,
-    help: Optional[Dict[str, str]],
-    parsers: Optional[Dict[str, Parser[Output]]],
+    help: Optional[typing.Dict[str, str]],
+    parsers: Optional[typing.Dict[str, Parser[Output]]],
     repeated: Optional[Parser[Output]],
 ) -> Parser:
     _exclude = [] if exclude is None else exclude
@@ -57,8 +57,8 @@ def _func_to_parser(
 
 def command(
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Parser[Output]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
@@ -140,7 +140,6 @@ def command(
             parsed = p.parse_args(*args)
             if parsed is None:
                 return
-            assert isinstance(parsed, Dict), parsed
             return func(**parsed)
 
         return wrapped
@@ -150,33 +149,41 @@ def command(
 
 @dataclass
 class _FunctionPair(Monoid[A_co]):
-    tree: Tree[A_co]
+    seq: Sequence[KeyValue[A_co]]
     function: Optional[Callable]
 
-    def __add__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Tree[B]") -> "_FunctionPair[A | B]":  # type: ignore[override]
-        return self | other
+    def __add__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        return self.add(other)
 
-    def __or__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Tree[B]") -> "_FunctionPair[A | B]":  # type: ignore[override]
-        if isinstance(other, Tree):
+    def __or__(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        return self.add(other)
+
+    def add(self: "_FunctionPair[A]", other: "_FunctionPair[B] | Sequence[KeyValue[B]]") -> "_FunctionPair[A | B]":  # type: ignore[override]
+        if isinstance(other, Sequence):
             function = self.function
-            tree = other
+            seq = other
         else:
             function = self.function if other.function is None else other.function
-            tree = other.tree
-        return _FunctionPair(tree=self.tree + tree, function=function)
+            seq = other.seq
+        return _FunctionPair(seq=self.seq | seq, function=function)
 
     @classmethod
     def command(
-        cls: Type["_FunctionPair[Tree[Any]]"],
+        cls: Type["_FunctionPair[Sequence[KeyValue[Any]]]"],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
     ) -> Parser[Output["_FunctionPair[Any]"]]:
         _help = {} if help is None else help
 
-        def f(cs: Sequence[str]) -> Result[Parse[Output[_FunctionPair[Tree[Any]]]]]:
+        def f(
+            cs: Sequence[str],
+        ) -> Result[Parse[Output[_FunctionPair[Sequence[KeyValue[Any]]]]]]:
             return Result.return_(
-                Parse(parsed=Output(_FunctionPair(Tree.zero(), func)), unparsed=cs)
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[Any]].zero(), func)),
+                    unparsed=cs,
+                )
             )
 
         return Parser(f, usage=usage, helps=_help)
@@ -186,7 +193,7 @@ class _FunctionPair(Monoid[A_co]):
         cls: Type["_FunctionPair[A]"],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
     ) -> Parser[Output["_FunctionPair[str]"]]:
         _help = {} if help is None else help
 
@@ -199,7 +206,10 @@ class _FunctionPair(Monoid[A_co]):
             cs: Sequence[str],
         ) -> Result[Parse[Output[_FunctionPair[str]]]]:
             return Result.return_(
-                Parse(parsed=Output(_FunctionPair(Tree({}), func)), unparsed=cs)
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[str]].zero(), func)),
+                    unparsed=cs,
+                )
             )
 
         eq = matches(func.__name__)
@@ -210,7 +220,7 @@ class _FunctionPair(Monoid[A_co]):
 
     @classmethod
     def zero(cls: Type[Monoid[A]]) -> Monoid[A]:
-        return _FunctionPair(Tree({}), function=None)
+        return _FunctionPair(Sequence[KeyValue[A]].zero(), function=None)
 
 
 @dataclass
@@ -218,8 +228,8 @@ class _Node:
     can_run: bool
     function: Callable
     flip_bools: bool
-    help: Optional[Dict[str, str]]
-    parsers: Optional[Dict[str, Parser[Output]]]
+    help: Optional[typing.Dict[str, str]]
+    parsers: Optional[typing.Dict[str, Parser[Output]]]
     repeated: Optional[Parser[Output]]
     subcommand: bool
     tree: Optional["CommandTree"]
@@ -258,8 +268,8 @@ class CommandTree:
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Parser[Output]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
         repeated: Optional[Parser[Output]] = None,
     ) -> Callable:
         """
@@ -405,16 +415,16 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair = cast(_FunctionPair, result.head.parsed.get)
+        pair = result.head.parsed.get
         assert pair.function is not None
-        return pair.function(**pair.tree.to_json())
+        return pair.function(**pair.seq.to_dict())
 
     def subcommand(
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Optional[Parser[Output]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
         repeated: Optional[Parser[Output]] = None,
     ) -> Callable:
         """

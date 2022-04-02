@@ -8,9 +8,9 @@ import operator
 import os
 import re
 import sys
-from dataclasses import dataclass, replace
+from dataclasses import astuple, dataclass, replace
 from functools import lru_cache, partial, reduce
-from typing import Any, Callable, Dict, Generic, Mapping, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -24,7 +24,7 @@ from dollar_lambda.error import (
     UnexpectedError,
 )
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import Key, Output, Sequence, Tree
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 A_co = TypeVar("A_co", covariant=True)
 A_monoid = TypeVar("A_monoid", bound=Monoid)
@@ -110,7 +110,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("-a", "-c", "-b")
         {'a': True, 'c': True, 'b': True}
         """
-        p = (self >> other) | (other >> self)
+        p = (self >> other) | (other.rshift(self))
         usage = binary_usage(self.usage, " ", other.usage, add_brackets=False)
         return replace(p, usage=usage)
 
@@ -152,6 +152,11 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **other.helps},
         )
 
+    def rshift(
+        self: "Parser[Output[A_monoid]]", p: "Parser[Output[B_monoid]]"
+    ) -> "Parser[Output[A_monoid | B_monoid]]":
+        return self >> p
+
     def __rshift__(
         self: "Parser[Output[A_monoid]]", p: "Parser[Output[B_monoid]]"
     ) -> "Parser[Output[A_monoid | B_monoid]]":
@@ -175,7 +180,7 @@ class Parser(MonadPlus[A_co]):
             def g(p2: Output[B_monoid]) -> Parser[Output[A_monoid | B_monoid]]:
                 # _p1 = p1 if isinstance(p1, Sequence) else Sequence(p1)
                 # _p2 = p2 if isinstance(p2, Sequence) else Sequence(p2)
-                return Parser.return_(p1 | p2)
+                return Parser.return_(p1 + p2)
 
             return p >= g
 
@@ -259,8 +264,9 @@ class Parser(MonadPlus[A_co]):
 
         Now let's use the `matches` parser to write a function that takes the output of `p1` and fails unless
         the next argument is the same as the first:
-        >>> def f(out: Output[Tree[str]]) -> Parser[Output[str]]:
-        ...     return matches(out.get.last_leaf())
+        >>> def f(out: Output[Sequence[KeyValue[Any]]]) -> Parser[Output[str]]:
+        ...     *_, kv = out.get
+        ...     return matches(kv.value)
 
         >>> p = p1 >= f
         >>> p.parse_args("a", "a")
@@ -531,9 +537,7 @@ class Parser(MonadPlus[A_co]):
             else:
                 exit()
 
-        tree = result.head.parsed.get
-        assert isinstance(tree, Tree), tree
-        return tree.to_json()
+        return result.head.parsed.get.to_dict()
 
     @classmethod
     def return_(cls, a: A_co) -> "Parser[A_co]":  # type: ignore[misc]
@@ -543,8 +547,8 @@ class Parser(MonadPlus[A_co]):
         and always returns `a` as the result. For the most part, the user will not use
         this method unless building custom parsers.
 
-        >>> Parser.return_(Output(Tree({"some-key": "some-value"}))).parse_args()
-        {'some-key': 'some-value'}
+        >>> Parser.return_(Output.from_dict(some_key="some_value")).parse_args()
+        {'some_key': 'some_value'}
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[A_co]]:
@@ -561,8 +565,8 @@ class Parser(MonadPlus[A_co]):
         Applies `parser`, applies a predicate to the result and fails if this returns false.
 
         >>> p = option("x", type=int).many().sat(
-        ...     lambda out: sum(out.get.leaves()) > 0,
-        ...     lambda out: ArgumentError(f"The values in {list(out.get.leaves())} must sum to more than 0."),
+        ...     lambda out: sum(out.get.values()) > 0,
+        ...     lambda out: ArgumentError(f"The values in {list(out.get.values())} must sum to more than 0."),
         ... )
         >>> p.parse_args("-x", "-1", "-x", "1")  # fails
         usage: [-x X ...]
@@ -588,8 +592,8 @@ class Parser(MonadPlus[A_co]):
         return self.apply(f)
 
     def type(
-        self: "Parser[Output[Tree[str]]]", f: Callable[[str], Any]
-    ) -> "Parser[Output[Tree[str]]]":
+        self: "Parser[Output[Sequence[KeyValue[str]]]]", f: Callable[[str], Any]
+    ) -> "Parser[Output[Sequence[KeyValue[str]]]]":
         """
         A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
         >>> p1 = option("x") >> option("y")
@@ -598,20 +602,17 @@ class Parser(MonadPlus[A_co]):
         {'x': '1', 'y': 2}
         """
 
-        def g(out: Output[Tree[str]]) -> Result[Output]:
-            tree = out.get
-            path = tree.path_to_last_leaf()
-            v = tree.last_leaf()
-            if v is None or not path:
+        def g(out: Output[Sequence[KeyValue[str]]]) -> Result[Output]:
+            d = out.get
+            if not d:
                 raise RuntimeError("Invoked type on a parser that returns no output.")
+            *tail, head = out.get
             try:
-                y = f(v)
+                y = f(head.value)
             except Exception as e:
-                usage = f"argument {v}: raised exception {e}"
+                usage = f"argument {head.value}: raised exception {e}"
                 return Result(ArgumentError(usage))
-            head, *tail = path
-            new_tree = Tree.from_path(NonemptyList.make(head, *tail), leaf=y)
-            return Result.return_(Output(tree.set(new_tree)))
+            return Result.return_(Output(Sequence([*tail, KeyValue(head.key, y)])))
 
         p = self.apply(g)
         return replace(p, usage=self.usage, helps=self.helps)
@@ -682,13 +683,13 @@ def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
     {'foo': 'bar'}
 
     Here we use `f` to directly manipulate the binding generated by `item`:
-    >>> p2 = apply(lambda bar: Output({bar + "e": bar + "f"}), description="baz")
+    >>> p2 = apply(lambda bar: Output.from_dict(**{bar + "e": bar + "f"}), description="baz")
     >>> p2.parse_args("bar")
     {'bare': 'barf'}
     """
 
-    def g(parsed: Output[Tree[str]]) -> Result[B_monoid]:
-        v = parsed.get.last_leaf()
+    def g(out: Output[Sequence[KeyValue[str]]]) -> Result[B_monoid]:
+        *_, (_, v) = map(astuple, out.get)
         assert v is not None  # because item produces output
         try:
             y = f(v)
@@ -734,11 +735,11 @@ def argument(
     return parser
 
 
-def defaults(**kwargs: A) -> Parser[Output[Tree[A]]]:
+def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
     """
     Useful for assigning default values to arguments.
     It ignore the input and always returns `kwargs` converted into `CollisionDict`.
-    `defaults` never fails.
+    `defaults` never failsekpoi
 
     >>> defaults(a=1, b=2).parse_args()
     {'a': 1, 'b': 2}
@@ -758,14 +759,15 @@ def defaults(**kwargs: A) -> Parser[Output[Tree[A]]]:
     >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
     {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
     """
-    _kwargs = cast(Mapping[Key, A], kwargs)
-    p = Parser[Output[A_monoid]].return_(Output(Tree(_kwargs)))
+    p = Parser[Output[A_monoid]].return_(
+        Output[Sequence[KeyValue[A]]].from_dict(**kwargs)
+    )
     return replace(p, usage=None)
 
 
 def matches(
     s: str, peak: bool = False, regex: bool = True
-) -> Parser[Output[Tree[str]]]:
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
     Checks if the next word is `s`.
 
@@ -837,7 +839,7 @@ def flag(
     help: Optional[str] = None,
     short: bool = True,
     string: Optional[str] = None,
-) -> Parser[Output[Tree[bool]]]:
+) -> Parser[Output[Sequence[KeyValue[bool]]]]:
     """
     Binds a boolean value to a variable.
 
@@ -907,7 +909,7 @@ def flag(
     def f(
         cs: Sequence[str],
         s: str,
-    ) -> Result[Parse[Output[Tree[bool]]]]:
+    ) -> Result[Parse[Output[Sequence[KeyValue[bool]]]]]:
         parser = matches(s) >= (lambda _: defaults(**{dest: not default}))
         return parser.parse(cs)
 
@@ -938,7 +940,7 @@ def help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
 def item(
     name: str,
     help_name: Optional[str] = None,
-) -> Parser[Output[Tree[str]]]:
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
     Parses a single word and binds it to `dest`.
     One of the lowest level building blocks for parsers.
@@ -959,13 +961,15 @@ def item(
     The following arguments are required: Your first name
     """
 
-    def f(cs: Sequence[str]) -> Result[Parse[Output[Tree[str]]]]:
+    def f(cs: Sequence[str]) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
         if cs:
             head, *tail = cs
             return Result(
                 NonemptyList(
                     Parse(
-                        parsed=Output(Tree({name: head})),
+                        parsed=Output[Sequence[KeyValue[str]]].from_dict(
+                            **{name: head}
+                        ),
                         unparsed=Sequence(tail),
                     )
                 )
@@ -1067,7 +1071,7 @@ def option(
     help: Optional[str] = None,
     short: bool = True,
     type: Callable[[str], Any] = str,
-) -> Parser[Output[Tree[Any]]]:
+) -> Parser[Output[Sequence[KeyValue[Any]]]]:
     """
     Parses two words, binding the second to the first.
 
@@ -1140,7 +1144,7 @@ def option(
 
     def f(
         cs: Sequence[str],
-    ) -> Result[Parse[Output[Tree[str]]]]:
+    ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
         parser = matches(_flag) >= (lambda _: item(dest, help_name=dest.upper()))
         return parser.parse(cs)
 
@@ -1158,16 +1162,18 @@ def option(
 def peak(
     name: str,
     description: Optional[str] = None,
-) -> Parser[Output[Tree[str]]]:
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
     def f(
         cs: Sequence[str],
-    ) -> Result[Parse[Output[Tree[str]]]]:
+    ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
         if cs:
             head, *_ = cs
             return Result(
                 NonemptyList(
                     Parse(
-                        parsed=Output(Tree({name: head})),
+                        parsed=Output[Sequence[KeyValue[str]]].from_dict(
+                            **{name: head}
+                        ),
                         unparsed=Sequence(cs),
                     )
                 )
@@ -1186,7 +1192,7 @@ def sat(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
-) -> Parser[Output[Tree[str]]]:
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
     A wrapper around `Parser.sat` that uses `item` to parse the argument and just applies `predicate` to the value output by `item`.
 
@@ -1208,15 +1214,13 @@ def sat(
         The value to bind the result to.
     """
 
-    def _predicate(parsed: Output[Tree[str]]) -> bool:
-        leaf = parsed.get.last_leaf()
-        assert leaf is not None  # item has output
-        return predicate(leaf)
+    def _predicate(out: Output[Sequence[KeyValue[str]]]) -> bool:
+        *_, (_, v) = map(astuple, out.get)
+        return predicate(v)
 
-    def _on_fail(parsed: Output[Tree[str]]) -> ArgumentError:
-        leaf = parsed.get.last_leaf()
-        assert leaf is not None  # item has output
-        return on_fail(leaf)
+    def _on_fail(out: Output[Sequence[KeyValue[str]]]) -> ArgumentError:
+        *_, (_, v) = map(astuple, out.get)
+        return on_fail(v)
 
     return item(name).sat(_predicate, _on_fail)
 
@@ -1225,15 +1229,13 @@ def sat_peak(
     predicate: Callable[[str], bool],
     on_fail: Callable[[str], ArgumentError],
     name: str,
-) -> Parser[Output[Tree[str]]]:
-    def _predicate(parsed: Output[Tree[str]]) -> bool:
-        leaf = parsed.get.last_leaf()
-        assert leaf is not None  # because peak produces output
-        return predicate(leaf)
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
+    def _predicate(out: Output[Sequence[KeyValue[str]]]) -> bool:
+        *_, (_, v) = map(astuple, out.get)
+        return predicate(v)
 
-    def _on_fail(parsed: Output[Tree[str]]) -> ArgumentError:
-        leaf = parsed.get.last_leaf()
-        assert leaf is not None  # because peak produces output
-        return on_fail(leaf)
+    def _on_fail(out: Output[Sequence[KeyValue[str]]]) -> ArgumentError:
+        *_, (_, v) = map(astuple, out.get)
+        return on_fail(v)
 
     return peak(name).sat(_predicate, _on_fail)

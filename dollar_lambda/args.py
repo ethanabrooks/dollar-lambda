@@ -221,9 +221,8 @@ class Args:
         """
         Parses the arguments and returns a dictionary of the parsed values.
         """
-        parser = typing.cast(
-            Parser[Output[Any]],
+        parser = (
             cls.parser(flip_bools=flip_bools, repeated=repeated)
-            >> Parser[Output[Tree[Any]]].done(),
+            >> Parser[Output[Tree[Any]]].done()
         )
         return parser.parse_args(*args)

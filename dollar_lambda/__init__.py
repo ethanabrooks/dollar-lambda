@@ -136,7 +136,7 @@ As promised, this succeeds:
 And this succeeds:
 
 >>> p.parse_args("1", "2", "3")
-{'y': [1.0, [2.0, 3.0]]}
+{'y': [1.0, 2.0, 3.0]}
 
 Again, you would ordinarily provide `parse_args` no arguments and it would get them
 from the command line:

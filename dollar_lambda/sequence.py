@@ -4,15 +4,15 @@ Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 from __future__ import annotations
 
 import typing
-from collections import UserDict
+from collections import UserDict, UserList
 from copy import copy
 from dataclasses import astuple, dataclass
 from typing import (
-    Any,
     Callable,
+    Dict,
     Generator,
+    Generic,
     Iterator,
-    List,
     Optional,
     Tuple,
     Type,
@@ -29,6 +29,18 @@ from pytypeclass.nonempty_list import NonemptyList
 
 A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
+A_monoid = TypeVar("A_monoid", bound=Monoid)
+B_monoid = TypeVar("B_monoid", bound=Monoid)
+
+
+class Array(UserList[A]):
+    pass
+
+
+@dataclass
+class KeyValue(Generic[A_co]):
+    key: str
+    value: A_co
 
 
 @dataclass
@@ -93,6 +105,15 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
         return Sequence(list(g()))
 
+    @classmethod
+    def from_dict(
+        cls: Type[Sequence[KeyValue[A]]], **kwargs
+    ) -> "Sequence[KeyValue[A]]":
+        return Sequence([KeyValue(k, v) for k, v in kwargs.items()])
+
+    def keys(self: "Sequence[KeyValue[A]]") -> "Sequence[str]":
+        return Sequence([kv.key for kv in self])
+
     @staticmethod
     def return_(a: A) -> "Sequence[A]":
         """
@@ -101,18 +122,33 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         """
         return Sequence([a])
 
+    def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | Array[A]]":
+        d: Dict[str, "A | Array[A]"] = {}
+        for kv in self:
+            if kv.key in d:
+                v = d[kv.key]
+                if isinstance(v, Array):
+                    v.append(kv.value)
+                else:
+                    d[kv.key] = Array([v, kv.value])
+            else:
+                d[kv.key] = kv.value
+        return d
+
+    def values(self: "Sequence[KeyValue[A]]") -> "Sequence[A]":
+        return Sequence([kv.value for kv in self])
+
     @classmethod
     def zero(cls: Type["Sequence[A_co]"]) -> "Sequence[A_co]":
         return Sequence([])
 
 
-A_monoid = TypeVar("A_monoid", covariant=True, bound=Monoid)
-B_monoid = TypeVar("B_monoid", bound=Monoid)
+A_co_monoid = TypeVar("A_co_monoid", covariant=True, bound=Monoid)
 
 
 @dataclass
-class Output(Monoid[A_monoid]):
-    get: A_monoid
+class Output(Monoid[A_co_monoid]):
+    get: A_co_monoid
 
     def __or__(  # type: ignore[override]
         self: Output[A_monoid], other: Output[B_monoid]
@@ -126,10 +162,16 @@ class Output(Monoid[A_monoid]):
         return self | other
 
     @classmethod
+    def from_dict(
+        cls: Type[Output[Sequence[KeyValue[A]]]], **kwargs
+    ) -> "Output[Sequence[KeyValue[A]]]":
+        return Output[Sequence[KeyValue[A]]](Sequence[KeyValue[A]].from_dict(**kwargs))
+
+    @classmethod
     def zero(
         cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
     ) -> Output[A_monoid]:
-        zero = cast(A_monoid, Tree.zero() if a is None else a.zero())
+        zero = cast(A_monoid, Sequence.zero() if a is None else a.zero())
         return Output(zero)
 
 
@@ -244,7 +286,7 @@ class Tree(Monoid[A_co], UserDict[Key, Value]):
             if isinstance(v, Tree):
                 yield from v.leaves()
             else:
-                yield cast(A_co, v)
+                yield v
 
     @classmethod
     def zero(cls: Type[Tree[A]]) -> Tree[A]:
