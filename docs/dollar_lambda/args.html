@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/args.py#L1-L228" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/args.py#L1-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `Args` dataclass and associated functions.
@@ -62,7 +62,7 @@ from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
-from dollar_lambda.sequence import Output, Tree
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 
 def field(
@@ -270,15 +270,14 @@ class Args:
         *args,
         flip_bools: bool = True,
         repeated: Optional[Parser[Output]] = None,
-    ) -&gt; typing.Dict[str, Any]:
+    ) -&gt; Optional[typing.Dict[str, Any]]:
         &#34;&#34;&#34;
         Parses the arguments and returns a dictionary of the parsed values.
         &#34;&#34;&#34;
-        parser = (
+        return (
             cls.parser(flip_bools=flip_bools, repeated=repeated)
-            &gt;&gt; Parser[Output[Tree[Any]]].done()
-        )
-        return parser.parse_args(*args)</code></pre>
+            &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
+        ).parse_args(*args)</code></pre>
 </details>
 </section>
 <section>
@@ -309,7 +308,7 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/args.py#L15-L46" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/args.py#L15-L46" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def field(
     help: Optional[str] = None,
@@ -414,7 +413,7 @@ y: a number to increment
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/args.py#L108-L228" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/args.py#L108-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Args:
@@ -528,27 +527,26 @@ class Args:
         *args,
         flip_bools: bool = True,
         repeated: Optional[Parser[Output]] = None,
-    ) -&gt; typing.Dict[str, Any]:
+    ) -&gt; Optional[typing.Dict[str, Any]]:
         &#34;&#34;&#34;
         Parses the arguments and returns a dictionary of the parsed values.
         &#34;&#34;&#34;
-        parser = (
+        return (
             cls.parser(flip_bools=flip_bools, repeated=repeated)
-            &gt;&gt; Parser[Output[Tree[Any]]].done()
-        )
-        return parser.parse_args(*args)</code></pre>
+            &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
+        ).parse_args(*args)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="dollar_lambda.args.Args.parse_args"><code class="name flex">
-<span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Dict[str, Any]</span>
+<span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Optional[Dict[str, Any]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parses the arguments and returns a dictionary of the parsed values.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/args.py#L214-L228" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/args.py#L214-L227" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parse_args(
@@ -556,15 +554,14 @@ def parse_args(
     *args,
     flip_bools: bool = True,
     repeated: Optional[Parser[Output]] = None,
-) -&gt; typing.Dict[str, Any]:
+) -&gt; Optional[typing.Dict[str, Any]]:
     &#34;&#34;&#34;
     Parses the arguments and returns a dictionary of the parsed values.
     &#34;&#34;&#34;
-    parser = (
+    return (
         cls.parser(flip_bools=flip_bools, repeated=repeated)
-        &gt;&gt; Parser[Output[Tree[Any]]].done()
-    )
-    return parser.parse_args(*args)</code></pre>
+        &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
+    ).parse_args(*args)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.args.Args.parser"><code class="name flex">
@@ -597,7 +594,7 @@ Combines these parsers using <code>nonpositional</code>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/args.py#L171-L212" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/args.py#L171-L212" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def parser(

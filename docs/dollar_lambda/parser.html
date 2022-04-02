@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L1-L1241" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L1-L1241" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines parsing functions and the `Parser` class that they instantiate.
@@ -421,6 +421,10 @@ class Parser(MonadPlus[A_co]):
                 print_usage(self.usage)
             if error.usage:
                 print(error.usage)
+        if TESTING:
+            return
+        else:
+            exit()
 
     def ignore(
         self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -546,7 +550,7 @@ class Parser(MonadPlus[A_co]):
         *args: str,
         allow_unparsed: bool = False,
         check_help: bool = True,
-    ) -&gt; &#34;Dict[str, Any]&#34;:
+    ) -&gt; &#34;Optional[Dict[str, Any]]&#34;:
         &#34;&#34;&#34;
         The main way the user extracts parsed results from the parser.
 
@@ -585,11 +589,7 @@ class Parser(MonadPlus[A_co]):
         result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             self.handle_error(result)
-            if TESTING:
-                return  # type: ignore[return-value]
-            else:
-                exit()
-
+            return None
         return result.head.parsed.get.to_dict()
 
     @classmethod
@@ -1322,7 +1322,7 @@ Here is an example of usage. First we define a simple <code><a title="dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L672-L701" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L672-L701" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(f: Callable[[str], B_monoid], description: str) -&gt; Parser[B_monoid]:
     &#34;&#34;&#34;
@@ -1383,7 +1383,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L704-L735" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L704-L735" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def argument(
     dest: str, help: Optional[str] = None, type: Optional[Callable[[str], Any]] = None
@@ -1427,7 +1427,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L62-L70" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L62-L70" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
     &#34;&#34;&#34;
@@ -1468,7 +1468,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L738-L765" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L738-L765" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def defaults(**kwargs: A) -&gt; Parser[Output[Sequence[KeyValue[A]]]]:
     &#34;&#34;&#34;
@@ -1555,7 +1555,7 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L836-L925" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L836-L925" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def flag(
     dest: str,
@@ -1657,7 +1657,7 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L928-L937" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L928-L937" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def help_parser(usage: Optional[str], parsed: A_monoid) -&gt; Parser[A_monoid]:
     def f(
@@ -1693,7 +1693,7 @@ The following arguments are required: Your first name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L940-L984" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L940-L984" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def item(
     name: str,
@@ -1784,7 +1784,7 @@ But this would work:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L768-L833" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L768-L833" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def matches(
     s: str, peak: bool = False, regex: bool = True
@@ -1901,7 +1901,7 @@ returning the first permutations that is successful:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L987-L1064" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L987-L1064" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nonpositional(
     *parsers: &#34;Parser[Output[A_monoid]]&#34;,
@@ -2040,7 +2040,7 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L1067-L1159" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L1067-L1159" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def option(
     dest: str,
@@ -2145,7 +2145,7 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L1162-L1188" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L1162-L1188" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def peak(
     name: str,
@@ -2201,7 +2201,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L1191-L1225" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L1191-L1225" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     predicate: Callable[[str], bool],
@@ -2248,7 +2248,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L1228-L1241" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L1228-L1241" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat_peak(
     predicate: Callable[[str], bool],
@@ -2287,7 +2287,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L39-L53" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L39-L53" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parse(Generic[A_co]):
@@ -2330,7 +2330,7 @@ class Parse(Generic[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L73-L669" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L73-L669" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parser(MonadPlus[A_co]):
@@ -2630,6 +2630,10 @@ class Parser(MonadPlus[A_co]):
                 print_usage(self.usage)
             if error.usage:
                 print(error.usage)
+        if TESTING:
+            return
+        else:
+            exit()
 
     def ignore(
         self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -2755,7 +2759,7 @@ class Parser(MonadPlus[A_co]):
         *args: str,
         allow_unparsed: bool = False,
         check_help: bool = True,
-    ) -&gt; &#34;Dict[str, Any]&#34;:
+    ) -&gt; &#34;Optional[Dict[str, Any]]&#34;:
         &#34;&#34;&#34;
         The main way the user extracts parsed results from the parser.
 
@@ -2794,11 +2798,7 @@ class Parser(MonadPlus[A_co]):
         result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             self.handle_error(result)
-            if TESTING:
-                return  # type: ignore[return-value]
-            else:
-                exit()
-
+            return None
         return result.head.parsed.get.to_dict()
 
     @classmethod
@@ -2973,7 +2973,7 @@ to the end of the parser:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L288-L316" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L288-L316" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def done(
@@ -3017,7 +3017,7 @@ def done(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L318-L327" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L318-L327" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def empty(
@@ -3044,7 +3044,7 @@ this method unless building custom parsers.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L542-L557" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L542-L557" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -3090,7 +3090,7 @@ This is a test.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L652-L669" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L652-L669" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34;:
@@ -3132,7 +3132,7 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L218-L246" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L218-L246" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(self: &#34;Parser[A_monoid]&#34;, f: Callable[[A_monoid], Result[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[misc]
     # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
@@ -3197,7 +3197,7 @@ Expected 'a'. Got 'b'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L248-L286" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L248-L286" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[override]
     &#34;&#34;&#34;
@@ -3253,7 +3253,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L329-L352" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L329-L352" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def fails(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -3289,7 +3289,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L354-L370" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L354-L374" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
     def print_usage(usage: str):
@@ -3307,7 +3307,11 @@ Parser unexpectedly succeeded.
         if self.usage:
             print_usage(self.usage)
         if error.usage:
-            print(error.usage)</code></pre>
+            print(error.usage)
+    if TESTING:
+        return
+    else:
+        exit()</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.ignore"><code class="name flex">
@@ -3330,7 +3334,7 @@ The following arguments are required: --hello
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L372-L397" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L376-L401" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def ignore(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -3386,7 +3390,7 @@ heterogenous:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L399-L430" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L403-L434" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many(
     self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
@@ -3440,7 +3444,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L432-L458" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L436-L462" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many1(
     self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
@@ -3479,7 +3483,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L460-L468" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L464-L472" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def map_error(self, f: Callable[[ArgumentError], ArgumentError]) -&gt; &#34;Parser[A_co]&#34;:
     def g(cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -3510,7 +3514,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L470-L483" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L474-L487" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def optional(self: &#34;Parser[Output[A_monoid]]&#34;) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
@@ -3536,7 +3540,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L485-L489" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L489-L493" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
     &#34;&#34;&#34;
@@ -3546,7 +3550,7 @@ Expected '--optional'. Got '--misspelled'
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.parse_args"><code class="name flex">
-<span>def <span class="ident">parse_args</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output]'", *args: str, allow_unparsed: bool = False, check_help: bool = True) <span style="white-space: nowrap;">-></span> Dict[str, Any]</span>
+<span>def <span class="ident">parse_args</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output]'", *args: str, allow_unparsed: bool = False, check_help: bool = True) <span style="white-space: nowrap;">-></span> Optional[Dict[str, Any]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The main way the user extracts parsed results from the parser.</p>
@@ -3570,14 +3574,14 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L491-L540" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L495-L540" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse_args(
     self: &#34;Parser[Output]&#34;,
     *args: str,
     allow_unparsed: bool = False,
     check_help: bool = True,
-) -&gt; &#34;Dict[str, Any]&#34;:
+) -&gt; &#34;Optional[Dict[str, Any]]&#34;:
     &#34;&#34;&#34;
     The main way the user extracts parsed results from the parser.
 
@@ -3616,11 +3620,7 @@ usage: A
     result = self.parse(Sequence(list(_args))).get
     if isinstance(result, ArgumentError):
         self.handle_error(result)
-        if TESTING:
-            return  # type: ignore[return-value]
-        else:
-            exit()
-
+        return None
     return result.head.parsed.get.to_dict()</code></pre>
 </details>
 </dd>
@@ -3632,7 +3632,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L155-L158" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L155-L158" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def rshift(
     self: &#34;Parser[Output[A_monoid]]&#34;, p: &#34;Parser[Output[B_monoid]]&#34;
@@ -3669,7 +3669,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L559-L592" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L559-L592" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     self: &#34;Parser[A_monoid]&#34;,
@@ -3720,7 +3720,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L594-L618" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L594-L618" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def type(
     self: &#34;Parser[Output[Sequence[KeyValue[str]]]]&#34;, f: Callable[[str], Any]
@@ -3757,7 +3757,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L620-L621" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L620-L621" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_error(self, error: ArgumentError) -&gt; &#34;Parser[A_co]&#34;:
     return self.map_error(lambda _: error)</code></pre>
@@ -3789,7 +3789,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L623-L650" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L623-L650" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_help(
     self: &#34;Parser[A_monoid]&#34;, a: Optional[Type[A_monoid]] = None
@@ -3832,7 +3832,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/parser.py#L56-L59" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/parser.py#L56-L59" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class SuccessError(ArgumentError, Generic[A_monoid]):
