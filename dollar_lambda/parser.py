@@ -368,6 +368,10 @@ class Parser(MonadPlus[A_co]):
                 print_usage(self.usage)
             if error.usage:
                 print(error.usage)
+        if TESTING:
+            return
+        else:
+            exit()
 
     def ignore(
         self: "Parser[Output[A_monoid]]", a: Optional[Type[A_monoid]] = None
@@ -493,7 +497,7 @@ class Parser(MonadPlus[A_co]):
         *args: str,
         allow_unparsed: bool = False,
         check_help: bool = True,
-    ) -> "Dict[str, Any]":
+    ) -> "Optional[Dict[str, Any]]":
         """
         The main way the user extracts parsed results from the parser.
 
@@ -532,11 +536,7 @@ class Parser(MonadPlus[A_co]):
         result = self.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             self.handle_error(result)
-            if TESTING:
-                return  # type: ignore[return-value]
-            else:
-                exit()
-
+            return None
         return result.head.parsed.get.to_dict()
 
     @classmethod

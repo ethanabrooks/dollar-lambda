@@ -409,11 +409,7 @@ class CommandTree:
         p = self._parser() >> Parser[Output[_FunctionPair[Any]]].done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
-            p.handle_error(result)
-            if parser_mod.TESTING:
-                return  # type: ignore[return-value]
-            else:
-                exit()
+            return p.handle_error(result)
         assert isinstance(result, NonemptyList)
         pair = result.head.parsed.get
         assert pair.function is not None

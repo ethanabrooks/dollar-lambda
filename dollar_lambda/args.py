@@ -217,12 +217,11 @@ class Args:
         *args,
         flip_bools: bool = True,
         repeated: Optional[Parser[Output]] = None,
-    ) -> typing.Dict[str, Any]:
+    ) -> Optional[typing.Dict[str, Any]]:
         """
         Parses the arguments and returns a dictionary of the parsed values.
         """
-        parser = (
+        return (
             cls.parser(flip_bools=flip_bools, repeated=repeated)
             >> Parser[Output[Tree[Any]]].done()
-        )
-        return parser.parse_args(*args)
+        ).parse_args(*args)
