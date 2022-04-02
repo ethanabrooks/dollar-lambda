@@ -14,7 +14,7 @@ pip install dollar-lambda
 # [Documentation](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/)
 
 # Highlights
-`$λ` comes with syntactic sugar that came make building parsers completely boilerplate-free.
+`$λ` comes with syntactic sugar that can make building parsers completely boilerplate-free.
 For complex parsing situations that exceed the expressive capacity of this syntax,
 the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 handle any reasonable amount of logical complexity.
@@ -45,9 +45,7 @@ main("-h")  # ordinarily you provide no arguments and main gets them from sys.ar
 
 
 ```python
-main(
-    "-x", "1", "--dev"
-)  # again, ordinarily these arguments would come from from sys.argv
+main("-x", "1", "--dev")
 ```
 
 
@@ -57,14 +55,14 @@ main(
 
 
 
-Use the `parsers` argument to add custom logic to this parser:
+Use the `parsers` argument to add custom logic using the lower-level syntax:
 
 
 ```python
 from dollar_lambda import flag
 
 
-@command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+@command(parsers=dict(kwargs=flag("dev") | flag("prod")))
 def main(x: int, **kwargs):
     return dict(x=x, **kwargs)
 ```
@@ -175,9 +173,6 @@ tree("-x", "1")
     Ran base_function with arguments: {'x': 1}
 
 
-As with `main` in the previous example, you would ordinarily provide `tree` no arguments and it would get them
-from the command line.
-
 There are many other ways to use `CommandTree`,
 including some that make use of the `base_function`.
 To learn more, we recommend the [`CommandTree` tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#commandtree-tutorial).
@@ -200,7 +195,7 @@ p = option("x", type=int) | argument("y", type=float).many()
 ```
 
 We go over this syntax in greater detail in the [tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#tutorial).
-For now, suffice to say that `argument` defines a positional argument,
+For now, suffice to say that [`argument`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.argument) defines a positional argument,
 [`many`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.many) allows parsers to be applied
 zero or more times, and [`|`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.__or__) expresses alternatives.
 
