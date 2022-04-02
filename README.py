@@ -180,7 +180,7 @@ p.parse_args("-x", "1")
 # And this succeeds:
 
 # %%
-p.parse_args("1", "2", "3", return_dict=False)
+p.parse_args("1", "2", "3")
 
 # %% [markdown]
 # ### Thanks

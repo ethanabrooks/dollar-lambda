@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/sequence.py#L1-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L1-L293" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
@@ -57,13 +57,43 @@ Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
-from typing import Callable, Generator, Iterator, Type, TypeVar, overload
+from collections import UserDict, UserList
+from copy import copy
+from dataclasses import astuple, dataclass
+from typing import (
+    Callable,
+    Dict,
+    Generator,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeAlias,
+    TypeVar,
+    cast,
+    overload,
+)
 
 from pytypeclass import Monad, MonadPlus
+from pytypeclass.monad import C
+from pytypeclass.monoid import B, Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 A_co = TypeVar(&#34;A_co&#34;, covariant=True)
 A = TypeVar(&#34;A&#34;)
+A_monoid = TypeVar(&#34;A_monoid&#34;, bound=Monoid)
+B_monoid = TypeVar(&#34;B_monoid&#34;, bound=Monoid)
+
+
+class Array(UserList[A]):
+    pass
+
+
+@dataclass
+class KeyValue(Generic[A_co]):
+    key: str
+    value: A_co
 
 
 @dataclass
@@ -128,6 +158,15 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
         return Sequence(list(g()))
 
+    @classmethod
+    def from_dict(
+        cls: Type[Sequence[KeyValue[A]]], **kwargs
+    ) -&gt; &#34;Sequence[KeyValue[A]]&#34;:
+        return Sequence([KeyValue(k, v) for k, v in kwargs.items()])
+
+    def keys(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[str]&#34;:
+        return Sequence([kv.key for kv in self])
+
     @staticmethod
     def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
         &#34;&#34;&#34;
@@ -136,9 +175,175 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         &#34;&#34;&#34;
         return Sequence([a])
 
+    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | Array[A]]&#34;:
+        d: Dict[str, &#34;A | Array[A]&#34;] = {}
+        for kv in self:
+            if kv.key in d:
+                v = d[kv.key]
+                if isinstance(v, Array):
+                    v.append(kv.value)
+                else:
+                    d[kv.key] = Array([v, kv.value])
+            else:
+                d[kv.key] = kv.value
+        return d
+
+    def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
+        return Sequence([kv.value for kv in self])
+
     @classmethod
     def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
-        return Sequence([])</code></pre>
+        return Sequence([])
+
+
+A_co_monoid = TypeVar(&#34;A_co_monoid&#34;, covariant=True, bound=Monoid)
+
+
+@dataclass
+class Output(Monoid[A_co_monoid]):
+    get: A_co_monoid
+
+    def __or__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -&gt; Output[A_monoid | B_monoid]:
+        c = cast(A_monoid | B_monoid, self.get | other.get)
+        return Output(c)
+
+    def __add__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -&gt; Output[A_monoid | B_monoid]:
+        return self | other
+
+    @classmethod
+    def from_dict(
+        cls: Type[Output[Sequence[KeyValue[A]]]], **kwargs
+    ) -&gt; &#34;Output[Sequence[KeyValue[A]]]&#34;:
+        return Output[Sequence[KeyValue[A]]](Sequence[KeyValue[A]].from_dict(**kwargs))
+
+    @classmethod
+    def zero(
+        cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
+    ) -&gt; Output[A_monoid]:
+        zero = cast(A_monoid, Sequence.zero() if a is None else a.zero())
+        return Output(zero)
+
+
+Key: TypeAlias = &#34;str | int&#34;
+Value: TypeAlias = &#34;A_co | Tree[A_co]&#34;
+
+
+class Tree(Monoid[A_co], UserDict[Key, Value]):
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; d = Tree[int]({})
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: 1})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: 1}
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: 2})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: {0: 1, 1: 2}}
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: d})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: {0: 1, 1: 2, &#39;a&#39;: {0: 1, 1: 2}}}
+    &gt;&gt;&gt; d.to_json()
+    {&#39;a&#39;: [1, 2, {&#39;a&#39;: [1, 2]}]}
+    &#34;&#34;&#34;
+
+    def bind(  # type: ignore[override]
+        self: &#34;Tree[B]&#34;,
+        f: Callable[[Tuple[Sequence[Key], B]], &#34;Tree[C]&#34;],
+    ) -&gt; &#34;Tree[C]&#34;:
+        raise NotImplementedError
+
+    @classmethod
+    def return_(  # type: ignore[override]
+        cls: Type[Tree[A]], a: Tuple[Key, UserDict[str, A]]
+    ) -&gt; Tree[A]:
+        raise NotImplementedError
+        # return Tree(dict([a]))
+
+    def __add__(self: Tree[A], other: Tree[B]) -&gt; Tree[A | B]:
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                inner = cd[k]
+                if isinstance(inner, Tree):
+                    if isinstance(v, Tree):
+                        _v = v
+                    else:
+                        _v = Tree({len(cd): v})
+                        assert len(cd) not in inner
+                    cd[k] = inner + _v  # recurse
+                else:
+                    cd[k] = Tree({0: cd[k], 1: v})
+            else:
+                cd[k] = v
+        return cd
+
+    def __or__(self: Tree[A], other: Tree[B]) -&gt; Tree[A | B]:  # type: ignore[override]
+        return self + other
+
+    @classmethod
+    def from_path(cls: Type[&#34;Tree[A]&#34;], path: NonemptyList[Key], leaf: A) -&gt; &#34;Tree[A]&#34;:
+        head, tail = astuple(path)
+        if tail:
+            return Tree({head: cls.from_path(tail, leaf)})
+        else:
+            return Tree({head: leaf})
+
+    def last_leaf(self) -&gt; &#34;A_co | None&#34;:
+        if not self:
+            return None
+        *_, (_, v) = super().items()
+        return v.last_leaf() if isinstance(v, Tree) else v
+
+    def path_to_last_leaf(self) -&gt; &#34;Sequence[Key]&#34;:
+        if not self:
+            return Sequence([])
+        *_, (k, v) = super().items()
+        if isinstance(v, Tree):
+            return Sequence([k, *v.path_to_last_leaf()])
+        else:
+            return Sequence([k])
+
+    def set(self, other: &#34;Tree[A_co]&#34;) -&gt; &#34;Tree[A_co]&#34;:
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                inner = cd[k]
+                if isinstance(v, Tree) and isinstance(inner, Tree):
+                    cd[k] = inner.set(v)  # recurse
+                else:
+                    # clobber the existing value
+                    cd[k] = v
+            else:
+                # k is a new key so just add to cd
+                cd[k] = v
+        return cd
+
+    def to_json(self):
+        cd = {k: v.to_json() if isinstance(v, Tree) else v for k, v in super().items()}
+        int_keys = [(k, v) for k, v in cd.items() if isinstance(k, int)]
+        int_keys = [v for k, v in sorted(int_keys)]
+        str_keys = {k: v for k, v in cd.items() if isinstance(k, str)}
+        if int_keys and str_keys:
+            return [*int_keys, str_keys]
+        elif int_keys:
+            return int_keys
+        else:
+            return str_keys
+
+    def leaves(self) -&gt; &#34;Iterator[A_co]&#34;:
+        if not self:
+            return
+        for v in super().values():
+            if isinstance(v, Tree):
+                yield from v.leaves()
+            else:
+                yield v
+
+    @classmethod
+    def zero(cls: Type[Tree[A]]) -&gt; Tree[A]:
+        return Tree({})</code></pre>
 </details>
 </section>
 <section>
@@ -150,6 +355,154 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="dollar_lambda.sequence.Array"><code class="flex name class">
+<span>class <span class="ident">Array</span></span>
+<span>(</span><span>initlist=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A more or less complete user-defined wrapper around list objects.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L36-L37" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">class Array(UserList[A]):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>collections.UserList</li>
+<li>collections.abc.MutableSequence</li>
+<li>collections.abc.Sequence</li>
+<li>collections.abc.Reversible</li>
+<li>collections.abc.Collection</li>
+<li>collections.abc.Sized</li>
+<li>collections.abc.Iterable</li>
+<li>collections.abc.Container</li>
+</ul>
+</dd>
+<dt id="dollar_lambda.sequence.KeyValue"><code class="flex name class">
+<span>class <span class="ident">KeyValue</span></span>
+<span>(</span><span>key: str, value: A_co)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>KeyValue(key: 'str', value: 'A_co')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L40-L43" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@dataclass
+class KeyValue(Generic[A_co]):
+    key: str
+    value: A_co</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="dollar_lambda.sequence.KeyValue.key"><code class="name">var <span class="ident">key</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.sequence.KeyValue.value"><code class="name">var <span class="ident">value</span> : +A_co</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="dollar_lambda.sequence.Output"><code class="flex name class">
+<span>class <span class="ident">Output</span></span>
+<span>(</span><span>get: A_co_monoid)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Output(get: 'A_co_monoid')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L149-L175" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@dataclass
+class Output(Monoid[A_co_monoid]):
+    get: A_co_monoid
+
+    def __or__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -&gt; Output[A_monoid | B_monoid]:
+        c = cast(A_monoid | B_monoid, self.get | other.get)
+        return Output(c)
+
+    def __add__(  # type: ignore[override]
+        self: Output[A_monoid], other: Output[B_monoid]
+    ) -&gt; Output[A_monoid | B_monoid]:
+        return self | other
+
+    @classmethod
+    def from_dict(
+        cls: Type[Output[Sequence[KeyValue[A]]]], **kwargs
+    ) -&gt; &#34;Output[Sequence[KeyValue[A]]]&#34;:
+        return Output[Sequence[KeyValue[A]]](Sequence[KeyValue[A]].from_dict(**kwargs))
+
+    @classmethod
+    def zero(
+        cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
+    ) -&gt; Output[A_monoid]:
+        zero = cast(A_monoid, Sequence.zero() if a is None else a.zero())
+        return Output(zero)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pytypeclass.monoid.Monoid</li>
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="dollar_lambda.sequence.Output.get"><code class="name">var <span class="ident">get</span> : +A_co_monoid</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="dollar_lambda.sequence.Output.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>**kwargs) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Output" href="#dollar_lambda.sequence.Output">Output</a>[<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[~A]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L164-L168" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def from_dict(
+    cls: Type[Output[Sequence[KeyValue[A]]]], **kwargs
+) -&gt; &#34;Output[Sequence[KeyValue[A]]]&#34;:
+    return Output[Sequence[KeyValue[A]]](Sequence[KeyValue[A]].from_dict(**kwargs))</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Output.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>a: Optional[Type[A_monoid]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Output" href="#dollar_lambda.sequence.Output">Output</a>[~A_monoid]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L170-L175" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def zero(
+    cls: Type[Output[A_monoid]], a: Optional[Type[A_monoid]] = None
+) -&gt; Output[A_monoid]:
+    zero = cast(A_monoid, Sequence.zero() if a is None else a.zero())
+    return Output(zero)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="dollar_lambda.sequence.Sequence"><code class="flex name class">
 <span>class <span class="ident">Sequence</span></span>
 <span>(</span><span>get: typing.Sequence[A_co])</span>
@@ -174,7 +527,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/sequence.py#L16-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L46-L143" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
@@ -238,6 +591,15 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
         return Sequence(list(g()))
 
+    @classmethod
+    def from_dict(
+        cls: Type[Sequence[KeyValue[A]]], **kwargs
+    ) -&gt; &#34;Sequence[KeyValue[A]]&#34;:
+        return Sequence([KeyValue(k, v) for k, v in kwargs.items()])
+
+    def keys(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[str]&#34;:
+        return Sequence([kv.key for kv in self])
+
     @staticmethod
     def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
         &#34;&#34;&#34;
@@ -245,6 +607,22 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         Sequence(get=[1])
         &#34;&#34;&#34;
         return Sequence([a])
+
+    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | Array[A]]&#34;:
+        d: Dict[str, &#34;A | Array[A]&#34;] = {}
+        for kv in self:
+            if kv.key in d:
+                v = d[kv.key]
+                if isinstance(v, Array):
+                    v.append(kv.value)
+                else:
+                    d[kv.key] = Array([v, kv.value])
+            else:
+                d[kv.key] = kv.value
+        return d
+
+    def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
+        return Sequence([kv.value for kv in self])
 
     @classmethod
     def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
@@ -263,10 +641,6 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 <li>collections.abc.Iterable</li>
 <li>collections.abc.Container</li>
 </ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li>dollar_lambda.decorators._FunctionPair</li>
-</ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="dollar_lambda.sequence.Sequence.get"><code class="name">var <span class="ident">get</span> : <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[+A_co]</code></dt>
@@ -276,6 +650,23 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 </dl>
 <h3>Static methods</h3>
 <dl>
+<dt id="dollar_lambda.sequence.Sequence.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>**kwargs) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[~A]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L108-L112" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def from_dict(
+    cls: Type[Sequence[KeyValue[A]]], **kwargs
+) -&gt; &#34;Sequence[KeyValue[A]]&#34;:
+    return Sequence([KeyValue(k, v) for k, v in kwargs.items()])</code></pre>
+</details>
+</dd>
 <dt id="dollar_lambda.sequence.Sequence.return_"><code class="name flex">
 <span>def <span class="ident">return_</span></span>(<span>a: A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
 </code></dt>
@@ -286,7 +677,7 @@ Sequence(get=[1])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/sequence.py#L78-L84" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L117-L123" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
 def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
@@ -305,7 +696,7 @@ def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/sequence.py#L86-L88" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L141-L143" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
@@ -325,7 +716,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/sequence.py#L64-L76" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L94-L106" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; &#34;Sequence[A]&#34;:
     &#34;&#34;&#34;
@@ -340,6 +731,388 @@ Sequence(get=[1, -1, 2, -2])
             yield from y
 
     return Sequence(list(g()))</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Sequence.keys"><code class="name flex">
+<span>def <span class="ident">keys</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[A]]'") <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[str]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L114-L115" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def keys(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[str]&#34;:
+    return Sequence([kv.key for kv in self])</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Sequence.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[A]]'") <span style="white-space: nowrap;">-></span> Dict[str, Union[~A, <a title="dollar_lambda.sequence.Array" href="#dollar_lambda.sequence.Array">Array</a>[~A]]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L125-L136" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | Array[A]]&#34;:
+    d: Dict[str, &#34;A | Array[A]&#34;] = {}
+    for kv in self:
+        if kv.key in d:
+            v = d[kv.key]
+            if isinstance(v, Array):
+                v.append(kv.value)
+            else:
+                d[kv.key] = Array([v, kv.value])
+        else:
+            d[kv.key] = kv.value
+    return d</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Sequence.values"><code class="name flex">
+<span>def <span class="ident">values</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[A]]'") <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L138-L139" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
+    return Sequence([kv.value for kv in self])</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="dollar_lambda.sequence.Tree"><code class="flex name class">
+<span>class <span class="ident">Tree</span></span>
+<span>(</span><span>dict=None, /, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><pre><code class="language-python-repl">&gt;&gt;&gt; d = Tree[int]({})
+&gt;&gt;&gt; d = d + Tree({&quot;a&quot;: 1})
+&gt;&gt;&gt; d
+{'a': 1}
+&gt;&gt;&gt; d = d + Tree({&quot;a&quot;: 2})
+&gt;&gt;&gt; d
+{'a': {0: 1, 1: 2}}
+&gt;&gt;&gt; d = d + Tree({&quot;a&quot;: d})
+&gt;&gt;&gt; d
+{'a': {0: 1, 1: 2, 'a': {0: 1, 1: 2}}}
+&gt;&gt;&gt; d.to_json()
+{'a': [1, 2, {'a': [1, 2]}]}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L182-L293" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">class Tree(Monoid[A_co], UserDict[Key, Value]):
+    &#34;&#34;&#34;
+    &gt;&gt;&gt; d = Tree[int]({})
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: 1})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: 1}
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: 2})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: {0: 1, 1: 2}}
+    &gt;&gt;&gt; d = d + Tree({&#34;a&#34;: d})
+    &gt;&gt;&gt; d
+    {&#39;a&#39;: {0: 1, 1: 2, &#39;a&#39;: {0: 1, 1: 2}}}
+    &gt;&gt;&gt; d.to_json()
+    {&#39;a&#39;: [1, 2, {&#39;a&#39;: [1, 2]}]}
+    &#34;&#34;&#34;
+
+    def bind(  # type: ignore[override]
+        self: &#34;Tree[B]&#34;,
+        f: Callable[[Tuple[Sequence[Key], B]], &#34;Tree[C]&#34;],
+    ) -&gt; &#34;Tree[C]&#34;:
+        raise NotImplementedError
+
+    @classmethod
+    def return_(  # type: ignore[override]
+        cls: Type[Tree[A]], a: Tuple[Key, UserDict[str, A]]
+    ) -&gt; Tree[A]:
+        raise NotImplementedError
+        # return Tree(dict([a]))
+
+    def __add__(self: Tree[A], other: Tree[B]) -&gt; Tree[A | B]:
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                inner = cd[k]
+                if isinstance(inner, Tree):
+                    if isinstance(v, Tree):
+                        _v = v
+                    else:
+                        _v = Tree({len(cd): v})
+                        assert len(cd) not in inner
+                    cd[k] = inner + _v  # recurse
+                else:
+                    cd[k] = Tree({0: cd[k], 1: v})
+            else:
+                cd[k] = v
+        return cd
+
+    def __or__(self: Tree[A], other: Tree[B]) -&gt; Tree[A | B]:  # type: ignore[override]
+        return self + other
+
+    @classmethod
+    def from_path(cls: Type[&#34;Tree[A]&#34;], path: NonemptyList[Key], leaf: A) -&gt; &#34;Tree[A]&#34;:
+        head, tail = astuple(path)
+        if tail:
+            return Tree({head: cls.from_path(tail, leaf)})
+        else:
+            return Tree({head: leaf})
+
+    def last_leaf(self) -&gt; &#34;A_co | None&#34;:
+        if not self:
+            return None
+        *_, (_, v) = super().items()
+        return v.last_leaf() if isinstance(v, Tree) else v
+
+    def path_to_last_leaf(self) -&gt; &#34;Sequence[Key]&#34;:
+        if not self:
+            return Sequence([])
+        *_, (k, v) = super().items()
+        if isinstance(v, Tree):
+            return Sequence([k, *v.path_to_last_leaf()])
+        else:
+            return Sequence([k])
+
+    def set(self, other: &#34;Tree[A_co]&#34;) -&gt; &#34;Tree[A_co]&#34;:
+        cd = copy(self)
+        for k, v in other.items():
+            if k in cd:
+                inner = cd[k]
+                if isinstance(v, Tree) and isinstance(inner, Tree):
+                    cd[k] = inner.set(v)  # recurse
+                else:
+                    # clobber the existing value
+                    cd[k] = v
+            else:
+                # k is a new key so just add to cd
+                cd[k] = v
+        return cd
+
+    def to_json(self):
+        cd = {k: v.to_json() if isinstance(v, Tree) else v for k, v in super().items()}
+        int_keys = [(k, v) for k, v in cd.items() if isinstance(k, int)]
+        int_keys = [v for k, v in sorted(int_keys)]
+        str_keys = {k: v for k, v in cd.items() if isinstance(k, str)}
+        if int_keys and str_keys:
+            return [*int_keys, str_keys]
+        elif int_keys:
+            return int_keys
+        else:
+            return str_keys
+
+    def leaves(self) -&gt; &#34;Iterator[A_co]&#34;:
+        if not self:
+            return
+        for v in super().values():
+            if isinstance(v, Tree):
+                yield from v.leaves()
+            else:
+                yield v
+
+    @classmethod
+    def zero(cls: Type[Tree[A]]) -&gt; Tree[A]:
+        return Tree({})</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pytypeclass.monoid.Monoid</li>
+<li>typing.Generic</li>
+<li>collections.UserDict</li>
+<li>collections.abc.MutableMapping</li>
+<li>collections.abc.Mapping</li>
+<li>collections.abc.Collection</li>
+<li>collections.abc.Sized</li>
+<li>collections.abc.Iterable</li>
+<li>collections.abc.Container</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="dollar_lambda.sequence.Tree.from_path"><code class="name flex">
+<span>def <span class="ident">from_path</span></span>(<span>path: NonemptyList[Key], leaf: A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L232-L238" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def from_path(cls: Type[&#34;Tree[A]&#34;], path: NonemptyList[Key], leaf: A) -&gt; &#34;Tree[A]&#34;:
+    head, tail = astuple(path)
+    if tail:
+        return Tree({head: cls.from_path(tail, leaf)})
+    else:
+        return Tree({head: leaf})</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.return_"><code class="name flex">
+<span>def <span class="ident">return_</span></span>(<span>a: Tuple[Key, UserDict[str, A]]) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L204-L209" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def return_(  # type: ignore[override]
+    cls: Type[Tree[A]], a: Tuple[Key, UserDict[str, A]]
+) -&gt; Tree[A]:
+    raise NotImplementedError
+    # return Tree(dict([a]))</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.zero"><code class="name flex">
+<span>def <span class="ident">zero</span></span>(<span>) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L291-L293" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def zero(cls: Type[Tree[A]]) -&gt; Tree[A]:
+    return Tree({})</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="dollar_lambda.sequence.Tree.bind"><code class="name flex">
+<span>def <span class="ident">bind</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[B]'", f: "Callable[[Tuple[<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[Key], B]], '<a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[C]']") <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[~C]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L198-L202" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def bind(  # type: ignore[override]
+    self: &#34;Tree[B]&#34;,
+    f: Callable[[Tuple[Sequence[Key], B]], &#34;Tree[C]&#34;],
+) -&gt; &#34;Tree[C]&#34;:
+    raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.last_leaf"><code class="name flex">
+<span>def <span class="ident">last_leaf</span></span>(<span>self) <span style="white-space: nowrap;">-></span> Optional[+A_co]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L240-L244" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def last_leaf(self) -&gt; &#34;A_co | None&#34;:
+    if not self:
+        return None
+    *_, (_, v) = super().items()
+    return v.last_leaf() if isinstance(v, Tree) else v</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.leaves"><code class="name flex">
+<span>def <span class="ident">leaves</span></span>(<span>self) <span style="white-space: nowrap;">-></span> Iterator[+A_co]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L282-L289" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def leaves(self) -&gt; &#34;Iterator[A_co]&#34;:
+    if not self:
+        return
+    for v in super().values():
+        if isinstance(v, Tree):
+            yield from v.leaves()
+        else:
+            yield v</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.path_to_last_leaf"><code class="name flex">
+<span>def <span class="ident">path_to_last_leaf</span></span>(<span>self) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[str | int]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L246-L253" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def path_to_last_leaf(self) -&gt; &#34;Sequence[Key]&#34;:
+    if not self:
+        return Sequence([])
+    *_, (k, v) = super().items()
+    if isinstance(v, Tree):
+        return Sequence([k, *v.path_to_last_leaf()])
+    else:
+        return Sequence([k])</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.set"><code class="name flex">
+<span>def <span class="ident">set</span></span>(<span>self, other: "'<a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[A_co]'") <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a>[+A_co]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L255-L268" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def set(self, other: &#34;Tree[A_co]&#34;) -&gt; &#34;Tree[A_co]&#34;:
+    cd = copy(self)
+    for k, v in other.items():
+        if k in cd:
+            inner = cd[k]
+            if isinstance(v, Tree) and isinstance(inner, Tree):
+                cd[k] = inner.set(v)  # recurse
+            else:
+                # clobber the existing value
+                cd[k] = v
+        else:
+            # k is a new key so just add to cd
+            cd[k] = v
+    return cd</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Tree.to_json"><code class="name flex">
+<span>def <span class="ident">to_json</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/sequence.py#L270-L280" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def to_json(self):
+    cd = {k: v.to_json() if isinstance(v, Tree) else v for k, v in super().items()}
+    int_keys = [(k, v) for k, v in cd.items() if isinstance(k, int)]
+    int_keys = [v for k, v in sorted(int_keys)]
+    str_keys = {k: v for k, v in cd.items() if isinstance(k, str)}
+    if int_keys and str_keys:
+        return [*int_keys, str_keys]
+    elif int_keys:
+        return int_keys
+    else:
+        return str_keys</code></pre>
 </details>
 </dd>
 </dl>
@@ -412,12 +1185,48 @@ setTimeout(() => input.focus(), 100);
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a></code></h4>
+<h4><code><a title="dollar_lambda.sequence.Array" href="#dollar_lambda.sequence.Array">Array</a></code></h4>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a></code></h4>
 <ul class="">
+<li><code><a title="dollar_lambda.sequence.KeyValue.key" href="#dollar_lambda.sequence.KeyValue.key">key</a></code></li>
+<li><code><a title="dollar_lambda.sequence.KeyValue.value" href="#dollar_lambda.sequence.KeyValue.value">value</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.sequence.Output" href="#dollar_lambda.sequence.Output">Output</a></code></h4>
+<ul class="">
+<li><code><a title="dollar_lambda.sequence.Output.from_dict" href="#dollar_lambda.sequence.Output.from_dict">from_dict</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Output.get" href="#dollar_lambda.sequence.Output.get">get</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Output.zero" href="#dollar_lambda.sequence.Output.zero">zero</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a></code></h4>
+<ul class="two-column">
 <li><code><a title="dollar_lambda.sequence.Sequence.bind" href="#dollar_lambda.sequence.Sequence.bind">bind</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.from_dict" href="#dollar_lambda.sequence.Sequence.from_dict">from_dict</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.get" href="#dollar_lambda.sequence.Sequence.get">get</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.keys" href="#dollar_lambda.sequence.Sequence.keys">keys</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.return_" href="#dollar_lambda.sequence.Sequence.return_">return_</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.to_dict" href="#dollar_lambda.sequence.Sequence.to_dict">to_dict</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.values" href="#dollar_lambda.sequence.Sequence.values">values</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.zero" href="#dollar_lambda.sequence.Sequence.zero">zero</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.sequence.Tree" href="#dollar_lambda.sequence.Tree">Tree</a></code></h4>
+<ul class="two-column">
+<li><code><a title="dollar_lambda.sequence.Tree.bind" href="#dollar_lambda.sequence.Tree.bind">bind</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.from_path" href="#dollar_lambda.sequence.Tree.from_path">from_path</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.last_leaf" href="#dollar_lambda.sequence.Tree.last_leaf">last_leaf</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.leaves" href="#dollar_lambda.sequence.Tree.leaves">leaves</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.path_to_last_leaf" href="#dollar_lambda.sequence.Tree.path_to_last_leaf">path_to_last_leaf</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.return_" href="#dollar_lambda.sequence.Tree.return_">return_</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.set" href="#dollar_lambda.sequence.Tree.set">set</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.to_json" href="#dollar_lambda.sequence.Tree.to_json">to_json</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Tree.zero" href="#dollar_lambda.sequence.Tree.zero">zero</a></code></li>
 </ul>
 </li>
 </ul>

@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L1-L503" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/decorators.py#L1-L526" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines the `command` decorator and the `CommandTree` class.
@@ -62,17 +62,17 @@ import typing
 from dataclasses import dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
-from typing import Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, cast
+from typing import Any, Callable, Iterator, List, Optional, Type, TypeVar
 
+from pytypeclass import Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda import parser as parser_mod
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.error import ArgumentError
-from dollar_lambda.key_value import KeyValue
-from dollar_lambda.parser import Parse, Parser, done, matches
+from dollar_lambda.parser import Parse, Parser, matches
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import Sequence
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 A = TypeVar(&#34;A&#34;)
 B = TypeVar(&#34;B&#34;)
@@ -83,10 +83,10 @@ def _func_to_parser(
     func: Callable,
     exclude: Optional[List[str]],
     flip_bools: bool,
-    help: Optional[Dict[str, str]],
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]],
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]],
-) -&gt; Parser[Sequence[KeyValue[Any]]]:
+    help: Optional[typing.Dict[str, str]],
+    parsers: Optional[typing.Dict[str, Parser[Output]]],
+    repeated: Optional[Parser[Output]],
+) -&gt; Parser:
     _exclude = [] if exclude is None else exclude
     _help = {} if help is None else help
     _parsers = {} if parsers is None else parsers
@@ -110,9 +110,9 @@ def _func_to_parser(
 
 def command(
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    repeated: Optional[Parser[Output]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
     A succinct way to generate a simple `nonpositional` parser. `@command` derives the
@@ -193,7 +193,6 @@ def command(
             parsed = p.parse_args(*args)
             if parsed is None:
                 return
-            assert isinstance(parsed, Dict), parsed
             return func(**parsed)
 
         return wrapped
@@ -202,36 +201,53 @@ def command(
 
 
 @dataclass
-class _FunctionPair(Sequence[A]):
-    function: Callable
+class _FunctionPair(Monoid[A_co]):
+    seq: Sequence[KeyValue[A_co]]
+    function: Optional[Callable]
 
-    def __or__(self, other: Sequence[B]) -&gt; &#34;_FunctionPair[A | B]&#34;:  # type: ignore[override]
-        function = other.function if isinstance(other, _FunctionPair) else self.function
-        return _FunctionPair(get=[*self, *other], function=function)
+    def __add__(self: &#34;_FunctionPair[A]&#34;, other: &#34;_FunctionPair[B] | Sequence[KeyValue[B]]&#34;) -&gt; &#34;_FunctionPair[A | B]&#34;:  # type: ignore[override]
+        return self.add(other)
+
+    def __or__(self: &#34;_FunctionPair[A]&#34;, other: &#34;_FunctionPair[B] | Sequence[KeyValue[B]]&#34;) -&gt; &#34;_FunctionPair[A | B]&#34;:  # type: ignore[override]
+        return self.add(other)
+
+    def add(self: &#34;_FunctionPair[A]&#34;, other: &#34;_FunctionPair[B] | Sequence[KeyValue[B]]&#34;) -&gt; &#34;_FunctionPair[A | B]&#34;:  # type: ignore[override]
+        if isinstance(other, Sequence):
+            function = self.function
+            seq = other
+        else:
+            function = self.function if other.function is None else other.function
+            seq = other.seq
+        return _FunctionPair(seq=self.seq | seq, function=function)
 
     @classmethod
     def command(
-        cls: Type[&#34;_FunctionPair[A]&#34;],
+        cls: Type[&#34;_FunctionPair[Sequence[KeyValue[Any]]]&#34;],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
-    ) -&gt; Parser[&#34;_FunctionPair[A]&#34;]:
+        help: Optional[typing.Dict[str, str]] = None,
+    ) -&gt; Parser[Output[&#34;_FunctionPair[Any]&#34;]]:
         _help = {} if help is None else help
-        return Parser[_FunctionPair[A]](
-            lambda cs: Result.return_(
-                Parse(parsed=_FunctionPair(Sequence[A]([]), func), unparsed=cs)
-            ),
-            usage=usage,
-            helps=_help,
-        )
+
+        def f(
+            cs: Sequence[str],
+        ) -&gt; Result[Parse[Output[_FunctionPair[Sequence[KeyValue[Any]]]]]]:
+            return Result.return_(
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[Any]].zero(), func)),
+                    unparsed=cs,
+                )
+            )
+
+        return Parser(f, usage=usage, helps=_help)
 
     @classmethod
     def subcommand(
         cls: Type[&#34;_FunctionPair[A]&#34;],
         func: Callable,
         usage: Optional[str] = None,
-        help: Optional[Dict[str, str]] = None,
-    ) -&gt; Parser[&#34;_FunctionPair[KeyValue[str]]&#34;]:
+        help: Optional[typing.Dict[str, str]] = None,
+    ) -&gt; Parser[Output[&#34;_FunctionPair[str]&#34;]]:
         _help = {} if help is None else help
 
         # def f(
@@ -241,16 +257,23 @@ class _FunctionPair(Sequence[A]):
 
         def g(
             cs: Sequence[str],
-        ) -&gt; Result[Parse[_FunctionPair[KeyValue[str]]]]:
+        ) -&gt; Result[Parse[Output[_FunctionPair[str]]]]:
             return Result.return_(
-                Parse(parsed=_FunctionPair(Sequence([]), func), unparsed=cs)
+                Parse(
+                    parsed=Output(_FunctionPair(Sequence[KeyValue[str]].zero(), func)),
+                    unparsed=cs,
+                )
             )
 
         eq = matches(func.__name__)
         p = eq &gt;= (
-            lambda _: Parser[_FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
+            lambda _: Parser[Output[_FunctionPair[str]]](g, usage=usage, helps=_help)
         )
         return replace(p, usage=eq.usage, helps=eq.helps)
+
+    @classmethod
+    def zero(cls: Type[Monoid[A]]) -&gt; Monoid[A]:
+        return _FunctionPair(Sequence[KeyValue[A]].zero(), function=None)
 
 
 @dataclass
@@ -258,19 +281,19 @@ class _Node:
     can_run: bool
     function: Callable
     flip_bools: bool
-    help: Optional[Dict[str, str]]
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]]
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+    help: Optional[typing.Dict[str, str]]
+    parsers: Optional[typing.Dict[str, Parser[Output]]]
+    repeated: Optional[Parser[Output]]
     subcommand: bool
     tree: Optional[&#34;CommandTree&#34;]
 
-    def parser(self, *exclude: str) -&gt; Parser[_FunctionPair[KeyValue[Any]]]:
-        p1 = (
-            _FunctionPair[KeyValue[Any]].subcommand(self.function)
+    def parser(self, *exclude: str) -&gt; Parser[Output[_FunctionPair[Any]]]:
+        p1: Parser[Output[_FunctionPair[str]]] = (
+            _FunctionPair.subcommand(self.function)
             if self.subcommand
-            else _FunctionPair[KeyValue[Any]].command(self.function)
+            else _FunctionPair[Any].command(self.function)
         )
-        p2 = _func_to_parser(
+        p2: Parser[Output[_FunctionPair[str]]] = _func_to_parser(
             self.function,
             exclude=list(exclude),
             flip_bools=self.flip_bools,
@@ -278,8 +301,7 @@ class _Node:
             parsers=self.parsers,
             repeated=self.repeated,
         )
-        p = p1 &gt;&gt; p2
-        return p  # type: ignore[return-value]
+        return p1 &gt;&gt; p2
 
     def variable_names(self) -&gt; Iterator[str]:
         yield from signature(self.function).parameters.keys()
@@ -299,9 +321,9 @@ class CommandTree:
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -&gt; Callable:
         &#34;&#34;&#34;
         A decorator for adding a function as a child of this tree.
@@ -407,24 +429,24 @@ class CommandTree:
 
         return wrapper
 
-    def _parser(self, *variables: str) -&gt; Parser[_FunctionPair[KeyValue[Any]]]:
+    def _parser(self, *variables: str) -&gt; Parser[Output[_FunctionPair[Any]]]:
         if not self._children:
             raise RuntimeError(
                 &#34;You must assign children to a CommandTree object in order to use it as a parser.&#34;
             )
 
-        def get_alternatives() -&gt; Iterator[Parser[_FunctionPair[KeyValue[Any]]]]:
+        def get_alternatives() -&gt; Iterator[Parser[Output[_FunctionPair[Any]]]]:
             for child in self._children:
-                parser: Parser[_FunctionPair[KeyValue[Any]]] = child.parser(*variables)
+                parser: Parser[Output[_FunctionPair[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree._children:
                     child_parser = child.tree._parser(
                         *variables, *child.variable_names()
                     )
                     if child.can_run:
-                        child_parser = child_parser | done()  # type: ignore[operator]
-                    parser = cast(
-                        Parser[_FunctionPair[KeyValue[Any]]], parser &gt;&gt; child_parser
-                    )
+                        child_parser = (
+                            child_parser | Parser[Output[_FunctionPair[Any]]].done()
+                        )
+                    parser = parser &gt;&gt; child_parser
                 yield parser
 
         return reduce(operator.or_, get_alternatives()).wrap_help()
@@ -437,7 +459,7 @@ class CommandTree:
         If `args` is empty, uses `sys.argv[1:]`.
         &#34;&#34;&#34;
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
-        p = self._parser() &gt;&gt; done()
+        p = self._parser() &gt;&gt; Parser[Output[_FunctionPair[Any]]].done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             p.handle_error(result)
@@ -446,16 +468,17 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair = cast(_FunctionPair, result.head.parsed)
-        return pair.function(**{kv.key: kv.value for kv in pair.get})
+        pair = result.head.parsed.get
+        assert pair.function is not None
+        return pair.function(**pair.seq.to_dict())
 
     def subcommand(
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -&gt; Callable:
         &#34;&#34;&#34;
         A decorator for adding a function as a child of this tree.
@@ -517,7 +540,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         &gt;&gt;&gt; @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         &gt;&gt;&gt; tree(&#34;-h&#34;)
@@ -536,7 +559,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         &gt;&gt;&gt; @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         &gt;&gt;&gt; tree(&#34;-h&#34;)
@@ -564,7 +587,7 @@ class CommandTree:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="dollar_lambda.decorators.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[Dict[str, str]] = None, parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None, repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None) <span style="white-space: nowrap;">-></span> Callable[[Callable], Callable]</span>
+<span>def <span class="ident">command</span></span>(<span>flip_bools: bool = True, help: Optional[typing.Dict[str, str]] = None, parsers: Optional[typing.Dict[str, Parser[Output]]] = None, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Callable[[Callable], Callable]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A succinct way to generate a simple <code>nonpositional</code> parser. <code>@command</code> derives the
@@ -620,13 +643,13 @@ quiet: Be quiet
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L58-L148" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/decorators.py#L58-L147" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    repeated: Optional[Parser[Output]] = None,
 ) -&gt; Callable[[Callable], Callable]:
     &#34;&#34;&#34;
     A succinct way to generate a simple `nonpositional` parser. `@command` derives the
@@ -707,7 +730,6 @@ quiet: Be quiet
             parsed = p.parse_args(*args)
             if parsed is None:
                 return
-            assert isinstance(parsed, Dict), parsed
             return func(**parsed)
 
         return wrapped
@@ -729,7 +751,7 @@ see the <a href="#commandtree-tutorial"><code>CommandTree</code> tutorial</a>.</
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L235-L503" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/decorators.py#L257-L526" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class CommandTree:
@@ -745,9 +767,9 @@ class CommandTree:
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -&gt; Callable:
         &#34;&#34;&#34;
         A decorator for adding a function as a child of this tree.
@@ -853,24 +875,24 @@ class CommandTree:
 
         return wrapper
 
-    def _parser(self, *variables: str) -&gt; Parser[_FunctionPair[KeyValue[Any]]]:
+    def _parser(self, *variables: str) -&gt; Parser[Output[_FunctionPair[Any]]]:
         if not self._children:
             raise RuntimeError(
                 &#34;You must assign children to a CommandTree object in order to use it as a parser.&#34;
             )
 
-        def get_alternatives() -&gt; Iterator[Parser[_FunctionPair[KeyValue[Any]]]]:
+        def get_alternatives() -&gt; Iterator[Parser[Output[_FunctionPair[Any]]]]:
             for child in self._children:
-                parser: Parser[_FunctionPair[KeyValue[Any]]] = child.parser(*variables)
+                parser: Parser[Output[_FunctionPair[Any]]] = child.parser(*variables)
                 if child.tree is not None and child.tree._children:
                     child_parser = child.tree._parser(
                         *variables, *child.variable_names()
                     )
                     if child.can_run:
-                        child_parser = child_parser | done()  # type: ignore[operator]
-                    parser = cast(
-                        Parser[_FunctionPair[KeyValue[Any]]], parser &gt;&gt; child_parser
-                    )
+                        child_parser = (
+                            child_parser | Parser[Output[_FunctionPair[Any]]].done()
+                        )
+                    parser = parser &gt;&gt; child_parser
                 yield parser
 
         return reduce(operator.or_, get_alternatives()).wrap_help()
@@ -883,7 +905,7 @@ class CommandTree:
         If `args` is empty, uses `sys.argv[1:]`.
         &#34;&#34;&#34;
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
-        p = self._parser() &gt;&gt; done()
+        p = self._parser() &gt;&gt; Parser[Output[_FunctionPair[Any]]].done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):
             p.handle_error(result)
@@ -892,16 +914,17 @@ class CommandTree:
             else:
                 exit()
         assert isinstance(result, NonemptyList)
-        pair = cast(_FunctionPair, result.head.parsed)
-        return pair.function(**{kv.key: kv.value for kv in pair.get})
+        pair = result.head.parsed.get
+        assert pair.function is not None
+        return pair.function(**pair.seq.to_dict())
 
     def subcommand(
         self,
         can_run: bool = True,
         flip_bools: bool = True,
-        help: Optional[Dict[str, str]] = None,
-        parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None,
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+        help: Optional[typing.Dict[str, str]] = None,
+        parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
+        repeated: Optional[Parser[Output]] = None,
     ) -&gt; Callable:
         &#34;&#34;&#34;
         A decorator for adding a function as a child of this tree.
@@ -963,7 +986,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         &gt;&gt;&gt; @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         &gt;&gt;&gt; tree(&#34;-h&#34;)
@@ -982,7 +1005,7 @@ class CommandTree:
         ...     return dict(f1=dict(b=b))
         ...
         &gt;&gt;&gt; @f1.subcommand()
-        ... def g1(n: int):
+        ... def g1(b: bool, n: int):
         ...     return dict(g1=dict(b=b, n=n))
         ...
         &gt;&gt;&gt; tree(&#34;-h&#34;)
@@ -1004,7 +1027,7 @@ class CommandTree:
 <h3>Methods</h3>
 <dl>
 <dt id="dollar_lambda.decorators.CommandTree.command"><code class="name flex">
-<span>def <span class="ident">command</span></span>(<span>self, can_run: bool = True, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None, repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None) <span style="white-space: nowrap;">-></span> Callable</span>
+<span>def <span class="ident">command</span></span>(<span>self, can_run: bool = True, flip_bools: bool = True, help: Optional[typing.Dict[str, str]] = None, parsers: Optional[typing.Dict[str, Parser[Output]]] = None, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Callable</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A decorator for adding a function as a child of this tree.</p>
@@ -1084,15 +1107,15 @@ Expected '-b'. Got 'f1'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L245-L347" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/decorators.py#L267-L369" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def command(
     self,
     can_run: bool = True,
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Parser[Sequence[KeyValue[Any]]]]] = None,
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    repeated: Optional[Parser[Output]] = None,
 ) -&gt; Callable:
     &#34;&#34;&#34;
     A decorator for adding a function as a child of this tree.
@@ -1192,7 +1215,7 @@ Expected '-b'. Got 'f1'
 </details>
 </dd>
 <dt id="dollar_lambda.decorators.CommandTree.subcommand"><code class="name flex">
-<span>def <span class="ident">subcommand</span></span>(<span>self, can_run: bool = True, flip_bools: bool = True, help: Optional[Dict[str, str]] = None, parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None, repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None) <span style="white-space: nowrap;">-></span> Callable</span>
+<span>def <span class="ident">subcommand</span></span>(<span>self, can_run: bool = True, flip_bools: bool = True, help: Optional[typing.Dict[str, str]] = None, parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Callable</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A decorator for adding a function as a child of this tree.
@@ -1245,7 +1268,7 @@ for the <code>f1</code>'s children:</p>
 ...     return dict(f1=dict(b=b))
 ...
 &gt;&gt;&gt; @f1.subcommand()
-... def g1(n: int):
+... def g1(b: bool, n: int):
 ...     return dict(g1=dict(b=b, n=n))
 ...
 &gt;&gt;&gt; tree(&quot;-h&quot;)
@@ -1263,7 +1286,7 @@ are not supplied:</p>
 ...     return dict(f1=dict(b=b))
 ...
 &gt;&gt;&gt; @f1.subcommand()
-... def g1(n: int):
+... def g1(b: bool, n: int):
 ...     return dict(g1=dict(b=b, n=n))
 ...
 &gt;&gt;&gt; tree(&quot;-h&quot;)
@@ -1276,15 +1299,15 @@ The following arguments are required: g1
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3af1c11524b60ff2bc1f1ec6890ff52a071c4f29/dollar_lambda/decorators.py#L399-L503" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/6985236c77c096ca75bd34bac6009a72b619c85c/dollar_lambda/decorators.py#L422-L526" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def subcommand(
     self,
     can_run: bool = True,
     flip_bools: bool = True,
-    help: Optional[Dict[str, str]] = None,
-    parsers: Optional[Dict[str, Optional[Parser[Sequence[KeyValue[Any]]]]]] = None,
-    repeated: Optional[Parser[Sequence[KeyValue[Any]]]] = None,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
+    repeated: Optional[Parser[Output]] = None,
 ) -&gt; Callable:
     &#34;&#34;&#34;
     A decorator for adding a function as a child of this tree.
@@ -1346,7 +1369,7 @@ The following arguments are required: g1
     ...     return dict(f1=dict(b=b))
     ...
     &gt;&gt;&gt; @f1.subcommand()
-    ... def g1(n: int):
+    ... def g1(b: bool, n: int):
     ...     return dict(g1=dict(b=b, n=n))
     ...
     &gt;&gt;&gt; tree(&#34;-h&#34;)
@@ -1365,7 +1388,7 @@ The following arguments are required: g1
     ...     return dict(f1=dict(b=b))
     ...
     &gt;&gt;&gt; @f1.subcommand()
-    ... def g1(n: int):
+    ... def g1(b: bool, n: int):
     ...     return dict(g1=dict(b=b, n=n))
     ...
     &gt;&gt;&gt; tree(&#34;-h&#34;)

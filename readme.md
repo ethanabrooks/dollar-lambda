@@ -234,13 +234,13 @@ And this succeeds:
 
 
 ```python
-p.parse_args("1", "2", "3", return_dict=False)
+p.parse_args("1", "2", "3")
 ```
 
 
 
 
-    [('y', 1.0), ('y', 2.0), ('y', 3.0)]
+    {'y': Array([1.0, 2.0, 3.0])}
 
 
 
