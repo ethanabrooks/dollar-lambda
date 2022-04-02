@@ -13,6 +13,7 @@ from typing import (
     Generator,
     Generic,
     Iterator,
+    List,
     Optional,
     Tuple,
     Type,
@@ -122,7 +123,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         """
         return Sequence([a])
 
-    def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | Array[A]]":
+    def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | List[A]]":
         d: Dict[str, "A | Array[A]"] = {}
         for kv in self:
             if kv.key in d:
@@ -133,7 +134,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
                     d[kv.key] = Array([v, kv.value])
             else:
                 d[kv.key] = kv.value
-        return d
+        return {k: list(v) if isinstance(v, Array) else v for k, v in d.items()}
 
     def values(self: "Sequence[KeyValue[A]]") -> "Sequence[A]":
         return Sequence([kv.value for kv in self])
