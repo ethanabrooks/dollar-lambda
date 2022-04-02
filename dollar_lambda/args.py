@@ -9,7 +9,7 @@ from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
-from dollar_lambda.sequence import Output, Tree
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 
 def field(
@@ -223,5 +223,5 @@ class Args:
         """
         return (
             cls.parser(flip_bools=flip_bools, repeated=repeated)
-            >> Parser[Output[Tree[Any]]].done()
+            >> Parser[Output[Sequence[KeyValue[Any]]]].done()
         ).parse_args(*args)
