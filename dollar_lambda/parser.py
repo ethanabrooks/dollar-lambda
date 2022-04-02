@@ -702,7 +702,9 @@ def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
 
 
 def argument(
-    dest: str, help: Optional[str] = None, type: Optional[Callable[[str], Any]] = None
+    dest: str,
+    help: Optional[str] = None,
+    type: Optional[Callable[[str], Any]] = None,
 ) -> Parser[Output]:
     """
     Parses a single word and binds it to `dest`.
@@ -872,6 +874,9 @@ def flag(
     Here is an example using the `default` parameter:
 
     >>> p = flag("verbose", default=False)
+    >>> p.parse_args("-h")
+    usage: --verbose
+
     >>> p.parse_args()
     {'verbose': False}
 
@@ -939,7 +944,7 @@ def help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
 
 def item(
     name: str,
-    help_name: Optional[str] = None,
+    usage_name: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
     Parses a single word and binds it to `dest`.
@@ -947,13 +952,13 @@ def item(
 
     Parameters
     ----------
-    help_name : Optional[str]
-        Used for generating help text
+    usage_name : Optional[str]
+        Used for generating usage text
 
     Examples
     --------
 
-    >>> p = item("name", help_name="Your first name")
+    >>> p = item("name", usage_name="Your first name")
     >>> p.parse_args("Alice")
     {'name': 'Alice'}
     >>> p.parse_args()
@@ -977,7 +982,7 @@ def item(
         return Result(
             MissingError(
                 missing=name,
-                usage=f"The following arguments are required: {help_name or name}",
+                usage=f"The following arguments are required: {usage_name or name}",
             )
         )
 
@@ -1110,7 +1115,13 @@ def option(
 
     This example demonstrates the use of the `default` parameter:
 
-    >>> option("count", default=2).parse_args()
+    >>> p = option("count", default=2)
+    >>> p.parse_args("-h")
+    usage: --count COUNT
+    count: (default: 2)
+
+
+    >>> p.parse_args()
     {'count': 2}
 
     Here we specify a help-string using the `help` parameter:
@@ -1145,15 +1156,15 @@ def option(
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag) >= (lambda _: item(dest, help_name=dest.upper()))
+        parser = matches(_flag) >= (lambda _: argument(dest, type=type))
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if type is not str:
-        parser = parser.type(type)
     if short and len(dest) > 1:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
+    if default:
+        help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
     return parser if default is None else parser | defaults(**{dest: default})
