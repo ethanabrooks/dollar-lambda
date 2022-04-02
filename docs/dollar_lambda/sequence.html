@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L1-L174" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L1-L297" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
@@ -59,6 +59,7 @@ from __future__ import annotations
 import typing
 from collections import UserList
 from dataclasses import dataclass
+from itertools import filterfalse, tee
 from typing import (
     Callable,
     Dict,
@@ -75,6 +76,7 @@ from typing import (
 
 from pytypeclass import Monad, MonadPlus
 from pytypeclass.monoid import Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 A_co = TypeVar(&#34;A_co&#34;, covariant=True)
 A = TypeVar(&#34;A&#34;)
@@ -82,8 +84,78 @@ A_monoid = TypeVar(&#34;A_monoid&#34;, bound=Monoid)
 B_monoid = TypeVar(&#34;B_monoid&#34;, bound=Monoid)
 
 
-class Array(UserList[A]):
+class Colliding(UserList[A]):
     pass
+
+
+def partition(pred, iterable):
+    &#34;Use a predicate to partition entries into false entries and true entries&#34;
+    # partition(is_odd, range(10)) --&gt; 0 2 4 6 8   and  1 3 5 7 9
+    t1, t2 = tee(iterable)
+    return filterfalse(pred, t1), filter(pred, t2)
+
+
+@dataclass
+class TreePath(Generic[A]):
+    parents: NonemptyList[str]
+    leaf: A
+
+    @classmethod
+    def make(cls, head: str, *tail: str, leaf: A) -&gt; TreePath[A]:
+        return cls(parents=NonemptyList.make(head, *tail), leaf=leaf)
+
+    @classmethod
+    def merge(cls, *paths: TreePath[A]) -&gt; Dict[str, &#34;A | List[A]&#34;]:
+        &#34;&#34;&#34;
+        Merge a list of paths into a nested dictionary, handling collisions with
+        `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
+
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: 1, &#39;b&#39;: 2}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [1, 2]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;c&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: 1, &#39;c&#39;: 2}}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: [1, 2]}}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: 1}, &#39;b&#39;: 1}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [2, {&#39;b&#39;: 1}]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=&#34;b&#34;)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: 1}]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; tp3 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2, tp3)
+        {&#39;a&#39;: [2, {&#39;b&#39;: [1, 2]}]}
+        &#34;&#34;&#34;
+
+        def get_seq():
+            for path in paths:
+                tail = path.parents.tail
+                if tail:
+                    tail2 = tail.tail if tail.tail else []
+                    v = TreePath.make(tail.head, *tail2, leaf=path.leaf)
+                else:
+                    v = path.leaf
+                yield KeyValue(path.parents.head, v)
+
+        return Sequence(list(get_seq())).to_dict()
 
 
 @dataclass
@@ -164,25 +236,76 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence([kv.key for kv in self])
 
     @staticmethod
-    def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
+    def return_(a: A) -&gt; &#34;Sequence[A]&#34;:  # type: ignore[override]
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence.return_(1)
         Sequence(get=[1])
         &#34;&#34;&#34;
         return Sequence([a])
 
-    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | List[A]]&#34;:
-        d: Dict[str, &#34;A | Array[A]&#34;] = {}
+    def to_colliding_dict(
+        self: &#34;Sequence[KeyValue[A]]&#34;,
+    ) -&gt; &#34;Dict[str, A | Colliding[A]]&#34;:
+        &#34;&#34;&#34;
+        Handles collisions at the root level of the tree. Does not handle `TreePath`s.
+
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_colliding_dict()
+        {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_colliding_dict()
+        {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+        &#34;&#34;&#34;
+        d: Dict[str, &#34;A | Colliding[A]&#34;] = {}
         for kv in self:
             if kv.key in d:
                 v = d[kv.key]
-                if isinstance(v, Array):
+                if isinstance(v, Colliding):
                     v.append(kv.value)
                 else:
-                    d[kv.key] = Array([v, kv.value])
+                    d[kv.key] = Colliding([v, kv.value])
             else:
                 d[kv.key] = kv.value
-        return {k: list(v) if isinstance(v, Array) else v for k, v in d.items()}
+        return d
+
+    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | List[A]]&#34;:
+        &#34;&#34;&#34;
+        Expand a sequence of key-value pairs into a dictionary. Handles collidions and `TreePath`s.
+
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_dict()
+        {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_dict()
+        {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;))]).to_dict()
+        {&#39;a&#39;: {&#39;b&#39;: &#39;c&#39;}}
+        &gt;&gt;&gt; Sequence(
+        ...     [
+        ...         KeyValue(&#34;a&#34;, &#34;b&#34;),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;)),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=1)),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=2)),
+        ...     ]
+        ... ).to_dict()
+        {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: [&#39;c&#39;, {&#39;c&#39;: [1, 2]}]}]}
+        &#34;&#34;&#34;
+
+        def get_dict():
+            for k, v in self.to_colliding_dict().items():
+                if isinstance(v, Colliding):
+                    other, paths = partition(lambda x: isinstance(x, TreePath), v)
+                    other = list(other)
+                    merged = TreePath.merge(*paths)
+                    if merged and other:
+                        yield k, [*other, merged]
+                    elif other:
+                        yield k, other
+                    elif merged:
+                        yield k, merged
+                else:
+                    if isinstance(v, TreePath):
+                        yield k, TreePath.merge(v)
+                    else:
+                        yield k, v
+
+        return dict(get_dict())
 
     def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
         return Sequence([kv.value for kv in self])
@@ -232,12 +355,32 @@ class Output(Monoid[A_co_monoid]):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="dollar_lambda.sequence.partition"><code class="name flex">
+<span>def <span class="ident">partition</span></span>(<span>pred, iterable)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Use a predicate to partition entries into false entries and true entries</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L38-L42" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def partition(pred, iterable):
+    &#34;Use a predicate to partition entries into false entries and true entries&#34;
+    # partition(is_odd, range(10)) --&gt; 0 2 4 6 8   and  1 3 5 7 9
+    t1, t2 = tee(iterable)
+    return filterfalse(pred, t1), filter(pred, t2)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="dollar_lambda.sequence.Array"><code class="flex name class">
-<span>class <span class="ident">Array</span></span>
+<dt id="dollar_lambda.sequence.Colliding"><code class="flex name class">
+<span>class <span class="ident">Colliding</span></span>
 <span>(</span><span>initlist=None)</span>
 </code></dt>
 <dd>
@@ -245,9 +388,9 @@ class Output(Monoid[A_co_monoid]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L32-L33" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L34-L35" class="git-link">Browse git</a>
 </summary>
-<pre><code class="python">class Array(UserList[A]):
+<pre><code class="python">class Colliding(UserList[A]):
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -271,7 +414,7 @@ class Output(Monoid[A_co_monoid]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L36-L39" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L108-L111" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class KeyValue(Generic[A_co]):
@@ -303,7 +446,7 @@ class KeyValue(Generic[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L145-L174" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L268-L297" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Output(Monoid[A_co_monoid]):
@@ -358,7 +501,7 @@ class Output(Monoid[A_co_monoid]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L161-L165" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L284-L288" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def from_dict(
@@ -375,7 +518,7 @@ def from_dict(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L167-L174" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L290-L297" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(
@@ -413,7 +556,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L42-L139" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L114-L262" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
@@ -487,25 +630,76 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence([kv.key for kv in self])
 
     @staticmethod
-    def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
+    def return_(a: A) -&gt; &#34;Sequence[A]&#34;:  # type: ignore[override]
         &#34;&#34;&#34;
         &gt;&gt;&gt; Sequence.return_(1)
         Sequence(get=[1])
         &#34;&#34;&#34;
         return Sequence([a])
 
-    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | List[A]]&#34;:
-        d: Dict[str, &#34;A | Array[A]&#34;] = {}
+    def to_colliding_dict(
+        self: &#34;Sequence[KeyValue[A]]&#34;,
+    ) -&gt; &#34;Dict[str, A | Colliding[A]]&#34;:
+        &#34;&#34;&#34;
+        Handles collisions at the root level of the tree. Does not handle `TreePath`s.
+
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_colliding_dict()
+        {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_colliding_dict()
+        {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+        &#34;&#34;&#34;
+        d: Dict[str, &#34;A | Colliding[A]&#34;] = {}
         for kv in self:
             if kv.key in d:
                 v = d[kv.key]
-                if isinstance(v, Array):
+                if isinstance(v, Colliding):
                     v.append(kv.value)
                 else:
-                    d[kv.key] = Array([v, kv.value])
+                    d[kv.key] = Colliding([v, kv.value])
             else:
                 d[kv.key] = kv.value
-        return {k: list(v) if isinstance(v, Array) else v for k, v in d.items()}
+        return d
+
+    def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | List[A]]&#34;:
+        &#34;&#34;&#34;
+        Expand a sequence of key-value pairs into a dictionary. Handles collidions and `TreePath`s.
+
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_dict()
+        {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_dict()
+        {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+        &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;))]).to_dict()
+        {&#39;a&#39;: {&#39;b&#39;: &#39;c&#39;}}
+        &gt;&gt;&gt; Sequence(
+        ...     [
+        ...         KeyValue(&#34;a&#34;, &#34;b&#34;),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;)),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=1)),
+        ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=2)),
+        ...     ]
+        ... ).to_dict()
+        {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: [&#39;c&#39;, {&#39;c&#39;: [1, 2]}]}]}
+        &#34;&#34;&#34;
+
+        def get_dict():
+            for k, v in self.to_colliding_dict().items():
+                if isinstance(v, Colliding):
+                    other, paths = partition(lambda x: isinstance(x, TreePath), v)
+                    other = list(other)
+                    merged = TreePath.merge(*paths)
+                    if merged and other:
+                        yield k, [*other, merged]
+                    elif other:
+                        yield k, other
+                    elif merged:
+                        yield k, merged
+                else:
+                    if isinstance(v, TreePath):
+                        yield k, TreePath.merge(v)
+                    else:
+                        yield k, v
+
+        return dict(get_dict())
 
     def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
         return Sequence([kv.value for kv in self])
@@ -544,7 +738,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L104-L108" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L176-L180" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def from_dict(
@@ -563,10 +757,10 @@ Sequence(get=[1])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L113-L119" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L185-L191" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@staticmethod
-def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
+def return_(a: A) -&gt; &#34;Sequence[A]&#34;:  # type: ignore[override]
     &#34;&#34;&#34;
     &gt;&gt;&gt; Sequence.return_(1)
     Sequence(get=[1])
@@ -582,7 +776,7 @@ def return_(a: A) -&gt; &#34;Sequence[A]&#34;:
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L137-L139" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L260-L262" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls: Type[&#34;Sequence[A_co]&#34;]) -&gt; &#34;Sequence[A_co]&#34;:
@@ -602,7 +796,7 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L90-L102" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L162-L174" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[A]]) -&gt; &#34;Sequence[A]&#34;:
     &#34;&#34;&#34;
@@ -627,34 +821,117 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L110-L111" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L182-L183" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def keys(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[str]&#34;:
     return Sequence([kv.key for kv in self])</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.Sequence.to_colliding_dict"><code class="name flex">
+<span>def <span class="ident">to_colliding_dict</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[A]]'") <span style="white-space: nowrap;">-></span> Dict[str, Union[~A, <a title="dollar_lambda.sequence.Colliding" href="#dollar_lambda.sequence.Colliding">Colliding</a>[~A]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Handles collisions at the root level of the tree. Does not handle <code><a title="dollar_lambda.sequence.TreePath" href="#dollar_lambda.sequence.TreePath">TreePath</a></code>s.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; Sequence([KeyValue(&quot;a&quot;, 1), KeyValue(&quot;b&quot;, 2), KeyValue(&quot;a&quot;, 3)]).to_colliding_dict()
+{'a': [1, 3], 'b': 2}
+&gt;&gt;&gt; Sequence([KeyValue(&quot;a&quot;, [1]), KeyValue(&quot;b&quot;, 2), KeyValue(&quot;a&quot;, [3])]).to_colliding_dict()
+{'a': [[1], [3]], 'b': 2}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L193-L214" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">def to_colliding_dict(
+    self: &#34;Sequence[KeyValue[A]]&#34;,
+) -&gt; &#34;Dict[str, A | Colliding[A]]&#34;:
+    &#34;&#34;&#34;
+    Handles collisions at the root level of the tree. Does not handle `TreePath`s.
+
+    &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_colliding_dict()
+    {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+    &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_colliding_dict()
+    {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+    &#34;&#34;&#34;
+    d: Dict[str, &#34;A | Colliding[A]&#34;] = {}
+    for kv in self:
+        if kv.key in d:
+            v = d[kv.key]
+            if isinstance(v, Colliding):
+                v.append(kv.value)
+            else:
+                d[kv.key] = Colliding([v, kv.value])
+        else:
+            d[kv.key] = kv.value
+    return d</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.sequence.Sequence.to_dict"><code class="name flex">
 <span>def <span class="ident">to_dict</span></span>(<span>self: "'<a title="dollar_lambda.sequence.Sequence" href="#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a>[A]]'") <span style="white-space: nowrap;">-></span> Dict[str, Union[~A, List[~A]]]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Expand a sequence of key-value pairs into a dictionary. Handles collidions and <code><a title="dollar_lambda.sequence.TreePath" href="#dollar_lambda.sequence.TreePath">TreePath</a></code>s.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; Sequence([KeyValue(&quot;a&quot;, 1), KeyValue(&quot;b&quot;, 2), KeyValue(&quot;a&quot;, 3)]).to_dict()
+{'a': [1, 3], 'b': 2}
+&gt;&gt;&gt; Sequence([KeyValue(&quot;a&quot;, [1]), KeyValue(&quot;b&quot;, 2), KeyValue(&quot;a&quot;, [3])]).to_dict()
+{'a': [[1], [3]], 'b': 2}
+&gt;&gt;&gt; Sequence([KeyValue(&quot;a&quot;, TreePath.make(&quot;b&quot;, leaf=&quot;c&quot;))]).to_dict()
+{'a': {'b': 'c'}}
+&gt;&gt;&gt; Sequence(
+...     [
+...         KeyValue(&quot;a&quot;, &quot;b&quot;),
+...         KeyValue(&quot;a&quot;, TreePath.make(&quot;b&quot;, leaf=&quot;c&quot;)),
+...         KeyValue(&quot;a&quot;, TreePath.make(&quot;b&quot;, &quot;c&quot;, leaf=1)),
+...         KeyValue(&quot;a&quot;, TreePath.make(&quot;b&quot;, &quot;c&quot;, leaf=2)),
+...     ]
+... ).to_dict()
+{'a': ['b', {'b': ['c', {'c': [1, 2]}]}]}
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L121-L132" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L216-L255" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def to_dict(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Dict[str, A | List[A]]&#34;:
-    d: Dict[str, &#34;A | Array[A]&#34;] = {}
-    for kv in self:
-        if kv.key in d:
-            v = d[kv.key]
-            if isinstance(v, Array):
-                v.append(kv.value)
+    &#34;&#34;&#34;
+    Expand a sequence of key-value pairs into a dictionary. Handles collidions and `TreePath`s.
+
+    &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, 1), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, 3)]).to_dict()
+    {&#39;a&#39;: [1, 3], &#39;b&#39;: 2}
+    &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, [1]), KeyValue(&#34;b&#34;, 2), KeyValue(&#34;a&#34;, [3])]).to_dict()
+    {&#39;a&#39;: [[1], [3]], &#39;b&#39;: 2}
+    &gt;&gt;&gt; Sequence([KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;))]).to_dict()
+    {&#39;a&#39;: {&#39;b&#39;: &#39;c&#39;}}
+    &gt;&gt;&gt; Sequence(
+    ...     [
+    ...         KeyValue(&#34;a&#34;, &#34;b&#34;),
+    ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, leaf=&#34;c&#34;)),
+    ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=1)),
+    ...         KeyValue(&#34;a&#34;, TreePath.make(&#34;b&#34;, &#34;c&#34;, leaf=2)),
+    ...     ]
+    ... ).to_dict()
+    {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: [&#39;c&#39;, {&#39;c&#39;: [1, 2]}]}]}
+    &#34;&#34;&#34;
+
+    def get_dict():
+        for k, v in self.to_colliding_dict().items():
+            if isinstance(v, Colliding):
+                other, paths = partition(lambda x: isinstance(x, TreePath), v)
+                other = list(other)
+                merged = TreePath.merge(*paths)
+                if merged and other:
+                    yield k, [*other, merged]
+                elif other:
+                    yield k, other
+                elif merged:
+                    yield k, merged
             else:
-                d[kv.key] = Array([v, kv.value])
-        else:
-            d[kv.key] = kv.value
-    return {k: list(v) if isinstance(v, Array) else v for k, v in d.items()}</code></pre>
+                if isinstance(v, TreePath):
+                    yield k, TreePath.merge(v)
+                else:
+                    yield k, v
+
+    return dict(get_dict())</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.sequence.Sequence.values"><code class="name flex">
@@ -665,10 +942,216 @@ Sequence(get=[1, -1, 2, -2])
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/4066c7d2415ecb512067a38b36b9792262b69229/dollar_lambda/sequence.py#L134-L135" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L257-L258" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def values(self: &#34;Sequence[KeyValue[A]]&#34;) -&gt; &#34;Sequence[A]&#34;:
     return Sequence([kv.value for kv in self])</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="dollar_lambda.sequence.TreePath"><code class="flex name class">
+<span>class <span class="ident">TreePath</span></span>
+<span>(</span><span>parents: NonemptyList[str], leaf: A)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>TreePath(parents: 'NonemptyList[str]', leaf: 'A')</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L45-L105" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@dataclass
+class TreePath(Generic[A]):
+    parents: NonemptyList[str]
+    leaf: A
+
+    @classmethod
+    def make(cls, head: str, *tail: str, leaf: A) -&gt; TreePath[A]:
+        return cls(parents=NonemptyList.make(head, *tail), leaf=leaf)
+
+    @classmethod
+    def merge(cls, *paths: TreePath[A]) -&gt; Dict[str, &#34;A | List[A]&#34;]:
+        &#34;&#34;&#34;
+        Merge a list of paths into a nested dictionary, handling collisions with
+        `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
+
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: 1, &#39;b&#39;: 2}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [1, 2]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;c&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: 1, &#39;c&#39;: 2}}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: [1, 2]}}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: {&#39;b&#39;: 1}, &#39;b&#39;: 1}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [2, {&#39;b&#39;: 1}]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=&#34;b&#34;)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+        {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: 1}]}
+        &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+        &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+        &gt;&gt;&gt; tp3 = TreePath.make(&#34;a&#34;, leaf=2)
+        &gt;&gt;&gt; TreePath.merge(tp1, tp2, tp3)
+        {&#39;a&#39;: [2, {&#39;b&#39;: [1, 2]}]}
+        &#34;&#34;&#34;
+
+        def get_seq():
+            for path in paths:
+                tail = path.parents.tail
+                if tail:
+                    tail2 = tail.tail if tail.tail else []
+                    v = TreePath.make(tail.head, *tail2, leaf=path.leaf)
+                else:
+                    v = path.leaf
+                yield KeyValue(path.parents.head, v)
+
+        return Sequence(list(get_seq())).to_dict()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="dollar_lambda.sequence.TreePath.leaf"><code class="name">var <span class="ident">leaf</span> : ~A</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="dollar_lambda.sequence.TreePath.parents"><code class="name">var <span class="ident">parents</span> : pytypeclass.nonempty_list.NonemptyList[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="dollar_lambda.sequence.TreePath.make"><code class="name flex">
+<span>def <span class="ident">make</span></span>(<span>head: str, *tail: str, leaf: A) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.sequence.TreePath" href="#dollar_lambda.sequence.TreePath">TreePath</a>[~A]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L50-L52" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def make(cls, head: str, *tail: str, leaf: A) -&gt; TreePath[A]:
+    return cls(parents=NonemptyList.make(head, *tail), leaf=leaf)</code></pre>
+</details>
+</dd>
+<dt id="dollar_lambda.sequence.TreePath.merge"><code class="name flex">
+<span>def <span class="ident">merge</span></span>(<span>*paths: <a title="dollar_lambda.sequence.TreePath" href="#dollar_lambda.sequence.TreePath">TreePath</a>[A]) <span style="white-space: nowrap;">-></span> Dict[str, Union[~A, List[~A]]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Merge a list of paths into a nested dictionary, handling collisions with
+<code><a title="dollar_lambda.sequence.Sequence.to_dict" href="#dollar_lambda.sequence.Sequence.to_dict">Sequence.to_dict()</a></code> (which uses <code>Sequence.to_collision_dict</code>).</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;b&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': 1, 'b': 2}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': [1, 2]}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, &quot;c&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': {'b': 1, 'c': 2}}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': {'b': [1, 2]}}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;b&quot;, leaf=1)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': {'b': 1}, 'b': 1}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': [2, {'b': 1}]}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, leaf=&quot;b&quot;)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2)
+{'a': ['b', {'b': 1}]}
+&gt;&gt;&gt; tp1 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=1)
+&gt;&gt;&gt; tp2 = TreePath.make(&quot;a&quot;, &quot;b&quot;, leaf=2)
+&gt;&gt;&gt; tp3 = TreePath.make(&quot;a&quot;, leaf=2)
+&gt;&gt;&gt; TreePath.merge(tp1, tp2, tp3)
+{'a': [2, {'b': [1, 2]}]}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/3e357eeddf16fac1222fa1aac5c1aaeeb25ff251/dollar_lambda/sequence.py#L54-L105" class="git-link">Browse git</a>
+</summary>
+<pre><code class="python">@classmethod
+def merge(cls, *paths: TreePath[A]) -&gt; Dict[str, &#34;A | List[A]&#34;]:
+    &#34;&#34;&#34;
+    Merge a list of paths into a nested dictionary, handling collisions with
+    `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
+
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: 1, &#39;b&#39;: 2}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: [1, 2]}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;c&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: {&#39;b&#39;: 1, &#39;c&#39;: 2}}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: {&#39;b&#39;: [1, 2]}}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: {&#39;b&#39;: 1}, &#39;b&#39;: 1}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: [2, {&#39;b&#39;: 1}]}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, leaf=&#34;b&#34;)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2)
+    {&#39;a&#39;: [&#39;b&#39;, {&#39;b&#39;: 1}]}
+    &gt;&gt;&gt; tp1 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=1)
+    &gt;&gt;&gt; tp2 = TreePath.make(&#34;a&#34;, &#34;b&#34;, leaf=2)
+    &gt;&gt;&gt; tp3 = TreePath.make(&#34;a&#34;, leaf=2)
+    &gt;&gt;&gt; TreePath.merge(tp1, tp2, tp3)
+    {&#39;a&#39;: [2, {&#39;b&#39;: [1, 2]}]}
+    &#34;&#34;&#34;
+
+    def get_seq():
+        for path in paths:
+            tail = path.parents.tail
+            if tail:
+                tail2 = tail.tail if tail.tail else []
+                v = TreePath.make(tail.head, *tail2, leaf=path.leaf)
+            else:
+                v = path.leaf
+            yield KeyValue(path.parents.head, v)
+
+    return Sequence(list(get_seq())).to_dict()</code></pre>
 </details>
 </dd>
 </dl>
@@ -738,10 +1221,15 @@ setTimeout(() => input.focus(), 100);
 <li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="dollar_lambda.sequence.partition" href="#dollar_lambda.sequence.partition">partition</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="dollar_lambda.sequence.Array" href="#dollar_lambda.sequence.Array">Array</a></code></h4>
+<h4><code><a title="dollar_lambda.sequence.Colliding" href="#dollar_lambda.sequence.Colliding">Colliding</a></code></h4>
 </li>
 <li>
 <h4><code><a title="dollar_lambda.sequence.KeyValue" href="#dollar_lambda.sequence.KeyValue">KeyValue</a></code></h4>
@@ -766,9 +1254,19 @@ setTimeout(() => input.focus(), 100);
 <li><code><a title="dollar_lambda.sequence.Sequence.get" href="#dollar_lambda.sequence.Sequence.get">get</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.keys" href="#dollar_lambda.sequence.Sequence.keys">keys</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.return_" href="#dollar_lambda.sequence.Sequence.return_">return_</a></code></li>
+<li><code><a title="dollar_lambda.sequence.Sequence.to_colliding_dict" href="#dollar_lambda.sequence.Sequence.to_colliding_dict">to_colliding_dict</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.to_dict" href="#dollar_lambda.sequence.Sequence.to_dict">to_dict</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.values" href="#dollar_lambda.sequence.Sequence.values">values</a></code></li>
 <li><code><a title="dollar_lambda.sequence.Sequence.zero" href="#dollar_lambda.sequence.Sequence.zero">zero</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="dollar_lambda.sequence.TreePath" href="#dollar_lambda.sequence.TreePath">TreePath</a></code></h4>
+<ul class="">
+<li><code><a title="dollar_lambda.sequence.TreePath.leaf" href="#dollar_lambda.sequence.TreePath.leaf">leaf</a></code></li>
+<li><code><a title="dollar_lambda.sequence.TreePath.make" href="#dollar_lambda.sequence.TreePath.make">make</a></code></li>
+<li><code><a title="dollar_lambda.sequence.TreePath.merge" href="#dollar_lambda.sequence.TreePath.merge">merge</a></code></li>
+<li><code><a title="dollar_lambda.sequence.TreePath.parents" href="#dollar_lambda.sequence.TreePath.parents">parents</a></code></li>
 </ul>
 </li>
 </ul>

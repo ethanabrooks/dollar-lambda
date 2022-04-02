@@ -439,7 +439,7 @@ This is also a case where you might want to use `CommandTree`:
 >>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
-### `Parser.many`
+### [`many`](#dollar_lambda.Parser.many)
 
 What if we want to specify verbosity by the number of times that `--verbose` appears?
 For this we need `Parser.many`. Before showing how we could use `Parser.many` in this setting,
@@ -471,7 +471,7 @@ Now returning to the original example:
 >>> verbosity
 2
 
-### `Parser.many1`
+### [`many1`](#dollar_lambda.Parser.many1)
 
 In the previous example, the parse will default to `verbosity=0` if no `--verbose` flags
 are given.  What if we wanted users to be explicit about choosing a "quiet" setting?
@@ -722,6 +722,57 @@ We can also write this with `@command` syntax:
 {'x': 0}
 >>> main()
 {'x': 1}
+
+# Ignoring arguments
+There may be cases in which a user wants to provide certain arguments on the
+command line that `$λ` should ignore (not return in the output of `Parser.parse_args`
+or pass to the a decorated function). Suppose we wish to ignore any arguments starting
+with the `--config.` prefix:
+
+>>> regex = r"config.\\S*"
+>>> config_parsers = flag(regex) | option(regex)
+>>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
+
+Note that neither `--config.foo` nor `--config.bar` show up in the output:
+>>> p.parse_args("-x", "-y", "--config.foo", "--config.bar", "1")
+{'x': True, 'y': True}
+
+This works regardless of order:
+>>> p.parse_args("--config.baz", "1", "-y", "--config.foz", "-x")
+{'y': True, 'x': True}
+
+The same strategy can be used with decorators:
+>>> @command(repeated=config_parsers.ignore())
+... def f(x: bool, y: bool):
+...    return dict(x=x, y=y)
+>>> f("-x", "-y", "--config.foo", "--config.bar", "1")
+{'x': True, 'y': True}
+
+And similarly with `CommandTree`.
+
+# Nesting output
+By default introducing a `.` character into the name of an `argument`, `option`, or `flag` will
+induce nested output:
+>>> argument("a.b", type=int).parse_args("1")
+{'a': {'b': 1}}
+>>> option("a.b", type=int).parse_args("--a.b", "1")
+{'a': {'b': 1}}
+>>> flag("a.b").parse_args("--a.b")
+{'a': {'b': True}}
+
+This mechanism handles collisions:
+>>> nonpositional(flag("a.b"), flag("a.c")).parse_args("--a.b", "--a.c")
+{'a': {'b': True, 'c': True}}
+
+Even when mixing nested and unnested output:
+>>> nonpositional(flag("a"), flag("a.b")).parse_args("-a", "--a.b")
+{'a': [True, {'b': True}]}
+
+It can also go arbitrarily deep:
+>>> nonpositional(flag("a.b.c"), flag("a.b.d")).parse_args("--a.b.c", "--a.b.d")
+{'a': {'b': {'c': True, 'd': True}}}
+
+This behavior can always be disabled by setting `nesting=False` (or just not using `.` in the name).
 
 # Why `$λ`?
 

@@ -24,7 +24,7 @@ from dollar_lambda.error import (
     UnexpectedError,
 )
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import KeyValue, Output, Sequence
+from dollar_lambda.sequence import KeyValue, Output, Sequence, TreePath
 
 A_co = TypeVar("A_co", covariant=True)
 A_monoid = TypeVar("A_monoid", bound=Monoid)
@@ -537,7 +537,9 @@ class Parser(MonadPlus[A_co]):
         if isinstance(result, ArgumentError):
             self.handle_error(result)
             return None
-        return result.head.parsed.get.to_dict()
+        get = result.head.parsed.get
+        assert isinstance(get, Sequence), get
+        return get.to_dict()
 
     @classmethod
     def return_(cls, a: A_co) -> "Parser[A_co]":  # type: ignore[misc]
@@ -590,6 +592,34 @@ class Parser(MonadPlus[A_co]):
             return Result(NonemptyList(x) if predicate(x) else on_fail(x))
 
         return self.apply(f)
+
+    def nesting(
+        self: "Parser[Output[Sequence[KeyValue[Any]]]]",
+    ) -> "Parser[Output[Sequence[KeyValue[Any]]]]":
+        """
+        A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
+        >>> p1 = option("x") >> option("y")
+        >>> p = p1.type(int)
+        >>> p.parse_args("-x", "1", "-y", "2")  # converts "1" but not "2"
+        {'x': '1', 'y': 2}
+        """
+
+        def g(out: Output[Sequence[KeyValue[str]]]) -> Result[Output]:
+            d = out.get
+            if not d:
+                raise RuntimeError("Invoked nested on a parser that returns no output.")
+            *tail, head = out.get
+            if "." in head.key:
+                key, hd, *tl = head.key.split(".")
+                parents = NonemptyList.make(hd, *tl)
+                path = TreePath(parents, head.value)
+                kv = KeyValue(key, path)
+                return Result.return_(Output(Sequence([*tail, kv])))
+            else:
+                return Result.return_(out)
+
+        p = self.apply(g)
+        return replace(p, usage=self.usage, helps=self.helps)
 
     def type(
         self: "Parser[Output[Sequence[KeyValue[str]]]]", f: Callable[[str], Any]
@@ -703,6 +733,7 @@ def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
 
 def argument(
     dest: str,
+    nesting: bool = True,
     help: Optional[str] = None,
     type: Optional[Callable[[str], Any]] = None,
 ) -> Parser[Output]:
@@ -715,23 +746,41 @@ def argument(
     dest : str
         The name of variable to bind to:
 
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
     help : Optional[str]
         The help message to display for the option:
 
     type : Optional[Callable[[str], Any]]
         Use the `type` argument to convert the input to a different type:
 
-    >>> argument("name").parse_args("Alice")
-    {'name': 'Alice'}
+    >>> argument("name").parse_args("Dante")
+    {'name': 'Dante'}
     >>> argument("name").parse_args()
     usage: NAME
     The following arguments are required: name
+
+    Here are some examples that take advantage of `nesting=True`:
+    >>> argument("config.name").parse_args("-h")
+    usage: CONFIG.NAME
+    >>> argument("config.name").parse_args("Dante")
+    {'config': {'name': 'Dante'}}
+
+    Of course, you can disable this by setting `nesting=False`:
+    >>> argument("config.name", nesting=False).parse_args("Dante")
+    {'config.name': 'Dante'}
+    >>> (argument("config.first.name") >> argument("config.last.name")).parse_args("Dante", "Alighieri")
+    {'config': {'first': {'name': 'Dante'}, 'last': {'name': 'Alighieri'}}}
     """
     parser = item(dest)
     _type: Callable[[str], Any] = str if type is None else type  # type: ignore[assignment]
     # Mypy doesn't know that types also have type Callable[[str], Any]
     if _type is not str:
         parser = parser.type(_type)
+    if nesting:
+        parser = parser.nesting()
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=dest.upper(), helps=helps)
     return parser
@@ -813,7 +862,8 @@ def matches(
 
     def predicate(_s: str) -> bool:
         if regex:
-            return bool(re.match(s, _s))
+            b = bool(re.match(s, _s))
+            return b
         else:
             return s == _s
 
@@ -837,6 +887,7 @@ def matches(
 
 def flag(
     dest: str,
+    nesting: bool = True,
     default: Optional[bool] = None,
     help: Optional[str] = None,
     short: bool = True,
@@ -854,6 +905,10 @@ def flag(
     ----------
     dest : str
         The variable to which the value will be bound.
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
 
     default : Optional[bool]
         An optional default value.
@@ -905,6 +960,9 @@ def flag(
 
     >>> flag("value", string="v").parse_args("v")  # note that string does not have to start with -
     {'value': True}
+
+    >>> flag("config.value").parse_args("--config.value")
+    {'config': {'value': True}}
     """
     if string is None:
         _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
@@ -915,7 +973,10 @@ def flag(
         cs: Sequence[str],
         s: str,
     ) -> Result[Parse[Output[Sequence[KeyValue[bool]]]]]:
-        parser = matches(s) >= (lambda _: defaults(**{dest: not default}))
+        _defaults = defaults(**{dest: not default})
+        if nesting:
+            _defaults = _defaults.nesting()
+        parser = matches(s) >= (lambda _: _defaults)
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
@@ -1071,6 +1132,7 @@ def nonpositional(
 
 def option(
     dest: str,
+    nesting: bool = True,
     flag: Optional[str] = None,
     default: Any = None,
     help: Optional[str] = None,
@@ -1084,6 +1146,10 @@ def option(
     ----------
     dest : str
         The name of variable to bind to:
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
 
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
@@ -1146,6 +1212,9 @@ def option(
     {'x': 1}
     >>> option("x", type=lambda x: int(x) + 1).parse_args("-x", "1")
     {'x': 2}
+
+    >>> option("config.x").parse_args("--config.x", "a")
+    {'config': {'x': 'a'}}
     """
 
     if flag is None:
@@ -1156,7 +1225,9 @@ def option(
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag) >= (lambda _: argument(dest, type=type))
+        parser = matches(_flag) >= (
+            lambda _: argument(dest, nesting=nesting, type=type)
+        )
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})

@@ -6,6 +6,7 @@ from __future__ import annotations
 import typing
 from collections import UserList
 from dataclasses import dataclass
+from itertools import filterfalse, tee
 from typing import (
     Callable,
     Dict,
@@ -22,6 +23,7 @@ from typing import (
 
 from pytypeclass import Monad, MonadPlus
 from pytypeclass.monoid import Monoid
+from pytypeclass.nonempty_list import NonemptyList
 
 A_co = TypeVar("A_co", covariant=True)
 A = TypeVar("A")
@@ -29,8 +31,78 @@ A_monoid = TypeVar("A_monoid", bound=Monoid)
 B_monoid = TypeVar("B_monoid", bound=Monoid)
 
 
-class Array(UserList[A]):
+class Colliding(UserList[A]):
     pass
+
+
+def partition(pred, iterable):
+    "Use a predicate to partition entries into false entries and true entries"
+    # partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9
+    t1, t2 = tee(iterable)
+    return filterfalse(pred, t1), filter(pred, t2)
+
+
+@dataclass
+class TreePath(Generic[A]):
+    parents: NonemptyList[str]
+    leaf: A
+
+    @classmethod
+    def make(cls, head: str, *tail: str, leaf: A) -> TreePath[A]:
+        return cls(parents=NonemptyList.make(head, *tail), leaf=leaf)
+
+    @classmethod
+    def merge(cls, *paths: TreePath[A]) -> Dict[str, "A | List[A]"]:
+        """
+        Merge a list of paths into a nested dictionary, handling collisions with
+        `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
+
+        >>> tp1 = TreePath.make("a", leaf=1)
+        >>> tp2 = TreePath.make("b", leaf=2)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': 1, 'b': 2}
+        >>> tp1 = TreePath.make("a", leaf=1)
+        >>> tp2 = TreePath.make("a", leaf=2)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': [1, 2]}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("a", "c", leaf=2)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': {'b': 1, 'c': 2}}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("a", "b", leaf=2)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': {'b': [1, 2]}}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("b", leaf=1)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': {'b': 1}, 'b': 1}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("a", leaf=2)
+        >>> TreePath.merge(tp1, tp2)
+        {'a': [2, {'b': 1}]}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("a", leaf="b")
+        >>> TreePath.merge(tp1, tp2)
+        {'a': ['b', {'b': 1}]}
+        >>> tp1 = TreePath.make("a", "b", leaf=1)
+        >>> tp2 = TreePath.make("a", "b", leaf=2)
+        >>> tp3 = TreePath.make("a", leaf=2)
+        >>> TreePath.merge(tp1, tp2, tp3)
+        {'a': [2, {'b': [1, 2]}]}
+        """
+
+        def get_seq():
+            for path in paths:
+                tail = path.parents.tail
+                if tail:
+                    tail2 = tail.tail if tail.tail else []
+                    v = TreePath.make(tail.head, *tail2, leaf=path.leaf)
+                else:
+                    v = path.leaf
+                yield KeyValue(path.parents.head, v)
+
+        return Sequence(list(get_seq())).to_dict()
 
 
 @dataclass
@@ -111,25 +183,76 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         return Sequence([kv.key for kv in self])
 
     @staticmethod
-    def return_(a: A) -> "Sequence[A]":
+    def return_(a: A) -> "Sequence[A]":  # type: ignore[override]
         """
         >>> Sequence.return_(1)
         Sequence(get=[1])
         """
         return Sequence([a])
 
-    def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | List[A]]":
-        d: Dict[str, "A | Array[A]"] = {}
+    def to_colliding_dict(
+        self: "Sequence[KeyValue[A]]",
+    ) -> "Dict[str, A | Colliding[A]]":
+        """
+        Handles collisions at the root level of the tree. Does not handle `TreePath`s.
+
+        >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_colliding_dict()
+        {'a': [1, 3], 'b': 2}
+        >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_colliding_dict()
+        {'a': [[1], [3]], 'b': 2}
+        """
+        d: Dict[str, "A | Colliding[A]"] = {}
         for kv in self:
             if kv.key in d:
                 v = d[kv.key]
-                if isinstance(v, Array):
+                if isinstance(v, Colliding):
                     v.append(kv.value)
                 else:
-                    d[kv.key] = Array([v, kv.value])
+                    d[kv.key] = Colliding([v, kv.value])
             else:
                 d[kv.key] = kv.value
-        return {k: list(v) if isinstance(v, Array) else v for k, v in d.items()}
+        return d
+
+    def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | List[A]]":
+        """
+        Expand a sequence of key-value pairs into a dictionary. Handles collidions and `TreePath`s.
+
+        >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_dict()
+        {'a': [1, 3], 'b': 2}
+        >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_dict()
+        {'a': [[1], [3]], 'b': 2}
+        >>> Sequence([KeyValue("a", TreePath.make("b", leaf="c"))]).to_dict()
+        {'a': {'b': 'c'}}
+        >>> Sequence(
+        ...     [
+        ...         KeyValue("a", "b"),
+        ...         KeyValue("a", TreePath.make("b", leaf="c")),
+        ...         KeyValue("a", TreePath.make("b", "c", leaf=1)),
+        ...         KeyValue("a", TreePath.make("b", "c", leaf=2)),
+        ...     ]
+        ... ).to_dict()
+        {'a': ['b', {'b': ['c', {'c': [1, 2]}]}]}
+        """
+
+        def get_dict():
+            for k, v in self.to_colliding_dict().items():
+                if isinstance(v, Colliding):
+                    other, paths = partition(lambda x: isinstance(x, TreePath), v)
+                    other = list(other)
+                    merged = TreePath.merge(*paths)
+                    if merged and other:
+                        yield k, [*other, merged]
+                    elif other:
+                        yield k, other
+                    elif merged:
+                        yield k, merged
+                else:
+                    if isinstance(v, TreePath):
+                        yield k, TreePath.merge(v)
+                    else:
+                        yield k, v
+
+        return dict(get_dict())
 
     def values(self: "Sequence[KeyValue[A]]") -> "Sequence[A]":
         return Sequence([kv.value for kv in self])
