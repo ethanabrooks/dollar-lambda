@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1-L1320" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1-L1350" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines parsing functions and the `Parser` class that they instantiate.
@@ -62,7 +62,7 @@ import os
 import re
 import sys
 from dataclasses import astuple, dataclass, replace
-from functools import lru_cache, partial, reduce
+from functools import partial, reduce
 from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus, Monoid
@@ -79,14 +79,15 @@ from dollar_lambda.error import (
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import KeyValue, Output, Sequence, TreePath
 
+TESTING = os.environ.get(&#34;DOLLAR_LAMBDA_TESTING&#34;, False)
+PRINTING = os.environ.get(&#34;DOLLAR_LAMBDA_PRINTING&#34;, True)
+MAX_MANY = int(os.environ.get(&#34;DOLLAR_LAMBDA_MAX_MANY&#34;, 80))
+
 A_co = TypeVar(&#34;A_co&#34;, covariant=True)
 A_monoid = TypeVar(&#34;A_monoid&#34;, bound=Monoid)
 B_monoid = TypeVar(&#34;B_monoid&#34;, bound=Monoid)
 A = TypeVar(&#34;A&#34;)
 B = TypeVar(&#34;B&#34;)
-
-global TESTING
-TESTING = os.environ.get(&#34;DOLLAR_LAMBDA_TESTING&#34;, False)
 
 
 @dataclass
@@ -406,13 +407,13 @@ class Parser(MonadPlus[A_co]):
 
     def handle_error(self, error: ArgumentError) -&gt; None:
         def print_usage(usage: str):
-            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+            self._print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
             if &#34;\n&#34; in usage:
                 usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
-            print(usage)
+            self._print(usage)
             if self.helps:
                 for k, v in self.helps.items():
-                    print(f&#34;{k}: {v}&#34;)
+                    self._print(f&#34;{k}: {v}&#34;)
 
         if isinstance(error, HelpError):
             print_usage(error.usage)
@@ -420,7 +421,7 @@ class Parser(MonadPlus[A_co]):
             if self.usage:
                 print_usage(self.usage)
             if error.usage:
-                print(error.usage)
+                self._print(error.usage)
         if TESTING:
             return
         else:
@@ -454,10 +455,18 @@ class Parser(MonadPlus[A_co]):
         return Parser(f, usage=None, helps={})
 
     def many(
-        self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+        self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
     ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
         &#34;&#34;&#34;
         Applies `self` zero or more times (like `*` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         &gt;&gt;&gt; from dollar_lambda import argument, flag
         &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
@@ -480,17 +489,24 @@ class Parser(MonadPlus[A_co]):
         if max == 0:
             p = self.empty()
         else:
-            if max is not None:
-                max -= 1
-                assert max &gt;= 0, max
+            max -= 1
+            assert max &gt;= 0, max
             p = self.many1(max=max) | self.empty()
         return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
 
     def many1(
-        self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+        self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
     ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
         &#34;&#34;&#34;
         Applies `self` one or more times (like `+` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many1` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         &gt;&gt;&gt; from dollar_lambda import argument, flag
         &gt;&gt;&gt; p = argument(&#34;1-or-more&#34;).many1()
@@ -503,13 +519,8 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         &#34;&#34;&#34;
 
-        @lru_cache()
-        def f(cs: tuple):
-            y = self &gt;&gt; self.many(max=max)
-            return y.parse(Sequence(list(cs)))
-
         return Parser(
-            lambda cs: f(tuple(cs)),
+            lambda cs: (self &gt;&gt; self.many(max=max)).parse(cs),
             usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
             helps=self.helps,
         )
@@ -593,6 +604,11 @@ class Parser(MonadPlus[A_co]):
         get = result.head.parsed.get
         assert isinstance(get, Sequence), get
         return get.to_dict()
+
+    @staticmethod
+    def _print(*args, **kwargs):
+        if PRINTING:
+            print(*args, **kwargs)
 
     @classmethod
     def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -866,80 +882,12 @@ def defaults(**kwargs: A) -&gt; Parser[Output[Sequence[KeyValue[A]]]]:
     return replace(p, usage=None)
 
 
-def matches(
-    s: str, peak: bool = False, regex: bool = True
-) -&gt; Parser[Output[Sequence[KeyValue[str]]]]:
-    &#34;&#34;&#34;
-    Checks if the next word is `s`.
-
-    &gt;&gt;&gt; matches(&#34;hello&#34;).parse_args(&#34;hello&#34;)
-    {&#39;hello&#39;: &#39;hello&#39;}
-    &gt;&gt;&gt; matches(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
-    usage: hello
-    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
-
-    Parameters
-    ----------
-    s: str
-        The word to that input will be checked against for equality.
-    peak : bool
-        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
-        If `True`, then the parser leaves the `unparsed` component unchanged.
-
-    regex : bool
-        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
-        string equality.
-
-    Examples
-    --------
-
-    &gt;&gt;&gt; p = matches(&#34;hello&#34;) &gt;&gt; matches(&#34;goodbye&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
-    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
-
-    Look what happens when `peak=True`:
-    &gt;&gt;&gt; p = matches(&#34;hello&#34;, peak=True) &gt;&gt; matches(&#34;goodbye&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
-    usage: hello goodbye
-    Expected &#39;goodbye&#39;. Got &#39;hello&#39;
-
-    The first parser didn&#39;t consume the word and so &#34;hello&#34; got passed on to `equals(&#34;goodbye&#34;)`.
-    But this would work:
-    &gt;&gt;&gt; p = matches(&#34;hello&#34;, peak=True) &gt;&gt; matches(&#34;hello&#34;) &gt;&gt; matches(&#34;goodbye&#34;)
-    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
-    {&#39;hello&#39;: [&#39;hello&#39;, &#39;hello&#39;], &#39;goodbye&#39;: &#39;goodbye&#39;}
-    &#34;&#34;&#34;
-
-    def predicate(_s: str) -&gt; bool:
-        if regex:
-            b = bool(re.match(s, _s))
-            return b
-        else:
-            return s == _s
-
-    if peak:
-        return sat_peak(
-            predicate=predicate,
-            on_fail=lambda _s: UnequalError(
-                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
-            ),
-            name=s,
-        )
-    else:
-        return sat(
-            predicate=predicate,
-            on_fail=lambda _s: UnequalError(
-                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
-            ),
-            name=s,
-        )
-
-
 def flag(
     dest: str,
-    nesting: bool = True,
     default: Optional[bool] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     string: Optional[str] = None,
 ) -&gt; Parser[Output[Sequence[KeyValue[bool]]]]:
@@ -956,15 +904,18 @@ def flag(
     dest : str
         The variable to which the value will be bound.
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
-
     default : Optional[bool]
         An optional default value.
 
     help : Optional[str]
         An optional help string.
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will use a regex to match the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1026,11 +977,12 @@ def flag(
         _defaults = defaults(**{dest: not default})
         if nesting:
             _defaults = _defaults.nesting()
-        parser = matches(s) &gt;= (lambda _: _defaults)
+
+        parser = matches(s, regex=regex) &gt;= (lambda _: _defaults)
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if short:
+    if string is None and short and len(dest) &gt; 1:
         short_string = f&#34;-{dest[0]}&#34;
         parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
@@ -1100,8 +1052,77 @@ def item(
     return Parser(f, usage=name, helps={})
 
 
+def matches(
+    s: str, peak: bool = False, regex: bool = True
+) -&gt; Parser[Output[Sequence[KeyValue[str]]]]:
+    &#34;&#34;&#34;
+    Checks if the next word is `s`.
+
+    &gt;&gt;&gt; matches(&#34;hello&#34;).parse_args(&#34;hello&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;}
+    &gt;&gt;&gt; matches(&#34;hello&#34;).parse_args(&#34;goodbye&#34;)
+    usage: hello
+    Expected &#39;hello&#39;. Got &#39;goodbye&#39;
+
+    Parameters
+    ----------
+    s: str
+        The word to that input will be checked against for equality.
+    peak : bool
+        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    regex : bool
+        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
+        string equality.
+
+    Examples
+    --------
+
+    &gt;&gt;&gt; p = matches(&#34;hello&#34;) &gt;&gt; matches(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: &#39;hello&#39;, &#39;goodbye&#39;: &#39;goodbye&#39;}
+
+    Look what happens when `peak=True`:
+    &gt;&gt;&gt; p = matches(&#34;hello&#34;, peak=True) &gt;&gt; matches(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    usage: hello goodbye
+    Expected &#39;goodbye&#39;. Got &#39;hello&#39;
+
+    The first parser didn&#39;t consume the word and so &#34;hello&#34; got passed on to `equals(&#34;goodbye&#34;)`.
+    But this would work:
+    &gt;&gt;&gt; p = matches(&#34;hello&#34;, peak=True) &gt;&gt; matches(&#34;hello&#34;) &gt;&gt; matches(&#34;goodbye&#34;)
+    &gt;&gt;&gt; p.parse_args(&#34;hello&#34;, &#34;goodbye&#34;)
+    {&#39;hello&#39;: [&#39;hello&#39;, &#39;hello&#39;], &#39;goodbye&#39;: &#39;goodbye&#39;}
+    &#34;&#34;&#34;
+
+    def predicate(_s: str) -&gt; bool:
+        if regex:
+            return bool(re.match(s, _s))
+        else:
+            return s == _s
+
+    if peak:
+        return sat_peak(
+            predicate=predicate,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )
+    else:
+        return sat(
+            predicate=predicate,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f&#34;Expected &#39;{s}&#39;. Got &#39;{_s}&#39;&#34;
+            ),
+            name=s,
+        )
+
+
 def nonpositional(
     *parsers: &#34;Parser[Output[A_monoid]]&#34;,
+    max: int = MAX_MANY,
     repeated: Optional[Parser[Output[A_monoid]]] = None,
 ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
@@ -1116,6 +1137,11 @@ def nonpositional(
 
     Parameters
     ----------
+    max: int
+        Limits the number of times `repeated` is applied in order to prevent `RecursionError`s.
+        The default for this can be increased by either setting `parser.MAX_MANY` or
+        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+
     repeated : Optional[Parser[Sequence[A]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
@@ -1151,11 +1177,11 @@ def nonpositional(
     _parsers = [*parsers] if repeated is None else [*parsers, repeated]
     usage = sep.join([p.usage or &#34;&#34; for p in _parsers])
     repeat_parser = None
-    if repeated is not None:
+    if repeated is not None and max &gt; 0:
         _repeated = repeated  # for mypy&#39;s benefit
 
         def f(cs: Sequence[str]):
-            p = _repeated &gt;&gt; nonpositional(*parsers, repeated=repeated)
+            p = _repeated &gt;&gt; nonpositional(*parsers, repeated=repeated, max=max - 1)
             return p.parse(cs)
 
         repeat_parser = Parser(f, usage=None, helps={})
@@ -1171,7 +1197,7 @@ def nonpositional(
             yield repeat_parser
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head &gt;&gt; nonpositional(*tail, repeated=repeated)
+            yield head &gt;&gt; nonpositional(*tail, repeated=repeated, max=max)
 
     parser = reduce(operator.or_, get_alternatives())
     helps = parser.helps
@@ -1182,10 +1208,11 @@ def nonpositional(
 
 def option(
     dest: str,
-    nesting: bool = True,
-    flag: Optional[str] = None,
     default: Any = None,
+    flag: Optional[str] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -&gt; Parser[Output[Sequence[KeyValue[Any]]]]:
@@ -1197,18 +1224,21 @@ def option(
     dest : str
         The name of variable to bind to:
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
+    default : Optional[Any]
+        The default value to bind on failure:
 
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    default : Optional[Any]
-        The default value to bind on failure:
-
     help : Optional[str]
         The help message to display for the option:
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will match the flag string as a regex.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1275,13 +1305,13 @@ def option(
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag) &gt;= (
+        parser = matches(_flag, regex=regex) &gt;= (
             lambda _: argument(dest, nesting=nesting, type=type)
         )
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if short and len(dest) &gt; 1:
+    if flag is None and short and len(dest) &gt; 1:
         parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
         parser = parser | parser2
     if default:
@@ -1401,7 +1431,7 @@ Here is an example of usage. First we define a simple <code><a title="dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L699-L728" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L715-L744" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(f: Callable[[str], B_monoid], description: str) -&gt; Parser[B_monoid]:
     &#34;&#34;&#34;
@@ -1480,7 +1510,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L731-L783" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L747-L799" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def argument(
     dest: str,
@@ -1545,7 +1575,7 @@ The following arguments are required: name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L62-L70" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L63-L71" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def binary_usage(a: Optional[str], op: str, b: Optional[str], add_brackets=True):
     &#34;&#34;&#34;
@@ -1586,7 +1616,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L786-L813" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L802-L829" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def defaults(**kwargs: A) -&gt; Parser[Output[Sequence[KeyValue[A]]]]:
     &#34;&#34;&#34;
@@ -1619,7 +1649,7 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.flag"><code class="name flex">
-<span>def <span class="ident">flag</span></span>(<span>dest: str, nesting: bool = True, default: Optional[bool] = None, help: Optional[str] = None, short: bool = True, string: Optional[str] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="sequence.html#dollar_lambda.sequence.KeyValue">KeyValue</a>[bool]]]]</span>
+<span>def <span class="ident">flag</span></span>(<span>dest: str, default: Optional[bool] = None, help: Optional[str] = None, nesting: bool = True, regex: bool = True, short: bool = True, string: Optional[str] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="sequence.html#dollar_lambda.sequence.KeyValue">KeyValue</a>[bool]]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Binds a boolean value to a variable.</p>
@@ -1631,13 +1661,15 @@ It ignore the input and always returns <code>kwargs</code> converted into <code>
 <dl>
 <dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
 <dd>The variable to which the value will be bound.</dd>
-<dt><strong><code>nesting</code></strong> :&ensp;<code>bool</code></dt>
-<dd>If <code>True</code>, then the parser will split the parsed output on <code>.</code> yielding nested output.
-See Examples for more details.</dd>
 <dt><strong><code>default</code></strong> :&ensp;<code>Optional[bool]</code></dt>
 <dd>An optional default value.</dd>
 <dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
 <dd>An optional help string.</dd>
+<dt><strong><code>nesting</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If <code>True</code>, then the parser will split the parsed output on <code>.</code> yielding nested output.
+See Examples for more details.</dd>
+<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If <code>True</code>, then the parser will use a regex to match the flag string.</dd>
 <dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Whether to check for the short form of the flag, which
 uses a single dash and the first character of <code>dest</code>, e.g. <code>-f</code> for <code>foo</code>.</dd>
@@ -1682,13 +1714,14 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L885-L988" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L832-L940" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def flag(
     dest: str,
-    nesting: bool = True,
     default: Optional[bool] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     string: Optional[str] = None,
 ) -&gt; Parser[Output[Sequence[KeyValue[bool]]]]:
@@ -1705,15 +1738,18 @@ Expected '--verbose'. Got '-v'
     dest : str
         The variable to which the value will be bound.
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
-
     default : Optional[bool]
         An optional default value.
 
     help : Optional[str]
         An optional help string.
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will use a regex to match the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1775,11 +1811,12 @@ Expected '--verbose'. Got '-v'
         _defaults = defaults(**{dest: not default})
         if nesting:
             _defaults = _defaults.nesting()
-        parser = matches(s) &gt;= (lambda _: _defaults)
+
+        parser = matches(s, regex=regex) &gt;= (lambda _: _defaults)
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if short:
+    if string is None and short and len(dest) &gt; 1:
         short_string = f&#34;-{dest[0]}&#34;
         parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
@@ -1798,7 +1835,7 @@ Expected '--verbose'. Got '-v'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L991-L1000" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L943-L952" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def help_parser(usage: Optional[str], parsed: A_monoid) -&gt; Parser[A_monoid]:
     def f(
@@ -1834,7 +1871,7 @@ The following arguments are required: Your first name
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1003-L1047" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L955-L999" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def item(
     name: str,
@@ -1925,7 +1962,7 @@ But this would work:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L816-L882" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1002-L1067" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def matches(
     s: str, peak: bool = False, regex: bool = True
@@ -1973,8 +2010,7 @@ But this would work:</p>
 
     def predicate(_s: str) -&gt; bool:
         if regex:
-            b = bool(re.match(s, _s))
-            return b
+            return bool(re.match(s, _s))
         else:
             return s == _s
 
@@ -1997,7 +2033,7 @@ But this would work:</p>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.nonpositional"><code class="name flex">
-<span>def <span class="ident">nonpositional</span></span>(<span>*parsers: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", repeated: Optional[<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
+<span>def <span class="ident">nonpositional</span></span>(<span>*parsers: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", max: int = 80, repeated: Optional[<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p><code><a title="dollar_lambda.parser.nonpositional" href="#dollar_lambda.parser.nonpositional">nonpositional()</a></code> takes a sequence of parsers as arguments and attempts all permutations of them,
@@ -2010,6 +2046,10 @@ returning the first permutations that is successful:</p>
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
+<dt><strong><code>max</code></strong> :&ensp;<code>int</code></dt>
+<dd>Limits the number of times <code>repeated</code> is applied in order to prevent <code>RecursionError</code>s.
+The default for this can be increased by either setting <code>parser.MAX_MANY</code> or
+the environment variable <code>DOLLAR_LAMBDA_MAX_MANY</code>.</dd>
 <dt><strong><code>repeated</code></strong> :&ensp;<code>Optional[<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Sequence[A]]]</code></dt>
 <dd>If provided, this parser gets applied repeatedly (zero or more times) at all positions.</dd>
 </dl>
@@ -2043,10 +2083,11 @@ returning the first permutations that is successful:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1050-L1127" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1070-L1153" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nonpositional(
     *parsers: &#34;Parser[Output[A_monoid]]&#34;,
+    max: int = MAX_MANY,
     repeated: Optional[Parser[Output[A_monoid]]] = None,
 ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
@@ -2061,6 +2102,11 @@ returning the first permutations that is successful:</p>
 
     Parameters
     ----------
+    max: int
+        Limits the number of times `repeated` is applied in order to prevent `RecursionError`s.
+        The default for this can be increased by either setting `parser.MAX_MANY` or
+        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+
     repeated : Optional[Parser[Sequence[A]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
@@ -2096,11 +2142,11 @@ returning the first permutations that is successful:</p>
     _parsers = [*parsers] if repeated is None else [*parsers, repeated]
     usage = sep.join([p.usage or &#34;&#34; for p in _parsers])
     repeat_parser = None
-    if repeated is not None:
+    if repeated is not None and max &gt; 0:
         _repeated = repeated  # for mypy&#39;s benefit
 
         def f(cs: Sequence[str]):
-            p = _repeated &gt;&gt; nonpositional(*parsers, repeated=repeated)
+            p = _repeated &gt;&gt; nonpositional(*parsers, repeated=repeated, max=max - 1)
             return p.parse(cs)
 
         repeat_parser = Parser(f, usage=None, helps={})
@@ -2116,7 +2162,7 @@ returning the first permutations that is successful:</p>
             yield repeat_parser
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head &gt;&gt; nonpositional(*tail, repeated=repeated)
+            yield head &gt;&gt; nonpositional(*tail, repeated=repeated, max=max)
 
     parser = reduce(operator.or_, get_alternatives())
     helps = parser.helps
@@ -2126,7 +2172,7 @@ returning the first permutations that is successful:</p>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.option"><code class="name flex">
-<span>def <span class="ident">option</span></span>(<span>dest: str, nesting: bool = True, flag: Optional[str] = None, default: Any = None, help: Optional[str] = None, short: bool = True, type: Callable[[str], Any] = builtins.str) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="sequence.html#dollar_lambda.sequence.KeyValue">KeyValue</a>[typing.Any]]]]</span>
+<span>def <span class="ident">option</span></span>(<span>dest: str, default: Any = None, flag: Optional[str] = None, help: Optional[str] = None, nesting: bool = True, regex: bool = True, short: bool = True, type: Callable[[str], Any] = builtins.str) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[<a title="dollar_lambda.sequence.Sequence" href="sequence.html#dollar_lambda.sequence.Sequence">Sequence</a>[<a title="dollar_lambda.sequence.KeyValue" href="sequence.html#dollar_lambda.sequence.KeyValue">KeyValue</a>[typing.Any]]]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parses two words, binding the second to the first.</p>
@@ -2134,15 +2180,17 @@ returning the first permutations that is successful:</p>
 <dl>
 <dt><strong><code>dest</code></strong> :&ensp;<code>str</code></dt>
 <dd>The name of variable to bind to:</dd>
+<dt><strong><code>default</code></strong> :&ensp;<code>Optional[Any]</code></dt>
+<dd>The default value to bind on failure:</dd>
+<dt><strong><code>flag</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>The flag to use for the option. If not provided, defaults to <code>--{dest}</code>.</dd>
+<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
+<dd>The help message to display for the option:</dd>
 <dt><strong><code>nesting</code></strong> :&ensp;<code>bool</code></dt>
 <dd>If <code>True</code>, then the parser will split the parsed output on <code>.</code> yielding nested output.
 See Examples for more details.</dd>
-<dt><strong><code>flag</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>The flag to use for the option. If not provided, defaults to <code>--{dest}</code>.</dd>
-<dt><strong><code>default</code></strong> :&ensp;<code>Optional[Any]</code></dt>
-<dd>The default value to bind on failure:</dd>
-<dt><strong><code>help</code></strong> :&ensp;<code>Optional[str]</code></dt>
-<dd>The help message to display for the option:</dd>
+<dt><strong><code>regex</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If <code>True</code>, then the parser will match the flag string as a regex.</dd>
 <dt><strong><code>short</code></strong> :&ensp;<code>bool</code></dt>
 <dd>Whether to check for the short form of the flag, which
 uses a single dash and the first character of <code>dest</code>, e.g. <code>-c</code> for <code>count</code>.</dd>
@@ -2193,14 +2241,15 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1130-L1238" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1156-L1268" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def option(
     dest: str,
-    nesting: bool = True,
-    flag: Optional[str] = None,
     default: Any = None,
+    flag: Optional[str] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -&gt; Parser[Output[Sequence[KeyValue[Any]]]]:
@@ -2212,18 +2261,21 @@ function that takes a single string argument:</p>
     dest : str
         The name of variable to bind to:
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
+    default : Optional[Any]
+        The default value to bind on failure:
 
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    default : Optional[Any]
-        The default value to bind on failure:
-
     help : Optional[str]
         The help message to display for the option:
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will match the flag string as a regex.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -2290,13 +2342,13 @@ function that takes a single string argument:</p>
     def f(
         cs: Sequence[str],
     ) -&gt; Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag) &gt;= (
+        parser = matches(_flag, regex=regex) &gt;= (
             lambda _: argument(dest, nesting=nesting, type=type)
         )
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if short and len(dest) &gt; 1:
+    if flag is None and short and len(dest) &gt; 1:
         parser2 = option(dest=dest, short=False, flag=f&#34;-{dest[0]}&#34;, default=None)
         parser = parser | parser2
     if default:
@@ -2314,7 +2366,7 @@ function that takes a single string argument:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1241-L1267" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1271-L1297" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def peak(
     name: str,
@@ -2370,7 +2422,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1270-L1304" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1300-L1334" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     predicate: Callable[[str], bool],
@@ -2417,7 +2469,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L1307-L1320" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L1337-L1350" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat_peak(
     predicate: Callable[[str], bool],
@@ -2456,7 +2508,7 @@ Takes the output of <code><a title="dollar_lambda.parser.item" href="#dollar_lam
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L39-L53" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L40-L54" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parse(Generic[A_co]):
@@ -2499,7 +2551,7 @@ class Parse(Generic[A_co]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L73-L696" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L74-L712" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class Parser(MonadPlus[A_co]):
@@ -2784,13 +2836,13 @@ class Parser(MonadPlus[A_co]):
 
     def handle_error(self, error: ArgumentError) -&gt; None:
         def print_usage(usage: str):
-            print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+            self._print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
             if &#34;\n&#34; in usage:
                 usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
-            print(usage)
+            self._print(usage)
             if self.helps:
                 for k, v in self.helps.items():
-                    print(f&#34;{k}: {v}&#34;)
+                    self._print(f&#34;{k}: {v}&#34;)
 
         if isinstance(error, HelpError):
             print_usage(error.usage)
@@ -2798,7 +2850,7 @@ class Parser(MonadPlus[A_co]):
             if self.usage:
                 print_usage(self.usage)
             if error.usage:
-                print(error.usage)
+                self._print(error.usage)
         if TESTING:
             return
         else:
@@ -2832,10 +2884,18 @@ class Parser(MonadPlus[A_co]):
         return Parser(f, usage=None, helps={})
 
     def many(
-        self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+        self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
     ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
         &#34;&#34;&#34;
         Applies `self` zero or more times (like `*` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         &gt;&gt;&gt; from dollar_lambda import argument, flag
         &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
@@ -2858,17 +2918,24 @@ class Parser(MonadPlus[A_co]):
         if max == 0:
             p = self.empty()
         else:
-            if max is not None:
-                max -= 1
-                assert max &gt;= 0, max
+            max -= 1
+            assert max &gt;= 0, max
             p = self.many1(max=max) | self.empty()
         return replace(p, usage=f&#34;[{self.usage} ...]&#34;)
 
     def many1(
-        self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+        self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
     ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
         &#34;&#34;&#34;
         Applies `self` one or more times (like `+` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many1` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         &gt;&gt;&gt; from dollar_lambda import argument, flag
         &gt;&gt;&gt; p = argument(&#34;1-or-more&#34;).many1()
@@ -2881,13 +2948,8 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         &#34;&#34;&#34;
 
-        @lru_cache()
-        def f(cs: tuple):
-            y = self &gt;&gt; self.many(max=max)
-            return y.parse(Sequence(list(cs)))
-
         return Parser(
-            lambda cs: f(tuple(cs)),
+            lambda cs: (self &gt;&gt; self.many(max=max)).parse(cs),
             usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
             helps=self.helps,
         )
@@ -2971,6 +3033,11 @@ class Parser(MonadPlus[A_co]):
         get = result.head.parsed.get
         assert isinstance(get, Sequence), get
         return get.to_dict()
+
+    @staticmethod
+    def _print(*args, **kwargs):
+        if PRINTING:
+            print(*args, **kwargs)
 
     @classmethod
     def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -3169,7 +3236,7 @@ to the end of the parser:</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L288-L316" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L289-L317" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def done(
@@ -3213,7 +3280,7 @@ def done(
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L318-L327" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L319-L328" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def empty(
@@ -3240,7 +3307,7 @@ this method unless building custom parsers.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L544-L559" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L560-L575" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def return_(cls, a: A_co) -&gt; &#34;Parser[A_co]&#34;:  # type: ignore[misc]
@@ -3286,7 +3353,7 @@ This is a test.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L679-L696" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L695-L712" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@classmethod
 def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34;:
@@ -3328,7 +3395,7 @@ def zero(cls, error: Optional[ArgumentError] = None) -&gt; &#34;Parser[A_co]&#34
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L218-L246" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L219-L247" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def apply(self: &#34;Parser[A_monoid]&#34;, f: Callable[[A_monoid], Result[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[misc]
     # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
@@ -3393,7 +3460,7 @@ Expected 'a'. Got 'b'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L248-L286" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L249-L287" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def bind(self, f: Callable[[A_co], Monad[B_monoid]]) -&gt; &#34;Parser[B_monoid]&#34;:  # type: ignore[override]
     &#34;&#34;&#34;
@@ -3449,7 +3516,7 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L329-L352" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L330-L353" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def fails(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -3485,17 +3552,17 @@ Parser unexpectedly succeeded.
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L354-L374" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L355-L375" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def handle_error(self, error: ArgumentError) -&gt; None:
     def print_usage(usage: str):
-        print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
+        self._print(&#34;usage:&#34;, end=&#34;\n&#34; if &#34;\n&#34; in usage else &#34; &#34;)
         if &#34;\n&#34; in usage:
             usage = &#34;\n&#34;.join([&#34;    &#34; + u for u in usage.split(&#34;\n&#34;)])
-        print(usage)
+        self._print(usage)
         if self.helps:
             for k, v in self.helps.items():
-                print(f&#34;{k}: {v}&#34;)
+                self._print(f&#34;{k}: {v}&#34;)
 
     if isinstance(error, HelpError):
         print_usage(error.usage)
@@ -3503,7 +3570,7 @@ Parser unexpectedly succeeded.
         if self.usage:
             print_usage(self.usage)
         if error.usage:
-            print(error.usage)
+            self._print(error.usage)
     if TESTING:
         return
     else:
@@ -3530,7 +3597,7 @@ The following arguments are required: --hello
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L376-L401" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L377-L402" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def ignore(
     self: &#34;Parser[Output[A_monoid]]&#34;, a: Optional[Type[A_monoid]] = None
@@ -3561,10 +3628,17 @@ The following arguments are required: --hello
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.many"><code class="name flex">
-<span>def <span class="ident">many</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", max: Optional[int] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
+<span>def <span class="ident">many</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", max: int = 80) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Applies <code>self</code> zero or more times (like <code>*</code> in regexes).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>max</code></strong> :&ensp;<code>int</code></dt>
+<dd>Limits the number of times <code>many</code> is applied in order to prevent <code>RecursionError</code>s.
+The default for this can be increased by either setting <code>parser.MAX_MANY</code> or
+the environment variable <code>DOLLAR_LAMBDA_MAX_MANY</code>.</dd>
+</dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
 &gt;&gt;&gt; p = argument(&quot;as-many-as-you-like&quot;).many()
 &gt;&gt;&gt; p.parse_args()
@@ -3586,13 +3660,21 @@ heterogenous:</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L403-L434" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L404-L442" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many(
-    self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+    self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
 ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
     Applies `self` zero or more times (like `*` in regexes).
+
+    Parameters
+    ----------
+
+    max: int
+        Limits the number of times `many` is applied in order to prevent `RecursionError`s.
+        The default for this can be increased by either setting `parser.MAX_MANY` or
+        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
     &gt;&gt;&gt; from dollar_lambda import argument, flag
     &gt;&gt;&gt; p = argument(&#34;as-many-as-you-like&#34;).many()
@@ -3615,18 +3697,24 @@ heterogenous:</p>
     if max == 0:
         p = self.empty()
     else:
-        if max is not None:
-            max -= 1
-            assert max &gt;= 0, max
+        max -= 1
+        assert max &gt;= 0, max
         p = self.many1(max=max) | self.empty()
     return replace(p, usage=f&#34;[{self.usage} ...]&#34;)</code></pre>
 </details>
 </dd>
 <dt id="dollar_lambda.parser.Parser.many1"><code class="name flex">
-<span>def <span class="ident">many1</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", max: Optional[int] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
+<span>def <span class="ident">many1</span></span>(<span>self: "'<a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[Output[A_monoid]]'", max: int = 80) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>[~A_monoid]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Applies <code>self</code> one or more times (like <code>+</code> in regexes).</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>max</code></strong> :&ensp;<code>int</code></dt>
+<dd>Limits the number of times <code>many1</code> is applied in order to prevent <code>RecursionError</code>s.
+The default for this can be increased by either setting <code>parser.MAX_MANY</code> or
+the environment variable <code>DOLLAR_LAMBDA_MAX_MANY</code>.</dd>
+</dl>
 <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument, flag
 &gt;&gt;&gt; p = argument(&quot;1-or-more&quot;).many1()
 &gt;&gt;&gt; p.parse_args(&quot;1&quot;)
@@ -3634,19 +3722,30 @@ heterogenous:</p>
 &gt;&gt;&gt; p.parse_args(&quot;1&quot;, &quot;2&quot;)
 {'1-or-more': ['1', '2']}
 &gt;&gt;&gt; p.parse_args()
-usage: 1-OR-MORE [1-OR-MORE ...]
+**```usage```** :&amp;ensp;`1-OR-MORE [1-OR-MORE ...]`
+:   &amp;nbsp;
+
+
 The following arguments are required: 1-or-more
 </code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L436-L462" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L444-L473" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def many1(
-    self: &#34;Parser[Output[A_monoid]]&#34;, max: Optional[int] = None
+    self: &#34;Parser[Output[A_monoid]]&#34;, max: int = MAX_MANY
 ) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
     Applies `self` one or more times (like `+` in regexes).
+
+    Parameters
+    ----------
+
+    max: int
+        Limits the number of times `many1` is applied in order to prevent `RecursionError`s.
+        The default for this can be increased by either setting `parser.MAX_MANY` or
+        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
     &gt;&gt;&gt; from dollar_lambda import argument, flag
     &gt;&gt;&gt; p = argument(&#34;1-or-more&#34;).many1()
@@ -3659,13 +3758,8 @@ The following arguments are required: 1-or-more
     The following arguments are required: 1-or-more
     &#34;&#34;&#34;
 
-    @lru_cache()
-    def f(cs: tuple):
-        y = self &gt;&gt; self.many(max=max)
-        return y.parse(Sequence(list(cs)))
-
     return Parser(
-        lambda cs: f(tuple(cs)),
+        lambda cs: (self &gt;&gt; self.many(max=max)).parse(cs),
         usage=f&#34;{self.usage} [{self.usage} ...]&#34;,
         helps=self.helps,
     )</code></pre>
@@ -3679,7 +3773,7 @@ The following arguments are required: 1-or-more
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L464-L472" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L475-L483" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def map_error(self, f: Callable[[ArgumentError], ArgumentError]) -&gt; &#34;Parser[A_co]&#34;:
     def g(cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
@@ -3701,7 +3795,7 @@ section of the documentation for more information.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L596-L619" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L612-L635" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def nesting(
     self: &#34;Parser[Output[Sequence[KeyValue[Any]]]]&#34;,
@@ -3747,7 +3841,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L474-L487" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L485-L498" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def optional(self: &#34;Parser[Output[A_monoid]]&#34;) -&gt; &#34;Parser[Output[A_monoid]]&#34;:
     &#34;&#34;&#34;
@@ -3773,7 +3867,7 @@ Expected '--optional'. Got '--misspelled'
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L489-L493" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L500-L504" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse(self, cs: Sequence[str]) -&gt; Result[Parse[A_co]]:
     &#34;&#34;&#34;
@@ -3807,7 +3901,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L495-L542" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L506-L553" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def parse_args(
     self: &#34;Parser[Output]&#34;,
@@ -3867,7 +3961,7 @@ usage: A
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L155-L158" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L156-L159" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def rshift(
     self: &#34;Parser[Output[A_monoid]]&#34;, p: &#34;Parser[Output[B_monoid]]&#34;
@@ -3904,7 +3998,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L561-L594" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L577-L610" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def sat(
     self: &#34;Parser[A_monoid]&#34;,
@@ -3955,7 +4049,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L621-L645" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L637-L661" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def type(
     self: &#34;Parser[Output[Sequence[KeyValue[str]]]]&#34;, f: Callable[[str], Any]
@@ -3992,7 +4086,7 @@ Takes the output of <code>parser</code> as an argument.</dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L647-L648" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L663-L664" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_error(self, error: ArgumentError) -&gt; &#34;Parser[A_co]&#34;:
     return self.map_error(lambda _: error)</code></pre>
@@ -4024,7 +4118,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L650-L677" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L666-L693" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">def wrap_help(
     self: &#34;Parser[A_monoid]&#34;, a: Optional[Type[A_monoid]] = None
@@ -4067,7 +4161,7 @@ usage: --option2 OPTION2
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/104227c17b48cb09ec67b18f24c69132e98b3408/dollar_lambda/parser.py#L56-L59" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/parser.py#L57-L60" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class SuccessError(ArgumentError, Generic[A_monoid]):

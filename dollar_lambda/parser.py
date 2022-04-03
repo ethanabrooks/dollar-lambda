@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from dataclasses import astuple, dataclass, replace
-from functools import lru_cache, partial, reduce
+from functools import partial, reduce
 from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus, Monoid
@@ -26,14 +26,15 @@ from dollar_lambda.error import (
 from dollar_lambda.result import Result
 from dollar_lambda.sequence import KeyValue, Output, Sequence, TreePath
 
+TESTING = os.environ.get("DOLLAR_LAMBDA_TESTING", False)
+PRINTING = os.environ.get("DOLLAR_LAMBDA_PRINTING", True)
+MAX_MANY = int(os.environ.get("DOLLAR_LAMBDA_MAX_MANY", 80))
+
 A_co = TypeVar("A_co", covariant=True)
 A_monoid = TypeVar("A_monoid", bound=Monoid)
 B_monoid = TypeVar("B_monoid", bound=Monoid)
 A = TypeVar("A")
 B = TypeVar("B")
-
-global TESTING
-TESTING = os.environ.get("DOLLAR_LAMBDA_TESTING", False)
 
 
 @dataclass
@@ -353,13 +354,13 @@ class Parser(MonadPlus[A_co]):
 
     def handle_error(self, error: ArgumentError) -> None:
         def print_usage(usage: str):
-            print("usage:", end="\n" if "\n" in usage else " ")
+            self._print("usage:", end="\n" if "\n" in usage else " ")
             if "\n" in usage:
                 usage = "\n".join(["    " + u for u in usage.split("\n")])
-            print(usage)
+            self._print(usage)
             if self.helps:
                 for k, v in self.helps.items():
-                    print(f"{k}: {v}")
+                    self._print(f"{k}: {v}")
 
         if isinstance(error, HelpError):
             print_usage(error.usage)
@@ -367,7 +368,7 @@ class Parser(MonadPlus[A_co]):
             if self.usage:
                 print_usage(self.usage)
             if error.usage:
-                print(error.usage)
+                self._print(error.usage)
         if TESTING:
             return
         else:
@@ -401,10 +402,18 @@ class Parser(MonadPlus[A_co]):
         return Parser(f, usage=None, helps={})
 
     def many(
-        self: "Parser[Output[A_monoid]]", max: Optional[int] = None
+        self: "Parser[Output[A_monoid]]", max: int = MAX_MANY
     ) -> "Parser[Output[A_monoid]]":
         """
         Applies `self` zero or more times (like `*` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         >>> from dollar_lambda import argument, flag
         >>> p = argument("as-many-as-you-like").many()
@@ -427,17 +436,24 @@ class Parser(MonadPlus[A_co]):
         if max == 0:
             p = self.empty()
         else:
-            if max is not None:
-                max -= 1
-                assert max >= 0, max
+            max -= 1
+            assert max >= 0, max
             p = self.many1(max=max) | self.empty()
         return replace(p, usage=f"[{self.usage} ...]")
 
     def many1(
-        self: "Parser[Output[A_monoid]]", max: Optional[int] = None
+        self: "Parser[Output[A_monoid]]", max: int = MAX_MANY
     ) -> "Parser[Output[A_monoid]]":
         """
         Applies `self` one or more times (like `+` in regexes).
+
+        Parameters
+        ----------
+
+        max: int
+            Limits the number of times `many1` is applied in order to prevent `RecursionError`s.
+            The default for this can be increased by either setting `parser.MAX_MANY` or
+            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
 
         >>> from dollar_lambda import argument, flag
         >>> p = argument("1-or-more").many1()
@@ -450,13 +466,8 @@ class Parser(MonadPlus[A_co]):
         The following arguments are required: 1-or-more
         """
 
-        @lru_cache()
-        def f(cs: tuple):
-            y = self >> self.many(max=max)
-            return y.parse(Sequence(list(cs)))
-
         return Parser(
-            lambda cs: f(tuple(cs)),
+            lambda cs: (self >> self.many(max=max)).parse(cs),
             usage=f"{self.usage} [{self.usage} ...]",
             helps=self.helps,
         )
@@ -540,6 +551,11 @@ class Parser(MonadPlus[A_co]):
         get = result.head.parsed.get
         assert isinstance(get, Sequence), get
         return get.to_dict()
+
+    @staticmethod
+    def _print(*args, **kwargs):
+        if PRINTING:
+            print(*args, **kwargs)
 
     @classmethod
     def return_(cls, a: A_co) -> "Parser[A_co]":  # type: ignore[misc]
@@ -813,80 +829,12 @@ def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
     return replace(p, usage=None)
 
 
-def matches(
-    s: str, peak: bool = False, regex: bool = True
-) -> Parser[Output[Sequence[KeyValue[str]]]]:
-    """
-    Checks if the next word is `s`.
-
-    >>> matches("hello").parse_args("hello")
-    {'hello': 'hello'}
-    >>> matches("hello").parse_args("goodbye")
-    usage: hello
-    Expected 'hello'. Got 'goodbye'
-
-    Parameters
-    ----------
-    s: str
-        The word to that input will be checked against for equality.
-    peak : bool
-        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
-        If `True`, then the parser leaves the `unparsed` component unchanged.
-
-    regex : bool
-        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
-        string equality.
-
-    Examples
-    --------
-
-    >>> p = matches("hello") >> matches("goodbye")
-    >>> p.parse_args("hello", "goodbye")
-    {'hello': 'hello', 'goodbye': 'goodbye'}
-
-    Look what happens when `peak=True`:
-    >>> p = matches("hello", peak=True) >> matches("goodbye")
-    >>> p.parse_args("hello", "goodbye")
-    usage: hello goodbye
-    Expected 'goodbye'. Got 'hello'
-
-    The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
-    But this would work:
-    >>> p = matches("hello", peak=True) >> matches("hello") >> matches("goodbye")
-    >>> p.parse_args("hello", "goodbye")
-    {'hello': ['hello', 'hello'], 'goodbye': 'goodbye'}
-    """
-
-    def predicate(_s: str) -> bool:
-        if regex:
-            b = bool(re.match(s, _s))
-            return b
-        else:
-            return s == _s
-
-    if peak:
-        return sat_peak(
-            predicate=predicate,
-            on_fail=lambda _s: UnequalError(
-                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
-            ),
-            name=s,
-        )
-    else:
-        return sat(
-            predicate=predicate,
-            on_fail=lambda _s: UnequalError(
-                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
-            ),
-            name=s,
-        )
-
-
 def flag(
     dest: str,
-    nesting: bool = True,
     default: Optional[bool] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     string: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[bool]]]]:
@@ -903,15 +851,18 @@ def flag(
     dest : str
         The variable to which the value will be bound.
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
-
     default : Optional[bool]
         An optional default value.
 
     help : Optional[str]
         An optional help string.
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will use a regex to match the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -973,11 +924,12 @@ def flag(
         _defaults = defaults(**{dest: not default})
         if nesting:
             _defaults = _defaults.nesting()
-        parser = matches(s) >= (lambda _: _defaults)
+
+        parser = matches(s, regex=regex) >= (lambda _: _defaults)
         return parser.parse(cs)
 
     parser = Parser(partial(f, s=_string), usage=None, helps={})
-    if short:
+    if string is None and short and len(dest) > 1:
         short_string = f"-{dest[0]}"
         parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
@@ -1047,8 +999,77 @@ def item(
     return Parser(f, usage=name, helps={})
 
 
+def matches(
+    s: str, peak: bool = False, regex: bool = True
+) -> Parser[Output[Sequence[KeyValue[str]]]]:
+    """
+    Checks if the next word is `s`.
+
+    >>> matches("hello").parse_args("hello")
+    {'hello': 'hello'}
+    >>> matches("hello").parse_args("goodbye")
+    usage: hello
+    Expected 'hello'. Got 'goodbye'
+
+    Parameters
+    ----------
+    s: str
+        The word to that input will be checked against for equality.
+    peak : bool
+        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
+        If `True`, then the parser leaves the `unparsed` component unchanged.
+
+    regex : bool
+        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
+        string equality.
+
+    Examples
+    --------
+
+    >>> p = matches("hello") >> matches("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    {'hello': 'hello', 'goodbye': 'goodbye'}
+
+    Look what happens when `peak=True`:
+    >>> p = matches("hello", peak=True) >> matches("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    usage: hello goodbye
+    Expected 'goodbye'. Got 'hello'
+
+    The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
+    But this would work:
+    >>> p = matches("hello", peak=True) >> matches("hello") >> matches("goodbye")
+    >>> p.parse_args("hello", "goodbye")
+    {'hello': ['hello', 'hello'], 'goodbye': 'goodbye'}
+    """
+
+    def predicate(_s: str) -> bool:
+        if regex:
+            return bool(re.match(s, _s))
+        else:
+            return s == _s
+
+    if peak:
+        return sat_peak(
+            predicate=predicate,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
+            ),
+            name=s,
+        )
+    else:
+        return sat(
+            predicate=predicate,
+            on_fail=lambda _s: UnequalError(
+                left=s, right=_s, usage=f"Expected '{s}'. Got '{_s}'"
+            ),
+            name=s,
+        )
+
+
 def nonpositional(
     *parsers: "Parser[Output[A_monoid]]",
+    max: int = MAX_MANY,
     repeated: Optional[Parser[Output[A_monoid]]] = None,
 ) -> "Parser[Output[A_monoid]]":
     """
@@ -1063,6 +1084,11 @@ def nonpositional(
 
     Parameters
     ----------
+    max: int
+        Limits the number of times `repeated` is applied in order to prevent `RecursionError`s.
+        The default for this can be increased by either setting `parser.MAX_MANY` or
+        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+
     repeated : Optional[Parser[Sequence[A]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
@@ -1098,11 +1124,11 @@ def nonpositional(
     _parsers = [*parsers] if repeated is None else [*parsers, repeated]
     usage = sep.join([p.usage or "" for p in _parsers])
     repeat_parser = None
-    if repeated is not None:
+    if repeated is not None and max > 0:
         _repeated = repeated  # for mypy's benefit
 
         def f(cs: Sequence[str]):
-            p = _repeated >> nonpositional(*parsers, repeated=repeated)
+            p = _repeated >> nonpositional(*parsers, repeated=repeated, max=max - 1)
             return p.parse(cs)
 
         repeat_parser = Parser(f, usage=None, helps={})
@@ -1118,7 +1144,7 @@ def nonpositional(
             yield repeat_parser
         for i, head in enumerate(parsers):
             tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail, repeated=repeated)
+            yield head >> nonpositional(*tail, repeated=repeated, max=max)
 
     parser = reduce(operator.or_, get_alternatives())
     helps = parser.helps
@@ -1129,10 +1155,11 @@ def nonpositional(
 
 def option(
     dest: str,
-    nesting: bool = True,
-    flag: Optional[str] = None,
     default: Any = None,
+    flag: Optional[str] = None,
     help: Optional[str] = None,
+    nesting: bool = True,
+    regex: bool = True,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -> Parser[Output[Sequence[KeyValue[Any]]]]:
@@ -1144,18 +1171,21 @@ def option(
     dest : str
         The name of variable to bind to:
 
-    nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
-        See Examples for more details.
+    default : Optional[Any]
+        The default value to bind on failure:
 
     flag : Optional[str]
         The flag to use for the option. If not provided, defaults to `--{dest}`.
 
-    default : Optional[Any]
-        The default value to bind on failure:
-
     help : Optional[str]
         The help message to display for the option:
+
+    nesting : bool
+        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        See Examples for more details.
+
+    regex : bool
+        If `True`, then the parser will match the flag string as a regex.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1222,13 +1252,13 @@ def option(
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag) >= (
+        parser = matches(_flag, regex=regex) >= (
             lambda _: argument(dest, nesting=nesting, type=type)
         )
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
-    if short and len(dest) > 1:
+    if flag is None and short and len(dest) > 1:
         parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
         parser = parser | parser2
     if default:
