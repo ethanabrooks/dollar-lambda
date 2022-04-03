@@ -23,7 +23,7 @@ repos:
     rev: 4.0.1
     hooks:
       - id: flake8
-        args: ["--exclude=readme.py"]
+        exclude: "README.py"
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
