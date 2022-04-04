@@ -1,5 +1,6 @@
 from dollar_lambda.args import Args, field
 from dollar_lambda.decorators import CommandTree, command
+from dollar_lambda.error import ArgumentError
 from dollar_lambda.parser import (
     Parser,
     apply,
@@ -12,6 +13,8 @@ from dollar_lambda.parser import (
     option,
     sat,
 )
+from dollar_lambda.result import Result
+from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 __all__ = [
     "Parser",
@@ -28,4 +31,9 @@ __all__ = [
     "field",
     "command",
     "CommandTree",
+    "Output",
+    "Sequence",
+    "KeyValue",
+    "ArgumentError",
+    "Result",
 ]

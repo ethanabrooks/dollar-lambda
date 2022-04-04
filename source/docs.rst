@@ -21,13 +21,10 @@ the lower-level syntax that lies behind the sugar, which can handle any
 reasonable amount of logical complexity.
 
 
-.. autofunction:: dollar_lambda.Parser
-
-
 The `dollar_lambda.command` decorator
 -------------------------------------------------------
 
-For the vast majority of parsing patterns, ``@command`` is the most
+For the vast majority of parsing patterns, :py:func:`@command<dollar_lambda.command>`` is the most
 concise way to define a parser:
 
          @command() ... def main(x: int, dev: bool = False, prod: bool =
@@ -63,7 +60,7 @@ to the ``kwargs`` argument: >>> main("-h") usage: -x X [-dev | -prod]
 "-prod") {'x': 1, 'prod': True} >>> main("-x", "1") usage: -x X [-dev |
 -prod] The following arguments are required: -dev
 
-``CommandTree`` for dynamic dispatch
+:py:class:`CommandTree<dollar_lambda.CommandTree>` for dynamic dispatch
 ------------------------------------
 
 For many programs, a user will want to use one entrypoint for one set of
@@ -100,14 +97,14 @@ neither ``--prod`` nor ``--dev`` are given:
 As with ``main`` in the previous example, you would ordinarily provide
 ``tree`` no arguments and it would get them from the command line.
 
-There are many other ways to use ``CommandTree``, including some that
+There are many other ways to use :py:class:`CommandTree<dollar_lambda.CommandTree>`, including some that
 make use of the ``base_function``. To learn more, we recommend the
-```CommandTree`` tutorial <#commandtree-tutorial>`__.
+`:py:class:`CommandTree<dollar_lambda.CommandTree>` tutorial <#commandtree-tutorial>`__.
 
 Lower-level syntax
 ------------------
 
-```@command`` <#dollar_lambda.command>`__ and ``CommandTree`` cover many
+`:py:func:`@command<dollar_lambda.command>`` <#dollar_lambda.command>`__ and :py:class:`CommandTree<dollar_lambda.CommandTree>` cover many
 use cases, but they are both syntactic sugar for a lower-level interface
 that is far more expressive.
 
@@ -430,7 +427,7 @@ We could express the same logic with the ``command`` decorator:
          help=dict(x="the base", y="the exponent"), ... ) ... def main(x:
          int, y: int, \**kwargs): ... pass # do work
 
-This is also a case where you might want to use ``CommandTree``:
+This is also a case where you might want to use :py:class:`CommandTree<dollar_lambda.CommandTree>`:
 
          tree = CommandTree() ... @tree.command(help=dict(x="the base",
          y="the exponent")) ... def base_function(x: int, y: int): ... pass
@@ -503,27 +500,27 @@ p.parse_args("--verbose", "-x", "1", "-y", "2") # this succeeds
 {'verbose': True, 'x': 1, 'y': 2} >>> p.parse_args("--quiet", "-x", "1",
 "-y", "2") # and this succeeds {'quiet': True, 'x': 1, 'y': 2}
 
-``CommandTree`` Tutorial
+:py:class:`CommandTree<dollar_lambda.CommandTree>` Tutorial
 ========================
 
-``CommandTree`` has already shown up in the `Highlights
+:py:class:`CommandTree<dollar_lambda.CommandTree>` has already shown up in the `Highlights
 section <#commandtree-for-dynamic-dispatch>`__ and in the
 `tutorial <#variations-on-the-example>`__. In this section we will give
 a more thorough treatment, exposing some of the underlying logic and
-covering all the variations in functionality that ``CommandTree``
+covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.CommandTree>`
 offers.
 
-``CommandTree`` draws inspiration from the
+:py:class:`CommandTree<dollar_lambda.CommandTree>` draws inspiration from the
 ```Click`` <https://click.palletsprojects.com/>`__ library.
-``CommandTree.subcommand`` (discussed `here <#commandtreesubcommand>`__)
+:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` (discussed `here <#commandtreesubcommand>`__)
 closely approximates the functionality described in the `Commands and
 Groups <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__
 section of the ``Click`` documentation.
 
-``CommandTree.command``
+:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
 -----------------------
 
-First let's walk through the use of the ``CommandTree.command``
+First let's walk through the use of the :py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
 decorator, one step at a time. First we define the object:
 
          tree = CommandTree()
@@ -533,7 +530,7 @@ Now we define at least one child function:
          @tree.command() ... def f1(a: int): ... return dict(f1=dict(a=a)) #
          this can be whatever
 
-``CommandTree.command`` automatically converts the function arguments
+:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>` automatically converts the function arguments
 into a parser. We can run the parser and pass its output to our function
 ``f1`` by calling ``tree``:
 
@@ -619,7 +616,7 @@ pipe:
 
 That comes from the third argument of ``h1``.
 
-``CommandTree.subcommand``
+:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>`
 --------------------------
 
 Often we want to explicitly specify which function to execute by naming
@@ -628,7 +625,7 @@ it on the command line. This would implement functionality similar to
 or
 ```Click.command`` <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__.
 
-For this we would use the ``CommandTree.subcommand`` decorator:
+For this we would use the :py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` decorator:
 
          tree = CommandTree() ... @tree.command() ... def f1(a: int): ...
          return dict(f1=dict(a=a)) ... @f1.subcommand() # note subcommand,
@@ -693,7 +690,7 @@ main(**p.parse_args("-x", "0", "1")) {'x': 0, 'y': 1}
 Fall back to the value in the config by not providing an argument for
 ``x``: >>> main(**p.parse_args("2")) {'x': 1, 'y': 2}
 
-We can also write this with ``@command`` syntax:
+We can also write this with :py:func:`@command<dollar_lambda.command>`` syntax:
 
          @command( ... parsers=dict( ... y=argument("y", type=int), ...
          kwargs=option("x", type=int).optional(), ... ) ... ) ... def main(y:
@@ -769,7 +766,7 @@ The same technique can be used with decorators: >>>
 return dict(x=x, y=y) >>> f("-x", "-y", "-config-foo", "-config-bar",
 "1") {'x': True, 'y': True}
 
-And similarly with ``CommandTree``.
+And similarly with :py:class:`CommandTree<dollar_lambda.CommandTree>`.
 
 Why ``$λ``?
 ===========
@@ -804,7 +801,7 @@ Concise
 
 ``$λ`` provides many syntactic shortcuts for cutting down boilerplate:
 
--  the ``command`` decorator and the ``CommandTree`` object for
+-  the ``command`` decorator and the :py:class:`CommandTree<dollar_lambda.CommandTree>` object for
    automatically building parsers from function signatures.
 -  operators like ```>>`` <#dollar_lambda.Parser.__rshift__>`__,
    ```|`` <#dollar_lambda.Parser.__or__>`__,

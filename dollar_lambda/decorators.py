@@ -1,5 +1,6 @@
 """
-Defines the `command` decorator and the `CommandTree` class.
+Defines the :py:func:`@command<dollar_lambda.command>` decorator
+and the :py:class:`CommandTree<dollar_lambda.CommandTree>` class.
 """
 from __future__ import annotations
 
@@ -62,26 +63,27 @@ def command(
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
-    A succinct way to generate a simple `nonpositional` parser. `@command` derives the
+    A succinct way to generate a simple :py:meth:`nonpositional` parser. :py:func:`@command<command>` derives the
     component parsers from the function's signature and automatically executes the function with
     the parsed arguments, if parsing succeeds:
 
+    >>> from dollar_lambda import command
     >>> @command(help=dict(a="something about a"))
     ... def f(a: int = 1, b: bool = False):
-    ...     return dict(a=a, b=b)
+    ...     print(dict(a=a, b=b))
+    ...
     >>> f("-a", "2", "-b")
     {'a': 2, 'b': True}
 
-    If the wrapped function receives no arguments (as in `f()`), the parser will take
-    `sys.argv[1:]` as the input.
-
-    Note that `@command` does not handle mutually exclusive arguments or alternative
-    arguments.
+    If the wrapped function receives no arguments (as in ``f()``), the parser will take
+    ``sys.argv[1:]`` as the input.
 
     Parameters
     ----------
+
     flip_bools : bool
-        For boolean arguments that default to true, this changes the flag from `--{dest}` to `--no-{dest}`:
+        For boolean arguments that default to true, this changes the flag from ``--{dest}`` to
+        ``--no-{dest}``:
 
     help : dict[str, str]
         A dictionary of help strings for the arguments.
@@ -103,7 +105,7 @@ def command(
     >>> f("--no-cuda")  # flip_bools adds --no- to the flag
     {'cuda': False}
 
-    As the following example demonstrates, when `flip_bools=False` output can be somewhat confusing:
+    As the following example demonstrates, when ``flip_bools=False`` output can be somewhat confusing:
 
     >>> @command(flip_bools=False)
     ... def f(cuda: bool = True):
@@ -111,7 +113,7 @@ def command(
     >>> f("--cuda")
     {'cuda': False}
 
-    Here is an example using the `help` parameter:
+    Here is an example using the ``help`` parameter:
 
     >>> @command(help=dict(quiet="Be quiet"))
     ... def f(quiet: bool):
@@ -120,9 +122,25 @@ def command(
     usage: --quiet
     quiet: Be quiet
 
-    Here is an example using the `parser` parameter:
+    Here is an example using the ``parsers`` parameter:
 
-    TODO!
+    >>> from dollar_lambda import flag
+    >>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+    ... def main(x: int, **kwargs):
+    ...     print(dict(x=x, **kwargs))
+
+    This parser requires either a ``--dev`` or ``--prod`` flag and maps it
+    to the ``kwargs`` argument:
+
+    >>> main("-h")
+    usage: -x X [--dev | --prod]
+    >>> main("-x", "1", "-dev")
+    {'x': 1, 'dev': True}
+    >>> main("-x", "1", "-prod")
+    {'x': 1, 'prod': True}
+    >>> main("-x", "1")
+    usage: -x X [--dev | --prod]
+    The following arguments are required: --dev
     """
 
     def wrapper(func: Callable) -> Callable:
@@ -258,7 +276,7 @@ class _Node:
 class CommandTree:
     """
     Allows parsers to dynamically dispatch their results based on the input. For usage details,
-    see the [`CommandTree` tutorial](#commandtree-tutorial).
+    see the :doc:`command_tree`.
     """
 
     _children: List[_Node] = field(default_factory=list)
@@ -282,7 +300,7 @@ class CommandTree:
             Whether the parser will permit the decorated function to run if no further arguments are supplied.
 
         flip_bools: bool
-            Whether to add `--no-<argument>` before arguments that default to `True`.
+            Whether to add ``--no-<argument>`` before arguments that default to ``True``.
 
         help: dict
             A dictionary of help strings for the arguments.
@@ -290,12 +308,15 @@ class CommandTree:
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
-        parsers: dict
-            TODO
+        parsers: Dict[str, Parser]
+            A dictionary reserving arguments for custom parsers.
+            See :py:func:`@command<dollar_lambda.command>` for examples.
 
         Examples
         --------
-        With `flip_bools` set to `True`:
+        With ``flip_bools`` set to ``True``:
+
+        >>> from dollar_lambda import CommandTree
         >>> tree = CommandTree()
         ...
         >>> @tree.command(flip_bools=True)
@@ -306,7 +327,7 @@ class CommandTree:
         usage: --no-b
         b: (default: True)
 
-        With `flip_bools` set to `False`:
+        With ``flip_bools`` set to ``False``:
 
         >>> tree = CommandTree()
         ...
@@ -319,8 +340,8 @@ class CommandTree:
         b: (default: True)
 
 
-        With `can_run` set to `True` (the default), we can run `f1` by not passing arguments
-        for the `f1`'s children:
+        With ``can_run`` set to ``True`` (the default), we can run ``f1``
+        by not passing arguments for the ``f1``'s children:
 
         >>> tree = CommandTree()
         ...
@@ -338,7 +359,7 @@ class CommandTree:
         >>> tree("-b")
         {'f1': {'b': True}}
 
-        With `can_run` set to `False`, the parser will fail if the child function arguments
+        With ``can_run`` set to ``False``, the parser will fail if the child function arguments
         are not supplied:
 
 
@@ -403,7 +424,7 @@ class CommandTree:
         Run the parser associated with this tree and execute the
         function associated with a succeeding parser.
 
-        If `args` is empty, uses `sys.argv[1:]`.
+        If ``args`` is empty, uses ``sys.argv[1:]``.
         """
         _args = args if args or parser_mod.TESTING else sys.argv[1:]
         p = self._parser() >> Parser[Output[_FunctionPair[Any]]].done()
@@ -435,22 +456,23 @@ class CommandTree:
             Whether the parser will permit the decorated function to run if no further arguments are supplied.
 
         flip_bools: bool
-            Whether to add `--no-<argument>` before arguments that default to `True`.
+            Whether to add ``--no-<argument>`` before arguments that default to ``True``.
 
         help: Dict[str, str]
             A dictionary of help strings for the arguments.
 
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
-            See `nonpositional` for examples.
+            See :py:func:`nonpositional` for examples.
 
         parsers: Dict[str, Parser]
-            A dictionary reserving arguments for custom parsers. See below for examples.
-            See `command` for examples.
+            A dictionary reserving arguments for custom parsers.
+            See :py:func:`@command<dollar_lambda.command>` for examples.
 
         Examples
         --------
-        With `flip_bools` set to `True`:
+        With ``flip_bools`` set to ``True``:
+
         >>> tree = CommandTree()
         ...
         >>> @tree.subcommand(flip_bools=True)
@@ -461,7 +483,7 @@ class CommandTree:
         usage: f1 --no-b
         b: (default: True)
 
-        With `flip_bools` set to `False`:
+        With ``flip_bools`` set to ``False``:
 
         >>> tree = CommandTree()
         ...
@@ -473,8 +495,8 @@ class CommandTree:
         usage: f1 -b
         b: (default: True)
 
-        With `can_run` set to `True` (the default), we can run `f1` by not passing arguments
-        for the `f1`'s children:
+        With ``can_run`` set to ``True`` (the default), we can run ``f1`` by not passing arguments
+        for the ``f1``'s children:
 
         >>> tree = CommandTree()
         ...
@@ -492,7 +514,7 @@ class CommandTree:
         >>> tree("f1", "-b")
         {'f1': {'b': True}}
 
-        With `can_run` set to `False`, the parser will fail if the child function arguments
+        With ``can_run`` set to ``False``, the parser will fail if the child function arguments
         are not supplied:
 
         >>> tree = CommandTree()

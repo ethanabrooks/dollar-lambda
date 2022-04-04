@@ -44,7 +44,7 @@ class Result(MonadPlus[A_co]):
         self: "Result[Sequence[A]]", other: "Result[Sequence[B]]"
     ) -> "Result[Sequence[A | B]]":
         """
-        Sequence cs >> ds for each (cs, ds) in self.get * other.get.
+        Sequence ``cs >> ds`` for each ``(cs, ds)`` in ``self.get * other.get``.
         Short circuit at Exceptions.
         """
 

@@ -24,7 +24,7 @@ from dollar_lambda.error import (
     UnexpectedError,
 )
 from dollar_lambda.result import Result
-from dollar_lambda.sequence import KeyValue, Output, Sequence, TreePath
+from dollar_lambda.sequence import KeyValue, Output, Sequence, _TreePath
 
 TESTING = os.environ.get("DOLLAR_LAMBDA_TESTING", False)
 PRINTING = os.environ.get("DOLLAR_LAMBDA_PRINTING", True)
@@ -41,9 +41,9 @@ B = TypeVar("B")
 class Parse(Generic[A_co]):
     """
     A `Parse` is the output of parsing.
-
     Parameters
     ----------
+
     parsed : A
         Component parsed by the parsed
     unparsed : Sequence[str]
@@ -86,6 +86,8 @@ class Parser(MonadPlus[A_co]):
     ) -> "Parser[Output[A_monoid | B_monoid]]":
         """
         Parse two arguments in either order.
+
+        >>> from dollar_lambda import flag
         >>> p = flag("verbose") + flag("debug")
         >>> p.parse_args("--verbose", "--debug")
         {'verbose': True, 'debug': True}
@@ -96,6 +98,7 @@ class Parser(MonadPlus[A_co]):
         Expected '--verbose'. Got '--debug'
 
         Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+
         >>> p = flag("a") + flag("b") + flag("c")
         >>> p.parse_args("-c", "-a", "-b")   # this works
         {'c': True, 'a': True, 'b': True}
@@ -104,9 +107,12 @@ class Parser(MonadPlus[A_co]):
         Expected '-b'. Got '-c'
 
         This makes more sense when one supplies the implicit parentheses:
+
         >>> p = (flag("a") + flag("b")) + flag("c")
 
         In order to chain together more than two arguments, use `nonpositional`:
+
+        >>> from dollar_lambda import nonpositional
         >>> p = nonpositional(flag("a"), flag("b"), flag("c"))
         >>> p.parse_args("-a", "-c", "-b")
         {'a': True, 'c': True, 'b': True}
@@ -140,6 +146,7 @@ class Parser(MonadPlus[A_co]):
         Unrecognized argument: --option
 
         To disable this behavior, use `allow_unparsed`:
+
         >>> p.parse_args("--verbose", "--option", "x", allow_unparsed=True)
         {'verbose': True}
         """
@@ -219,13 +226,16 @@ class Parser(MonadPlus[A_co]):
     def apply(self: "Parser[A_monoid]", f: Callable[[A_monoid], Result[B_monoid]]) -> "Parser[B_monoid]":  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
-        Takes the output of `parser` and applies `f` to it. Convert any errors that arise into `ArgumentError`.
+        Takes the output of parser and applies ``f`` to it. Convert any errors that arise into
+        :py:exc:`ArgumentError<dollar_lambda.ArgumentError>`.
 
         >>> p1 = flag("hello")
         >>> p1.parse_args("--hello")
         {'hello': True}
 
         This will double `p1`'s output:
+
+        >>> from dollar_lambda import Result
         >>> p2 = p1.apply(lambda out: Result.return_(out + out))
         >>> p2.parse_args("--hello")
         {'hello': [True, True]}
@@ -250,26 +260,29 @@ class Parser(MonadPlus[A_co]):
         """
         Returns a new parser that
 
-        1. applies `self`;
-        2. if this succeeds, applies `f` to the parsed component of the result.
+        1. applies ``self``;
+        2. if this succeeds, applies ``f`` to the parsed component of the result.
 
-        `bind` is one of the functions that makes `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). But most users will
-        avoid using it directly, preferring higher level combinators like `>>` (`Parser.__rshift__`),
-        `|` (`Parser.__or__`) and `+` (`Parser.__add__`).
+        :py:meth:`Parser.bind` is one of the functions that makes :py:class:`Parser` a
+        `Monad <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16>`_.
+        But most users will
+        avoid using it directly, preferring higher level combinators like :py:meth:`>><dollar_lambda.Parser.__rshift__>`,
+        :py:meth:`|<dollar_lambda.Parser.__or__>` and :py:meth:`+<dollar_lambda.Parser.__add__>`.
 
-        Note that `>=` as a synonym for `bind` (as defined in [`pytypeclass`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26))
+        Note that :py:meth:`>=<dollar_lambda.Parser.__ge__>` as a synonym for :py:meth:`Parser.bind` (as defined in
+        `pytypeclass <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26>`_)
         and we typically prefer using the infix operator to the spelled out method.
 
-        Let's start with our simplest parser, `argument`:
-        >>> p1 = argument("some_dest")
-
-        Now let's use the `matches` parser to write a function that takes the output of `p1` and fails unless
+        To demonstrate one use of:py:meth:`Parser.bind` or :py:meth:`>=<dollar_lambda.Parser.__ge__>`,
+        let's use the :py:func:`matches` parser to write a function that takes the output of a parser and fails unless
         the next argument is the same as the first:
-        >>> def f(out: Output[Sequence[KeyValue[Any]]]) -> Parser[Output[str]]:
+
+        >>> from dollar_lambda import Output, Sequence, KeyValue, Parser, matches, argument
+        >>> def f(out: Output[Sequence[KeyValue]]) -> Parser[Output[str]]:
         ...     *_, kv = out.get
         ...     return matches(kv.value)
-
-        >>> p = p1 >= f
+        ...
+        >>> p = argument("some_dest") >= f
         >>> p.parse_args("a", "a")
         {'a': 'a'}
         >>> p.parse_args("a", "b")
@@ -291,7 +304,8 @@ class Parser(MonadPlus[A_co]):
         cls: Type["Parser[Output[A_monoid]]"], a: Optional[Type[A_monoid]] = None
     ) -> Parser[Output[Any]]:
         """
-        `done` succeds on the end of input and fails on everything else.
+        :py:meth:`Parser.done` succeeds on the end of input and fails on everything else.
+
         >>> Parser.done().parse_args()
         {}
         >>> Parser.done().parse_args("arg")
@@ -302,7 +316,8 @@ class Parser(MonadPlus[A_co]):
         >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=True)
         {'verbose': True}
 
-        When `allow_unparsed=False` (the default), `parse_args` adds `>> Parser.done()`
+        When ``allow_unparsed=False`` (the default), :py:meth:`Parser.parse_args` adds
+        ``>> done()``
         to the end of the parser:
         """
 
@@ -321,7 +336,8 @@ class Parser(MonadPlus[A_co]):
         cls: Type["Parser[Output[A_monoid]]"], a: Optional[Type[A_monoid]] = None
     ) -> "Parser[Output[A_monoid]]":
         """
-        Always returns {}, no matter the input. Mostly useful for use in `nonpositional`.
+        Always returns ``{}``, no matter the input. Mostly useful for use in :py:func:`nonpositional`.
+
         >>> Parser.empty().parse_args("any", "arguments", allow_unparsed=True)
         {}
         """
@@ -331,7 +347,7 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[A_monoid]]", a: Optional[Type[A_monoid]] = None
     ) -> "Parser[Output[A_monoid]]":
         """
-        Succeeds only if self fails. Does not consume any input.
+        Succeeds only if ``self`` fails. Does not consume any input.
 
         >>> flag("x").fails().parse_args("not x", allow_unparsed=True)  # succeeds
         {}
@@ -384,11 +400,13 @@ class Parser(MonadPlus[A_co]):
 
         >>> p = flag("hello").ignore()
 
-        This will not bind any value to `"hello"`:
+        This will not bind any value to ``"hello"``:
+
         >>> p.parse_args("--hello")
         {}
 
-        But `--hello` is still required:
+        But ``--hello`` is still required:
+
         >>> p.parse_args()
         The following arguments are required: --hello
         """
@@ -405,15 +423,19 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[A_monoid]]", max: int = MAX_MANY
     ) -> "Parser[Output[A_monoid]]":
         """
-        Applies `self` zero or more times (like `*` in regexes).
+        Applies ``self`` zero or more times (like ``*`` in regexes).
 
         Parameters
         ----------
 
         max: int
-            Limits the number of times `many` is applied in order to prevent `RecursionError`s.
-            The default for this can be increased by either setting `parser.MAX_MANY` or
-            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+            Limits the number of times :py:meth:`Parser.many` is applied in order to prevent
+            a ``RecursionError``.
+            The default for this can be increased by either setting ``parser.MAX_MANY`` or
+            the environment variable ``DOLLAR_LAMBDA_MAX_MANY``.
+
+        Examples
+        --------
 
         >>> from dollar_lambda import argument, flag
         >>> p = argument("as-many-as-you-like").many()
@@ -426,8 +448,9 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("a", "b")
         {'as-many-as-you-like': ['a', 'b']}
 
-        Note that if `self` contains `Parser.__or__`, the arguments can be
+        Note that if ``self`` contains :py:meth:`|<Parser.__or__>`, the arguments can be
         heterogenous:
+
         >>> p = flag("verbose") | flag("quiet")
         >>> p = p.many()
         >>> p.parse_args("--verbose", "--quiet") # mix --verbose and --quiet
@@ -445,15 +468,19 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[A_monoid]]", max: int = MAX_MANY
     ) -> "Parser[Output[A_monoid]]":
         """
-        Applies `self` one or more times (like `+` in regexes).
+        Applies ``self`` one or more times (like ``+`` in regexes).
 
         Parameters
         ----------
 
         max: int
-            Limits the number of times `many1` is applied in order to prevent `RecursionError`s.
-            The default for this can be increased by either setting `parser.MAX_MANY` or
-            the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+            Limits the number of times :py:meth:`Parser.many` is applied in order to prevent
+            a ``RecursionError``.
+            The default for this can be increased by either setting ``parser.MAX_MANY`` or
+            the environment variable ``DOLLAR_LAMBDA_MAX_MANY``.
+
+        Examples
+        --------
 
         >>> from dollar_lambda import argument, flag
         >>> p = argument("1-or-more").many1()
@@ -482,9 +509,35 @@ class Parser(MonadPlus[A_co]):
 
         return Parser(g, usage=None, helps=self.helps)
 
+    def nesting(
+        self: "Parser[Output[Sequence[KeyValue[Any]]]]",
+    ) -> "Parser[Output[Sequence[KeyValue[Any]]]]":
+        """
+        Breaks the output of the wrapped parser into nested outputs. See the :doc:`nesting`
+        section of the documentation for more information.
+        """
+
+        def g(out: Output[Sequence[KeyValue[str]]]) -> Result[Output]:
+            d = out.get
+            if not d:
+                raise RuntimeError("Invoked nested on a parser that returns no output.")
+            *tail, head = out.get
+            if "." in head.key:
+                key, hd, *tl = head.key.split(".")
+                parents = NonemptyList.make(hd, *tl)
+                path = _TreePath(parents, head.value)
+                kv = KeyValue(key, path)
+                return Result.return_(Output(Sequence([*tail, kv])))
+            else:
+                return Result.return_(out)
+
+        p = self.apply(g)
+        return replace(p, usage=self.usage, helps=self.helps)
+
     def optional(self: "Parser[Output[A_monoid]]") -> "Parser[Output[A_monoid]]":
         """
         Allows arguments to be optional:
+
         >>> p1 = flag("optional")
         >>> p = p1.optional()
         >>> p.parse_args("--optional")
@@ -499,7 +552,7 @@ class Parser(MonadPlus[A_co]):
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A_co]]:
         """
-        Applies the parser to the input sequence `cs`.
+        Applies the parser to the input sequence ``cs``.
         """
         return self.f(cs)
 
@@ -515,12 +568,12 @@ class Parser(MonadPlus[A_co]):
         Parameters
         ----------
         args : str
-            A sequence of strings to parse. If empty, defaults to `sys.argv[1:]`.
+            A sequence of strings to parse. If empty, defaults to ``sys.argv[1:]``.
         allow_unparsed : bool
             Whether to cause parser to fail if there are unparsed inputs. Note that setting this to false
-            may cause unexpected behavior when using `nonpositional` or `Args`.
+            may cause unexpected behavior when using :py:func:`nonpositional` or :py:class:`Args`.
         check_help : bool
-            Before running the parser, checks if the input string is `--help` or `-h`.
+            Before running the parser, checks if the input string is ``--help`` or ``-h``.
             If it is, returns the usage message.
 
         Examples
@@ -561,7 +614,7 @@ class Parser(MonadPlus[A_co]):
     def return_(cls, a: A_co) -> "Parser[A_co]":  # type: ignore[misc]
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
-        This method is required to make `Parser` a [`Monad`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16). It consumes none of the input
+        This method is required to make :py:class:`Parser` a `Monad <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16>`_. It consumes none of the input
         and always returns `a` as the result. For the most part, the user will not use
         this method unless building custom parsers.
 
@@ -580,8 +633,9 @@ class Parser(MonadPlus[A_co]):
         on_fail: Callable[[A_monoid], ArgumentError],
     ) -> "Parser[A_monoid]":
         """
-        Applies `parser`, applies a predicate to the result and fails if this returns false.
+        Applies ``parser``, applies ``predicate`` to the result and fails if this returns false.
 
+        >>> from dollar_lambda import ArgumentError
         >>> p = option("x", type=int).many().sat(
         ...     lambda out: sum(out.get.values()) > 0,
         ...     lambda out: ArgumentError(f"The values in {list(out.get.values())} must sum to more than 0."),
@@ -589,7 +643,6 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("-x", "-1", "-x", "1")  # fails
         usage: [-x X ...]
         The values in [-1, 1] must sum to more than 0.
-
         >>> p.parse_args("-x", "-1", "-x", "2")  # succeeds
         {'x': [-1, 2]}
 
@@ -598,10 +651,10 @@ class Parser(MonadPlus[A_co]):
         parser : Parser[A]
             The parser to apply.
         predicate : Callable[[A], bool]
-            The predicate to apply to the result of `parser`. `sat` fails if this predicate returns false.
+            The predicate to apply to the result of ``parser``. :py:meth:`Parser.sat` fails if this predicate returns false.
         on_fail : Callable[[A], ArgumentError]
-            A function producing an ArgumentError to return if the predicate fails.
-            Takes the output of `parser` as an argument.
+            A function producing an :py:exc:`ArgumentError` to return if the predicate fails.
+            Takes the output of ``parser`` as an argument.
         """
 
         def f(x: A_monoid) -> Result[A_monoid]:
@@ -609,36 +662,13 @@ class Parser(MonadPlus[A_co]):
 
         return self.apply(f)
 
-    def nesting(
-        self: "Parser[Output[Sequence[KeyValue[Any]]]]",
-    ) -> "Parser[Output[Sequence[KeyValue[Any]]]]":
-        """
-        Breaks the output of the wrapped parser into nested outputs. See the [`Nesting output`](#nesting-output)
-        section of the documentation for more information.
-        """
-
-        def g(out: Output[Sequence[KeyValue[str]]]) -> Result[Output]:
-            d = out.get
-            if not d:
-                raise RuntimeError("Invoked nested on a parser that returns no output.")
-            *tail, head = out.get
-            if "." in head.key:
-                key, hd, *tl = head.key.split(".")
-                parents = NonemptyList.make(hd, *tl)
-                path = TreePath(parents, head.value)
-                kv = KeyValue(key, path)
-                return Result.return_(Output(Sequence([*tail, kv])))
-            else:
-                return Result.return_(out)
-
-        p = self.apply(g)
-        return replace(p, usage=self.usage, helps=self.helps)
-
     def type(
         self: "Parser[Output[Sequence[KeyValue[str]]]]", f: Callable[[str], Any]
     ) -> "Parser[Output[Sequence[KeyValue[str]]]]":
         """
-        A wrapper around `apply` that simply applies `f` to the value of the most recently parsed input.
+        A wrapper around :py:meth:`Parser.apply` that simply applies
+        ``f`` to the value of the most recently parsed input.
+
         >>> p1 = option("x") >> option("y")
         >>> p = p1.type(int)
         >>> p.parse_args("-x", "1", "-y", "2")  # converts "1" but not "2"
@@ -667,8 +697,8 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[A_monoid]", a: Optional[Type[A_monoid]] = None
     ) -> "Parser[A_monoid]":
         """
-        This checks for the `--help` or `-h` flag before applying `parser`.
-        If either of the flags is present, returns the usage message for `parser`.
+        This checks for the ``--help`` or ``-h`` flag before applying ``parser``.
+        If either of the flags is present, returns the usage message for ``parser``.
 
         >>> p = flag("help", help="Print this help message.").wrap_help()
         >>> p.parse_args("--help")
@@ -678,7 +708,8 @@ class Parser(MonadPlus[A_co]):
         usage: --help
         help: Print this help message.
 
-        We can use `wrap_help` to print partial usage messages, e.g. for subcommands:
+        We can use :py:meth:`Parser.wrap_help` to print partial usage messages, e.g. for subcommands:
+
         >>> subcommand1 = matches("subcommand1") >> option("option1").wrap_help()
         >>> subcommand2 = matches("subcommand2") >> option("option2").wrap_help()
         >>> p = subcommand1 | subcommand2
@@ -695,12 +726,16 @@ class Parser(MonadPlus[A_co]):
     @classmethod
     def zero(cls, error: Optional[ArgumentError] = None) -> "Parser[A_co]":
         """
-        This parser always fails. This method is necessary to make `Parser` a [`Monoid`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13).
+        This parser always fails. This method is necessary to make :py:class:`Parser`
+        a `Monoid <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L13>`_.
 
         Parameters
         ----------
         error : Optional[ArgumentError]
-            Customize the error returned by `zero`.
+            Customize the error returned by :py:meth:`Parser.zero`.
+
+        Examples
+        --------
 
         >>> Parser.zero().parse_args()
         zero
@@ -715,17 +750,21 @@ class Parser(MonadPlus[A_co]):
 def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
     """
     A shortcut for
-    ```python
-    item(description).apply(f)
-    ```
-    and spares `f` the trouble of outputting a `Result` object.
-    Here is an example of usage. First we define a simple `argument` parser:
+
+    ::
+
+        item(description).apply(f)
+
+    and spares ``f`` the trouble of outputting a :py:class:`Result` object.
+    Here is an example of usage. First we define a simple :py:func:`argument` parser:
 
     >>> p1 = argument("foo")
     >>> p1.parse_args("bar")
     {'foo': 'bar'}
 
-    Here we use `f` to directly manipulate the binding generated by `item`:
+    Here we use ``f`` to directly manipulate the binding generated by :py:func:`argument`:
+
+    >>> from dollar_lambda import apply
     >>> p2 = apply(lambda bar: Output.from_dict(**{bar + "e": bar + "f"}), description="baz")
     >>> p2.parse_args("bar")
     {'bare': 'barf'}
@@ -760,15 +799,19 @@ def argument(
         The name of variable to bind to:
 
     nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        If ``True``, then the parser will split the parsed output on ``.`` yielding nested output.
         See Examples for more details.
 
     help : Optional[str]
         The help message to display for the option:
 
     type : Optional[Callable[[str], Any]]
-        Use the `type` argument to convert the input to a different type:
+        Use the ``type`` argument to convert the input to a different type:
 
+    Examples
+    --------
+
+    >>> from dollar_lambda import argument
     >>> argument("name").parse_args("Dante")
     {'name': 'Dante'}
     >>> argument("name").parse_args()
@@ -776,12 +819,14 @@ def argument(
     The following arguments are required: name
 
     Here are some examples that take advantage of `nesting=True`:
+
     >>> argument("config.name").parse_args("-h")
     usage: CONFIG.NAME
     >>> argument("config.name").parse_args("Dante")
     {'config': {'name': 'Dante'}}
 
-    Of course, you can disable this by setting `nesting=False`:
+    You can disable this by setting ``nesting=False``:
+
     >>> argument("config.name", nesting=False).parse_args("Dante")
     {'config.name': 'Dante'}
     >>> (argument("config.first.name") >> argument("config.last.name")).parse_args("Dante", "Alighieri")
@@ -802,15 +847,19 @@ def argument(
 def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
     """
     Useful for assigning default values to arguments.
-    It ignore the input and always returns `kwargs` converted into `CollisionDict`.
-    `defaults` never failsekpoi
+    It ignore the input and always returns ``kwargs`` converted into a
+    :py:class:`Sequence` of :py:class:`KeyValue` pairs.
+    :py:func:`defaults` never fails:
 
+    >>> from dollar_lambda import defaults
     >>> defaults(a=1, b=2).parse_args()
     {'a': 1, 'b': 2}
     >>> (flag("fails") | defaults(fails="succeeds")).parse_args()
     {'fails': 'succeeds'}
 
     Here's a more complex example derived from the tutorial:
+
+    >>> from dollar_lambda import nonpositional, flag, defaults, option
     >>> p = nonpositional(
     ...     (
     ...         flag("verbose") + defaults(quiet=False)  # either --verbose and default "quiet" to False
@@ -819,7 +868,7 @@ def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
     ...     option("x", type=int, help="the base"),
     ...     option("y", type=int, help="the exponent"),
     ... )
-
+    ...
     >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
     {'x': 1, 'y': 2, 'verbose': True, 'quiet': False}
     """
@@ -845,7 +894,6 @@ def flag(
     >>> p.parse_args("--verbose")
     {'verbose': True}
 
-
     Parameters
     ----------
     dest : str
@@ -858,23 +906,23 @@ def flag(
         An optional help string.
 
     nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        If ``True``, then the parser will split the parsed output on ``.`` yielding nested output.
         See Examples for more details.
 
     regex : bool
-        If `True`, then the parser will use a regex to match the flag string.
+        If ``True``, then the parser will use a regex to match the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-f` for `foo`.
+        uses a single dash and the first character of `dest`, e.g. ``-f`` for ``foo``.
 
     string : Optional[str]
-        A custom string to use for the flag. Defaults to `--{dest}`.
+        A custom string to use for the flag. Defaults to ``--{dest}``.
 
     Examples
     --------
 
-    Here is an example using the `default` parameter:
+    Here is an example using the ``default`` parameter:
 
     >>> p = flag("verbose", default=False)
     >>> p.parse_args("-h")
@@ -884,19 +932,20 @@ def flag(
     {'verbose': False}
 
     By default `flag` fails when it does not receive expected input:
+
     >>> p = flag("verbose")
     >>> p.parse_args()
     usage: --verbose
     The following arguments are required: --verbose
 
-    Here is an example using the `help` parameter:
+    Here is an example using the ``help`` parameter:
 
     >>> p = flag("verbose", help="Turn on verbose output.")
     >>> p.parse_args("-h")
     usage: --verbose
     verbose: Turn on verbose output.
 
-    Here is an example using the `short` parameter:
+    Here is an example using the ``short`` parameter:
 
     >>> flag("verbose", short=True).parse_args("-v")  # this is the default
     {'verbose': True}
@@ -904,7 +953,7 @@ def flag(
     usage: --verbose
     Expected '--verbose'. Got '-v'
 
-    Here is an example using the `string` parameter:
+    Here is an example using the ``string`` parameter:
 
     >>> flag("value", string="v").parse_args("v")  # note that string does not have to start with -
     {'value': True}
@@ -957,17 +1006,19 @@ def item(
     usage_name: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
-    Parses a single word and binds it to `dest`.
+    Parses a single word and binds it to ``dest``.
     One of the lowest level building blocks for parsers.
 
     Parameters
     ----------
+
     usage_name : Optional[str]
         Used for generating usage text
 
     Examples
     --------
 
+    >>> from dollar_lambda import item
     >>> p = item("name", usage_name="Your first name")
     >>> p.parse_args("Alice")
     {'name': 'Alice'}
@@ -1003,8 +1054,9 @@ def matches(
     s: str, peak: bool = False, regex: bool = True
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
-    Checks if the next word is `s`.
+    Checks if the next word is ``s``.
 
+    >>> from dollar_lambda import matches
     >>> matches("hello").parse_args("hello")
     {'hello': 'hello'}
     >>> matches("hello").parse_args("goodbye")
@@ -1016,11 +1068,11 @@ def matches(
     s: str
         The word to that input will be checked against for equality.
     peak : bool
-        If `False`, then the parser will consume the word and return the remaining words as `unparsed`.
-        If `True`, then the parser leaves the `unparsed` component unchanged.
+        If ``False``, then the parser will consume the word and return the remaining words as ``unparsed``.
+        If ``True``, then the parser leaves the ``unparsed`` component unchanged.
 
     regex : bool
-        Whether to treat `s` as a regular expression. If `False`, then the parser will only succeed on
+        Whether to treat ``s`` as a regular expression. If ``False``, then the parser will only succeed on
         string equality.
 
     Examples
@@ -1030,14 +1082,16 @@ def matches(
     >>> p.parse_args("hello", "goodbye")
     {'hello': 'hello', 'goodbye': 'goodbye'}
 
-    Look what happens when `peak=True`:
+    Look what happens when ``peak=True``:
+
     >>> p = matches("hello", peak=True) >> matches("goodbye")
     >>> p.parse_args("hello", "goodbye")
     usage: hello goodbye
     Expected 'goodbye'. Got 'hello'
 
-    The first parser didn't consume the word and so "hello" got passed on to `equals("goodbye")`.
+    The first parser didn't consume the word and so ``"hello"`` got passed on to ``equals("goodbye")``.
     But this would work:
+
     >>> p = matches("hello", peak=True) >> matches("hello") >> matches("goodbye")
     >>> p.parse_args("hello", "goodbye")
     {'hello': ['hello', 'hello'], 'goodbye': 'goodbye'}
@@ -1073,9 +1127,10 @@ def nonpositional(
     repeated: Optional[Parser[Output[A_monoid]]] = None,
 ) -> "Parser[Output[A_monoid]]":
     """
-    `nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
+    :py:func:`nonpositional` takes a sequence of parsers as arguments and attempts all permutations of them,
     returning the first permutations that is successful:
 
+    >>> from dollar_lambda import nonpositional, flag
     >>> p = nonpositional(flag("verbose"), flag("quiet"))
     >>> p.parse_args("--verbose", "--quiet")
     {'verbose': True, 'quiet': True}
@@ -1084,13 +1139,14 @@ def nonpositional(
 
     Parameters
     ----------
-    max: int
-        Limits the number of times `repeated` is applied in order to prevent `RecursionError`s.
-        The default for this can be increased by either setting `parser.MAX_MANY` or
-        the environment variable `DOLLAR_LAMBDA_MAX_MANY`.
+        max: int
+            Limits the number of times ``repeated`` is applied in order to prevent
+            a ``RecursionError``.
+            The default for this can be increased by either setting ``parser.MAX_MANY`` or
+            the environment variable ``DOLLAR_LAMBDA_MAX_MANY``.
 
-    repeated : Optional[Parser[Sequence[A]]]
-        If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+        repeated : Optional[Parser[Sequence[A]]]
+            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
     Examples
     --------
@@ -1170,24 +1226,24 @@ def option(
         The default value to bind on failure:
 
     flag : Optional[str]
-        The flag to use for the option. If not provided, defaults to `--{dest}`.
+        The flag to use for the option. If not provided, defaults to ``--{dest}``.
 
     help : Optional[str]
         The help message to display for the option:
 
     nesting : bool
-        If `True`, then the parser will split the parsed output on `.` yielding nested output.
+        If ``True``, then the parser will split the parsed output on ``.`` yielding nested output.
         See Examples for more details.
 
     regex : bool
-        If `True`, then the parser will match the flag string as a regex.
+        If ``True``, then the parser will match the flag string as a regex.
 
     short : bool
         Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. `-c` for `count`.
+        uses a single dash and the first character of ``dest``, e.g. ``-c`` for ``count``.
 
     type : Callable[[str], Any]
-        Use the `type` argument to convert the input to a different type:
+        Use the ``type`` argument to convert the input to a different type:
 
     Examples
     --------
@@ -1195,13 +1251,13 @@ def option(
     >>> option("count").parse_args("--count", "1")
     {'count': '1'}
 
-    In this example, you can see that the `flag` parameter allows the user to
+    In this example, you can see that the ``flag`` parameter allows the user to
     specify an arbitrary lead string, including one that doesn't start with a dash.
 
     >>> option("count", flag="ct").parse_args("ct", "1")
     {'count': '1'}
 
-    This example demonstrates the use of the `default` parameter:
+    This example demonstrates the use of the ``default`` parameter:
 
     >>> p = option("count", default=2)
     >>> p.parse_args("-h")
@@ -1212,13 +1268,13 @@ def option(
     >>> p.parse_args()
     {'count': 2}
 
-    Here we specify a help-string using the `help` parameter:
+    Here we specify a help-string using the ``help`` parameter:
 
     >>> option("count", help="The number we should count to").parse_args("-h")
     usage: --count COUNT
     count: The number we should count to
 
-    This example demonstrates the difference between `short=True` and `short=False`:
+    This example demonstrates the difference between ``short=True`` and ``short=False``:
 
     >>> option("count", short=True).parse_args("-c", "1")
     {'count': '1'}
@@ -1226,15 +1282,14 @@ def option(
     usage: --count COUNT
     Expected '--count'. Got '-c'
 
-    As with [argparse](https://docs.python.org/3/library/argparse.html#argument-parsing),
-    the `type` argument allows you to convert the input to a different type using a
+    As with :doc:`argparse<python:library/argparse>`,
+    the ``type`` argument allows you to convert the input to a different type using a
     function that takes a single string argument:
 
     >>> option("x", type=int).parse_args("-x", "1")  # converts "1" to an int
     {'x': 1}
     >>> option("x", type=lambda x: int(x) + 1).parse_args("-x", "1")
     {'x': 2}
-
     >>> option("config.x").parse_args("--config.x", "a")
     {'config': {'x': 'a'}}
     """
@@ -1298,8 +1353,10 @@ def sat(
     name: str,
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
     """
-    A wrapper around `Parser.sat` that uses `item` to parse the argument and just applies `predicate` to the value output by `item`.
+    A wrapper around :py:meth:`Parser.sat` that uses :py:func:`item` to parse the argument and just
+    applies ``predicate`` to the value output by :py:func:`item`.
 
+    >>> from dollar_lambda import sat, ArgumentError
     >>> p = sat(lambda x: len(x) == 1, lambda x: ArgumentError(f"'{x}' must have exactly one character."), "x")
     >>> p.parse_args("a")  # succeeds
     {'x': 'a'}
@@ -1310,10 +1367,11 @@ def sat(
     Parameters
     ----------
     predicate : Callable[[A], bool]
-        The predicate to apply to the result of `item`. `sat` fails if this predicate returns false.
+        The predicate to apply to the result of :py:func:`item`. :py:func:`sat`
+        fails if this predicate returns false.
     on_fail : Callable[[A], ArgumentError]
-        A function producing an ArgumentError to return if the predicate fails.
-        Takes the output of `item` as an argument.
+        A function producing an :py:exc:`ArgumentError` to return if the predicate fails.
+        Takes the output of :py:func:`item` as an argument.
     name: str
         The value to bind the result to.
     """

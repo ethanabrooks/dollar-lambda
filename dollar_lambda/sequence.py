@@ -31,11 +31,11 @@ A_monoid = TypeVar("A_monoid", bound=Monoid)
 B_monoid = TypeVar("B_monoid", bound=Monoid)
 
 
-class Colliding(UserList[A]):
+class _Colliding(UserList[A]):
     pass
 
 
-def partition(pred, iterable):
+def _partition(pred, iterable):
     "Use a predicate to partition entries into false entries and true entries"
     # partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9
     t1, t2 = tee(iterable)
@@ -43,52 +43,53 @@ def partition(pred, iterable):
 
 
 @dataclass
-class TreePath(Generic[A]):
+class _TreePath(Generic[A]):
     parents: NonemptyList[str]
     leaf: A
 
     @classmethod
-    def make(cls, head: str, *tail: str, leaf: A) -> TreePath[A]:
+    def make(cls, head: str, *tail: str, leaf: A) -> _TreePath[A]:
         return cls(parents=NonemptyList.make(head, *tail), leaf=leaf)
 
     @classmethod
-    def merge(cls, *paths: TreePath[A]) -> Dict[str, "A | List[A]"]:
+    def merge(cls, *paths: _TreePath[A]) -> Dict[str, "A | List[A]"]:
         """
         Merge a list of paths into a nested dictionary, handling collisions with
         `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
 
-        >>> tp1 = TreePath.make("a", leaf=1)
-        >>> tp2 = TreePath.make("b", leaf=2)
-        >>> TreePath.merge(tp1, tp2)
+        >>> from dollar_lambda.sequence import _TreePath
+        >>> tp1 = _TreePath.make("a", leaf=1)
+        >>> tp2 = _TreePath.make("b", leaf=2)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': 1, 'b': 2}
-        >>> tp1 = TreePath.make("a", leaf=1)
-        >>> tp2 = TreePath.make("a", leaf=2)
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", leaf=1)
+        >>> tp2 = _TreePath.make("a", leaf=2)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': [1, 2]}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("a", "c", leaf=2)
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("a", "c", leaf=2)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': {'b': 1, 'c': 2}}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("a", "b", leaf=2)
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("a", "b", leaf=2)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': {'b': [1, 2]}}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("b", leaf=1)
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("b", leaf=1)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': {'b': 1}, 'b': 1}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("a", leaf=2)
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("a", leaf=2)
+        >>> _TreePath.merge(tp1, tp2)
         {'a': [2, {'b': 1}]}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("a", leaf="b")
-        >>> TreePath.merge(tp1, tp2)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("a", leaf="b")
+        >>> _TreePath.merge(tp1, tp2)
         {'a': ['b', {'b': 1}]}
-        >>> tp1 = TreePath.make("a", "b", leaf=1)
-        >>> tp2 = TreePath.make("a", "b", leaf=2)
-        >>> tp3 = TreePath.make("a", leaf=2)
-        >>> TreePath.merge(tp1, tp2, tp3)
+        >>> tp1 = _TreePath.make("a", "b", leaf=1)
+        >>> tp2 = _TreePath.make("a", "b", leaf=2)
+        >>> tp3 = _TreePath.make("a", leaf=2)
+        >>> _TreePath.merge(tp1, tp2, tp3)
         {'a': [2, {'b': [1, 2]}]}
         """
 
@@ -97,7 +98,7 @@ class TreePath(Generic[A]):
                 tail = path.parents.tail
                 if tail:
                     tail2 = tail.tail if tail.tail else []
-                    v = TreePath.make(tail.head, *tail2, leaf=path.leaf)
+                    v = _TreePath.make(tail.head, *tail2, leaf=path.leaf)
                 else:
                     v = path.leaf
                 yield KeyValue(path.parents.head, v)
@@ -107,6 +108,10 @@ class TreePath(Generic[A]):
 
 @dataclass
 class KeyValue(Generic[A_co]):
+    """
+    Simple dataclass for storing key-value pairs.
+    """
+
     key: str
     value: A_co
 
@@ -114,9 +119,10 @@ class KeyValue(Generic[A_co]):
 @dataclass
 class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     """
-    This class combines the functionality of [`MonadPlus`](https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24)
-    and [`typing.Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence).
+    This class combines the functionality of `MonadPlus <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24>`_
+    and :external:py:class:`typing.Sequence`
 
+    >>> from dollar_lambda.sequence import Sequence
     >>> s = Sequence([1, 2])
     >>> len(s)
     2
@@ -192,43 +198,40 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
     def to_colliding_dict(
         self: "Sequence[KeyValue[A]]",
-    ) -> "Dict[str, A | Colliding[A]]":
+    ) -> "Dict[str, A | _Colliding[A]]":
         """
-        Handles collisions at the root level of the tree. Does not handle `TreePath`s.
-
         >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_colliding_dict()
         {'a': [1, 3], 'b': 2}
         >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_colliding_dict()
         {'a': [[1], [3]], 'b': 2}
         """
-        d: Dict[str, "A | Colliding[A]"] = {}
+        d: Dict[str, "A | _Colliding[A]"] = {}
         for kv in self:
             if kv.key in d:
                 v = d[kv.key]
-                if isinstance(v, Colliding):
+                if isinstance(v, _Colliding):
                     v.append(kv.value)
                 else:
-                    d[kv.key] = Colliding([v, kv.value])
+                    d[kv.key] = _Colliding([v, kv.value])
             else:
                 d[kv.key] = kv.value
         return d
 
     def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | List[A]]":
         """
-        Expand a sequence of key-value pairs into a dictionary. Handles collidions and `TreePath`s.
-
+        >>> from dollar_lambda.sequence import Sequence, _TreePath
         >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_dict()
         {'a': [1, 3], 'b': 2}
         >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_dict()
         {'a': [[1], [3]], 'b': 2}
-        >>> Sequence([KeyValue("a", TreePath.make("b", leaf="c"))]).to_dict()
+        >>> Sequence([KeyValue("a", _TreePath.make("b", leaf="c"))]).to_dict()
         {'a': {'b': 'c'}}
         >>> Sequence(
         ...     [
         ...         KeyValue("a", "b"),
-        ...         KeyValue("a", TreePath.make("b", leaf="c")),
-        ...         KeyValue("a", TreePath.make("b", "c", leaf=1)),
-        ...         KeyValue("a", TreePath.make("b", "c", leaf=2)),
+        ...         KeyValue("a", _TreePath.make("b", leaf="c")),
+        ...         KeyValue("a", _TreePath.make("b", "c", leaf=1)),
+        ...         KeyValue("a", _TreePath.make("b", "c", leaf=2)),
         ...     ]
         ... ).to_dict()
         {'a': ['b', {'b': ['c', {'c': [1, 2]}]}]}
@@ -236,10 +239,10 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
         def get_dict():
             for k, v in self.to_colliding_dict().items():
-                if isinstance(v, Colliding):
-                    other, paths = partition(lambda x: isinstance(x, TreePath), v)
+                if isinstance(v, _Colliding):
+                    other, paths = _partition(lambda x: isinstance(x, _TreePath), v)
                     other = list(other)
-                    merged = TreePath.merge(*paths)
+                    merged = _TreePath.merge(*paths)
                     if merged and other:
                         yield k, [*other, merged]
                     elif other:
@@ -247,8 +250,8 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
                     elif merged:
                         yield k, merged
                 else:
-                    if isinstance(v, TreePath):
-                        yield k, TreePath.merge(v)
+                    if isinstance(v, _TreePath):
+                        yield k, _TreePath.merge(v)
                     else:
                         yield k, v
 
@@ -267,6 +270,10 @@ A_co_monoid = TypeVar("A_co_monoid", covariant=True, bound=Monoid)
 
 @dataclass
 class Output(Monoid[A_co_monoid]):
+    """
+    This is the wrapper class for the output of :py:class:`Parser<dollar_lambda.Parser>`.
+    """
+
     get: A_co_monoid
 
     def __or__(  # type: ignore[override]

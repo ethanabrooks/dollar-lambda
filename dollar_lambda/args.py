@@ -19,22 +19,25 @@ def field(
     **kwargs,
 ) -> Field:
     """
-    This is a thin wrapper around [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+    This is a thin wrapper around :external:py:func:`dataclasses.field`.
 
     Parameters
     ----------
+
     help : str
         An optional help string for the argument.
+
     metadata : str
-        Identical to the `metadata` argument for [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+        Identical to the `metadata` argument for :external:py:func:`dataclasses.field`.
+
     type : Optional[type | Callable[[str], Any]]
-        A function that takes a string and returns a value just like the `type` argument for
-        [`ArgumentParser.add_argument`](https://docs.python.org/3/library/argparse.html#type).
+        A function that takes a string and returns a value just like the ``type`` argument for
+        :external:py:meth:`argparse.ArgumentParser.add_argument`.
 
     Returns
     -------
-    A `dataclasses.Field` object that can be used in place of a default argument as
-    described in the [`dataclasses.Field` documentation](https://docs.python.org/3/library/dataclasses.html#dataclasses.field).
+
+    A :external:py:class:`dataclasses.Field` object that can be used in place of a default argument as described in the :external:py:class:`dataclasses.Field` documentation.
 
     """
     if metadata is None:
@@ -108,9 +111,11 @@ class _ArgsField:
 @dataclass
 class Args:
     """
-    `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
-    from defining parsers with many arguments.
+    :py:class:`Args` is sugar for the :py:func:`nonpositional` function and
+     removes much of the boilerplate from defining parsers with many arguments.
 
+    >>> from dataclasses import dataclass
+    >>> from dollar_lambda import Args
     >>> @dataclass
     ... class MyArgs(Args):
     ...     verbose: bool
@@ -118,12 +123,14 @@ class Args:
     >>> MyArgs.parse_args("--verbose", "--count", "1")
     {'verbose': True, 'count': 1}
 
-    `MyArgs` will accept these arguments in any order:
+    ``MyArgs`` will accept these arguments in any order:
+
     >>> MyArgs.parse_args("--count", "1", "--verbose")
     {'count': 1, 'verbose': True}
 
-    Note that when the default value of an argument is `True`, `Args` will, by default
-    add `--no-` to the front of the flag (while still assigning the value to the original key):
+    Note that when the default value of an argument is ``True``, :py:class:`Args` will, by default
+    add ``--no-`` to the front of the flag (while still assigning the value to the original key):
+
     >>> @dataclass
     ... class MyArgs(Args):
     ...     tests: bool = True
@@ -132,11 +139,12 @@ class Args:
     >>> MyArgs.parse_args()
     {'tests': True}
 
-    To suppress this behavior, set `flip_bools=False`:
+    To suppress this behavior, set ``flip_bools=False``:
+
     >>> MyArgs.parse_args("--tests", flip_bools=False)
     {'tests': False}
 
-    By using the `Args.parser()` method, `Args` can take advantage of all the same
+    By using the :py:meth:`Args.parser` method, :py:class:`Args` can take advantage of all the same
     combinators as other parsers:
 
     >>> from dollar_lambda import argument
@@ -145,8 +153,9 @@ class Args:
     >>> p1.parse_args("--no-tests", "hello")
     {'tests': False, 'a': 'hello'}
 
-    To supply other metadata, like `help` text or custom parsers, use `field`:
-    @dataclass
+    To supply other metadata, like ``help`` text or custom parsers, use :py:func:`field`:
+
+    >>> from dollar_lambda import field, option
     >>> @dataclass
     ... class MyArgs(Args):
     ...     x: int = field(default=0, help="a number")
@@ -159,11 +168,13 @@ class Args:
     x: a number
     y: a number to increment
 
-    This supplies defaults for `y` when omitted:
+    This supplies defaults for ``y`` when omitted:
+
     >>> MyArgs.parse_args("-x", "10")
     {'x': 10, 'y': 1}
 
-    It also applies the custom type to `y` when `"-y"` is given
+    It also applies the custom type to ``y`` when ``"-y"`` is given
+
     >>> MyArgs.parse_args()
     {'x': 0, 'y': 1}
     """
@@ -176,27 +187,32 @@ class Args:
     ) -> Parser[Output]:
         """
         Returns a parser for the dataclass.
-        Converts each field to a parser (`option` or `flag` depending on its type).
-        Combines these parsers using `nonpositional`.
+        Converts each field to a parser (:py:func:`option` or
+        :py:func:`flag` depending on its type). Combines these parsers using
+        :py:func:`nonpositional`.
 
         Parameters
         ----------
+
         flip_bools: bool
-             Whether to add `--no-<argument>` before arguments that default to `True`.
+             Whether to add ``--no-<argument>`` before arguments that default to ``True``.
 
         Examples
         --------
+
         >>> @dataclass
         ... class MyArgs(Args):
         ...     tests: bool = True
 
-        Note the leading `--no-`:
+        Note the leading ``--no-``:
+
         >>> MyArgs.parse_args("--no-tests")
         {'tests': False}
         >>> MyArgs.parse_args()
         {'tests': True}
 
-        To suppress this behavior, set `flip_bools=False`:
+        To suppress this behavior, set ``flip_bools=False``:
+
         >>> MyArgs.parse_args("--tests", flip_bools=False)
         {'tests': False}
         """

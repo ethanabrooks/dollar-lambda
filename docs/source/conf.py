@@ -6,14 +6,15 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import sys
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import pathlib
-import sys
+from pathlib import Path
 
-sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+sys.path.insert(0, Path(__file__).parents[2].resolve().as_posix())
 
 
 # -- Project information -----------------------------------------------------
@@ -35,11 +36,25 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.autosectionlabel",
 ]
+autodoc_typehints = "none"
+
 doctest_global_setup = """
 from dollar_lambda import parser
 parser.TESTING = True
 """
+
+# Make sure the target is unique
+autosectionlabel_prefix_document = True
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "click": ("https://click.palletsprojects.com/en/8.1.x", None),
+}
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -49,13 +64,16 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+
+html_theme = "furo"
+
+html_logo = "../logo.png"
+html_favicon = "../logo.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
