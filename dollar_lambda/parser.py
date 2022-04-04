@@ -1123,30 +1123,25 @@ def nonpositional(
     sep = " " if len(parsers) <= 3 else "\n"
     _parsers = [*parsers] if repeated is None else [*parsers, repeated]
     usage = sep.join([p.usage or "" for p in _parsers])
-    repeat_parser = None
-    if repeated is not None and max > 0:
-        _repeated = repeated  # for mypy's benefit
 
-        def f(cs: Sequence[str]):
-            p = _repeated >> nonpositional(*parsers, repeated=repeated, max=max - 1)
-            return p.parse(cs)
-
-        repeat_parser = Parser(f, usage=None, helps={})
-
-    if not parsers:
-        if repeat_parser is None:
+    def _nonpositional(
+        *parsers: "Parser[Output[A_monoid]]", max: int = MAX_MANY
+    ) -> "Parser[Output[A_monoid]]":
+        if not parsers:
             return Parser[Output[A_monoid]].empty()
-        else:
-            return repeat_parser | Parser[Output[A_monoid]].empty()
 
-    def get_alternatives():
-        if repeat_parser is not None:
-            yield repeat_parser
-        for i, head in enumerate(parsers):
-            tail = [p for j, p in enumerate(parsers) if j != i]
-            yield head >> nonpositional(*tail, repeated=repeated, max=max)
+        def get_alternatives():
+            for i, head in enumerate(parsers):
+                tail = [p for j, p in enumerate(parsers) if j != i]
+                if repeated is not None:
+                    head = head >> repeated.many()
+                yield head >> _nonpositional(*tail, max=max)
 
-    parser = reduce(operator.or_, get_alternatives())
+        return reduce(operator.or_, get_alternatives())
+
+    parser = _nonpositional(*parsers, max=max)
+    if repeated is not None:
+        parser = repeated.many() >> parser
     helps = parser.helps
     if repeated is not None:
         helps = {**helps, **repeated.helps}
