@@ -14,4 +14,4 @@ readme: README.py
 
 .PHONY: docs
 docs: dollar_lambda/
-	pdoc3 --template-dir template --html dollar_lambda -o docs --force
+	sphinx-build -b html source build

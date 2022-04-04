@@ -15,5 +15,6 @@
         "Monoid",
         "pytypeclass"
     ],
-    "python.linting.enabled": false
+    "python.linting.enabled": false,
+    "esbonio.sphinx.confDir": ""
 }

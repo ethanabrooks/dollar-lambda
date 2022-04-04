@@ -10,3 +10,5 @@ readme.ipynb
 ignore.py
 dist
 .hypothesis
+build
+docs/build
