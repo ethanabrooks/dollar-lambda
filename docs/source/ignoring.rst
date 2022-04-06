@@ -106,7 +106,3 @@ And no matter how many matches are found:
         ...     "-config-foz",
         ... )
         {'x': True, 'y': True}
-
-
-:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` also takes a ``repeated`` argument
-that functions in much the same way.
