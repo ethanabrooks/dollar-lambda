@@ -43,6 +43,11 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
 ]
+
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+
+
 autodoc_typehints = "none"
 
 doctest_global_setup = """

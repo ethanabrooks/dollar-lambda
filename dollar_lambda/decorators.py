@@ -515,7 +515,7 @@ class CommandTree:
 
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
-            See :py:func:`nonpositional` for examples.
+            See :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` for examples.
 
         parsers: Dict[str, Parser | List[Parser]]
             A dictionary reserving arguments for custom parsers. If the value is a list, the

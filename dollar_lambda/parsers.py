@@ -236,7 +236,7 @@ class Parser(MonadPlus[A_co]):
         # see https://github.com/python/mypy/issues/6178#issuecomment-1057111790
         """
         Takes the output of parser and applies ``f`` to it. Convert any errors that arise into
-        :py:exc:`ArgumentError<dollar_lambda.ArgumentError>`.
+        :py:exc:`ArgumentError<dollar_lambda.errors.ArgumentError>`.
 
         >>> p1 = flag("hello")
         >>> p1.parse_args("--hello")
@@ -580,7 +580,7 @@ class Parser(MonadPlus[A_co]):
             A sequence of strings to parse. If empty, defaults to ``sys.argv[1:]``.
         allow_unparsed : bool
             Whether to cause parser to fail if there are unparsed inputs. Note that setting this to false
-            may cause unexpected behavior when using :py:func:`nonpositional` or :py:class:`Args`.
+            may cause unexpected behavior when using :py:func:`nonpositional` or :py:class:`Args<dollar_lambda.args.Args>`.
         check_help : bool
             Before running the parser, checks if the input string is ``--help`` or ``-h``.
             If it is, returns the usage message.
@@ -662,7 +662,7 @@ class Parser(MonadPlus[A_co]):
         predicate : Callable[[Monoid], bool]
             The predicate to apply to the result of ``parser``. :py:meth:`Parser.sat` fails if this predicate returns false.
         on_fail : Callable[[Monoid], ArgumentError]
-            A function producing an :py:exc:`ArgumentError` to return if the predicate fails.
+            A function producing an :py:exc:`ArgumentError<dollar_lambda.errors.ArgumentError>` to return if the predicate fails.
             Takes the output of ``parser`` as an argument.
         """
 
@@ -1401,7 +1401,7 @@ def sat(
         The predicate to apply to the result of :py:func:`item`. :py:func:`sat`
         fails if this predicate returns false.
     on_fail : Callable[[A], ArgumentError]
-        A function producing an :py:exc:`ArgumentError` to return if the predicate fails.
+        A function producing an :py:exc:`ArgumentError<dollar_lambda.errors.ArgumentError>` to return if the predicate fails.
         Takes the output of :py:func:`item` as an argument.
     name: str
         The value to bind the result to.
