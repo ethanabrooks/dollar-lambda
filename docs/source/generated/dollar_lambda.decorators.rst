@@ -14,6 +14,7 @@
    .. autosummary::
    
       command
+      parser
    
    
 

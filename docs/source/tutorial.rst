@@ -60,10 +60,10 @@ them from the command line:
 
 >>> import sys
 >>> sys.argv[1:] = ["-x", "1", "-y", "2"] # simulate command line input
->>> parser.TESTING = False # unnecessary outside doctests
+>>> parsers.TESTING = False # unnecessary outside doctests
 >>> main()
 {'x': 1, 'y': 2}
->>> parser.TESTING = True
+>>> parsers.TESTING = True
 
 Equivalent in lower-level syntax
 --------------------------------

@@ -4,15 +4,15 @@ import unittest
 from abc import ABC, abstractmethod
 
 import dollar_lambda
-from dollar_lambda import args, data_structures, decorator, parser, result
+from dollar_lambda import args, data_structures, decorators, parsers, result
 
 
 def load_tests(_, tests, __):
 
-    parser.TESTING = True
+    parsers.TESTING = True
     for mod in [
-        parser,
-        decorator,
+        parsers,
+        decorators,
         result,
         args,
         data_structures,

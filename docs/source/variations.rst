@@ -113,7 +113,7 @@ This is also a case where you might want to use
 ... def quiet_function(x: int, y: int, quiet: bool):
 ...     pass # do work
 ...
->>> tree("-x", "1", "-y", "2", "--verbose", "-verbosity", "3")
+>>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
 :py:meth:`many<dollar_lambda.parser.Parser.many>`

@@ -6,9 +6,9 @@ from hypothesis import given, register_random, settings
 from hypothesis import strategies as st
 from pytypeclass import List
 
-from dollar_lambda import argument, defaults, flag, item, matches, option, parser
+from dollar_lambda import argument, defaults, flag, item, matches, option, parsers
 from dollar_lambda.data_structures import Sequence
-from dollar_lambda.parser import Parser, nonpositional
+from dollar_lambda.parsers import Parser, nonpositional
 
 MAX_RANDOM = 5
 MAX_MANY = 3
@@ -281,8 +281,8 @@ def sad(parser_with_random_input):
 
 if __name__ == "__main__":
     sys.setrecursionlimit(10_000)
-    parser.TESTING = True
-    parser.PRINTING = False
+    parsers.TESTING = True
+    parsers.PRINTING = False
 
     register_random(Random(0))
 

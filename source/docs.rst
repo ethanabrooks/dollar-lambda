@@ -41,13 +41,13 @@ And here it is in action:
 Ordinarily you would provide ``main`` no arguments and it would get them
 from the command line.
 
-         parser.TESTING = False # False by default but needs to be true
+         parsers.TESTING = False # False by default but needs to be true
          for doctests import sys sys.argv[1:] = ["-x", "1", "-dev"] #
          simulate command line input main() {'x': 1, 'dev': True,
          'prod': False}
 
 In this document we'll feed the strings directly for the sake of
-brevity. >>> parser.TESTING = True
+brevity. >>> parsers.TESTING = True
 
 Use the ``parsers`` argument to add custom logic to this parser:
 
@@ -133,9 +133,9 @@ And this succeeds:
          p.parse_args("1", "2", "3") {'y': [1.0, 2.0, 3.0]}
 
 Again, you would ordinarily provide ``parse_args`` no arguments and it
-would get them from the command line: >>> parser.TESTING = False >>>
+would get them from the command line: >>> parsers.TESTING = False >>>
 sys.argv[1:] = ["-x", "1"] # simulate command line input >>>
-p.parse_args() {'x': 1} >>> parser.TESTING = True
+p.parse_args() {'x': 1} >>> parsers.TESTING = True
 
 Tutorial
 ========
@@ -191,9 +191,9 @@ or neither
 Ordinarily , we would not feed ``main`` any arguments, and it would get
 them from the command line:
 
-         parser.TESTING = False # False by default but needs to be True
+         parsers.TESTING = False # False by default but needs to be True
          for doctests sys.argv[1:] = ["-x", "1", "-y", "2"] # simulate
-         command line input main() {'x': 1, 'y': 2} parser.TESTING =
+         command line input main() {'x': 1, 'y': 2} parsers.TESTING =
          True
 
 Equivalent in lower-level syntax
@@ -542,9 +542,9 @@ At this point the parser takes a single option ``-a`` that binds an
 Usually we would call ``tree`` with no arguments, and it would get its
 input from ``sys.argv[1:]``.
 
-         parser.TESTING = False # False by default but needs to be true
+         parsers.TESTING = False # False by default but needs to be true
          for doctests sys.argv[1:] = ["-a", "1"] # simulate command line
-         input tree() {'f1': {'a': 1}} parser.TESTING = True
+         input tree() {'f1': {'a': 1}} parsers.TESTING = True
 
 Now let's add a second child function:
 

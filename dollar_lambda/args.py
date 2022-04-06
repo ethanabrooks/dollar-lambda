@@ -9,7 +9,7 @@ from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
-from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
+from dollar_lambda.parsers import Parser, defaults, flag, nonpositional, option
 
 
 def field(
@@ -97,13 +97,13 @@ class _ArgsField:
                         help=field.help,
                     )
                 else:
-                    opt = option(
+                    yield option(
                         dest=field.name,
                         default=field.default,
                         flag=string,
                         help=field.help,
+                        type=field.type,
                     )
-                    yield opt.type(field.type)
 
         return nonpositional(*get_parsers(), repeated=repeated)
 

@@ -54,14 +54,14 @@ from the command line.
 
 >>> import sys
 >>> sys.argv[1:] = ["-x", "1", "-dev"] # simulate command line input
->>> parser.TESTING = False # This is unnecessary outside of doctests
+>>> parsers.TESTING = False # This is unnecessary outside of doctests
 >>> main()
 {'x': 1, 'dev': True, 'prod': False}
 
 In this document we'll feed the strings directly for the sake of
 brevity.
 
->>> parser.TESTING = True
+>>> parsers.TESTING = True
 
 Use the ``parsers`` argument to add custom logic to this parser:
 
@@ -173,10 +173,10 @@ Again, you would ordinarily provide :py:meth:`parse_args<dollar_lambda.parser.Pa
 no arguments and it would get them from the command line:
 
 >>> sys.argv[1:] = ["-x", "1"] # simulate command line input
->>> parser.TESTING = False # unnecessary outside of doctests
+>>> parsers.TESTING = False # unnecessary outside of doctests
 >>> p.parse_args()
 {'x': 1}
->>> parser.TESTING = True
+>>> parsers.TESTING = True
 
 .. toctree::
    :hidden:

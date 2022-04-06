@@ -15,11 +15,11 @@ from typing import Any, Callable, Iterator, List, Optional, Type, TypeVar
 from pytypeclass import Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda import parser as parser_mod
+from dollar_lambda import parsers
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
 from dollar_lambda.error import ArgumentError
-from dollar_lambda.parser import Parse, Parser, matches
+from dollar_lambda.parsers import Parse, Parser, matches
 from dollar_lambda.result import Result
 
 A = TypeVar("A")
@@ -34,6 +34,7 @@ def _func_to_parser(
     help: Optional[typing.Dict[str, str]],
     parsers: Optional[typing.Dict[str, Parser[Output]]],
     repeated: Optional[Parser[Output]],
+    prefix: Optional[str] = None,
 ) -> Parser:
     _exclude = [] if exclude is None else exclude
     _help = {} if help is None else help
@@ -44,7 +45,7 @@ def _func_to_parser(
         _parsers.get(
             k,
             _ArgsField(
-                name=k,
+                name=k if prefix is None else f"{prefix}.{k}",
                 default=None if v.default == Parameter.empty else v.default,
                 help=_help.get(k),
                 type=types.get(k, str),
@@ -166,6 +167,38 @@ def command(
     return wrapper
 
 
+class _Function:
+    def __init__(self, callable: Callable, parser: Parser, key: str):
+        self.callable = callable
+        self.parser = parser
+        self.parser_dict = {key: parser}
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return self.callable(*args, **kwds)
+
+
+def parser(
+    prefix: str,
+    flip_bools: bool = True,
+    help: Optional[typing.Dict[str, str]] = None,
+    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    repeated: Optional[Parser[Output]] = None,
+) -> Callable[[Callable], Callable]:
+    def wrapper(func: Callable) -> Callable:
+        p = _func_to_parser(
+            func,
+            exclude=None,
+            flip_bools=flip_bools,
+            help=help,
+            parsers=parsers,
+            prefix=prefix,
+            repeated=repeated,
+        )
+        return _Function(func, p, prefix)
+
+    return wrapper
+
+
 @dataclass
 class _FunctionPair(Monoid[A_co]):
     seq: Sequence[KeyValue[A_co]]
@@ -215,11 +248,6 @@ class _FunctionPair(Monoid[A_co]):
         help: Optional[typing.Dict[str, str]] = None,
     ) -> Parser[Output["_FunctionPair[str]"]]:
         _help = {} if help is None else help
-
-        # def f(
-        #     _: Sequence[KeyValue[str]],
-        # ) -> Parser[FunctionPair[KeyValue[str]]]:
-        #     return Parser[FunctionPair[KeyValue[str]]](g, usage=usage, helps=_help)
 
         def g(
             cs: Sequence[str],
@@ -427,7 +455,7 @@ class CommandTree:
 
         If ``args`` is empty, uses ``sys.argv[1:]``.
         """
-        _args = args if args or parser_mod.TESTING else sys.argv[1:]
+        _args = args if args or parsers.TESTING else sys.argv[1:]
         p = self._parser() >> Parser[Output[_FunctionPair[Any]]].done()
         result = p.parse(Sequence(list(_args))).get
         if isinstance(result, ArgumentError):

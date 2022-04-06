@@ -45,8 +45,8 @@ extensions = [
 autodoc_typehints = "none"
 
 doctest_global_setup = """
-from dollar_lambda import parser
-parser.TESTING = True
+from dollar_lambda import parsers
+parsers.TESTING = True
 """
 
 # Make sure the target is unique

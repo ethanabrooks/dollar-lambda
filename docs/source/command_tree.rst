@@ -50,10 +50,10 @@ input from ``sys.argv[1:]``.
 
 >>> import sys
 >>> sys.argv[1:] = ["-a", "1"] # simulate command line
->>> parser.TESTING = False # unnecessary outside doctests
+>>> parsers.TESTING = False # unnecessary outside doctests
 >>> tree()
 {'f1': {'a': 1}}
->>> parser.TESTING = True
+>>> parsers.TESTING = True
 
 Now let's add a second child function:
 

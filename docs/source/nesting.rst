@@ -31,3 +31,40 @@ It can also go arbitrarily deep:
 
 This behavior can always be disabled by setting ``nesting=False`` (or
 just not using ``.`` in the name).
+
+Nesting with the :py:func:`@parser <dollar_lambda.decorators.parser>` decorator
+===============================================================================
+
+A common situation when processing command line arguments is to send one subset of
+arguments to one function, another subset to another, and so on.
+`$λ` provides a convenient syntax for doing this.
+
+Suppose ``f`` is the function that will require some subset of our command line arguments:
+
+>>> from dollar_lambda import parser
+>>> @parser("args")
+... def f(x: int, y: float):
+...     print(dict(x=x, y=y))
+
+A function wrapped with :py:func:`@parser <dollar_lambda.decorators.parser>` can still be called
+like normal:
+
+>>> f(1, 2.0)
+{'x': 1, 'y': 2.0}
+
+However, it now has a ``.parser`` property:
+
+>>> f.parser.parse_args("--args.x", "1", "--args.y", "2.0")
+{'args': {'x': 1, 'y': 2.0}}
+
+This parser can be used to easily feed arguments to ``f`` as follows:
+
+>>> from dollar_lambda import command
+>>> @command(parsers=dict(args=f.parser))  # or parsers=f.parser_dict
+... def main(z: bool, args: dict):
+...     print(dict(z=z))
+...     f(**args)
+...
+>>> main("-z", "--args.x", "1", "--args.y", "2.0")
+{'z': True}
+{'x': 1, 'y': 2.0}
