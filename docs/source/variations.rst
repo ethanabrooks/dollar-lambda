@@ -2,7 +2,7 @@ Variations on the tutorial example
 ==================================
 In the :doc:`tutorial`, we worked through an example, drawn from
 :doc:`argparse<python:library/argparse>` and showed how to express
-that logic using the higher-level :py:func:`@command<dollar_lambda.command>`
+that logic using the higher-level :py:func:`@command <dollar_lambda.decorators.command>`
 syntax. In this section we will explore some variations in the logic
 in that example that would be difficult or impossible to handle with
 :doc:`argparse<python:library/argparse>`.
@@ -19,7 +19,7 @@ What if we wanted to supply ``x`` and ``y`` as positional arguments?
 usage: -x X -y Y [--verbose | --quiet]
 
 This introduces a new parser combinator:
-:py:meth:`>><dollar_lambda.Parser.__rshift__>` which evaluates parsers in
+:py:meth:`>><dollar_lambda.parser.Parser.__rshift__>` which evaluates parsers in
 sequence. In this example, it would first evaluate the
 ``option("x", type=int)`` parser, and if that succeeded, it would hand
 the unparsed remainder on to the ``option("y", type=int)`` parser, and
@@ -35,8 +35,8 @@ Expected '-x'. Got '-typo'
 usage: -x X -y Y [--verbose | --quiet]
 Expected '--verbose'. Got '--typo'
 
-Unlike with :py:func:`nonpositional<dollar_lambda.nonpositional>` in the previous section,
-:py:meth:`>><dollar_lambda.Parser.__rshift__>` requires the user to
+Unlike with :py:func:`nonpositional<dollar_lambda.parser.nonpositional>` in the previous section,
+:py:meth:`>><dollar_lambda.parser.Parser.__rshift__>` requires the user to
 provide arguments in a fixed order:
 
 >>> p.parse_args("-y", "2", "-x", "1", "--quiet") # fails
@@ -53,7 +53,7 @@ usage: X Y [--verbose | --quiet]
 >>> p.parse_args("1", "2", "--quiet")
 {'x': 1, 'y': 2, 'quiet': True}
 
-:py:func:`argument<dollar_lambda.argument>` will bind input to a variable without checking for any
+:py:func:`argument<dollar_lambda.parser.argument>` will bind input to a variable without checking for any
 special flag strings like ``-x`` or ``-y`` preceding the input.
 
 Variable numbers of arguments
@@ -69,7 +69,7 @@ sense if the user chooses ``--verbose``?
 ...     option("y", type=int),
 ... )
 
-Remember that :py:meth:`+<dollar_lambda.Parser.__add__>` evaluates two
+Remember that :py:meth:`+<dollar_lambda.parser.Parser.__add__>` evaluates two
 parsers in both orders and stopping at the first order that succeeds. So
 this allows us to supply ``--verbose`` and ``--verbosity`` in any order.
 
@@ -82,7 +82,7 @@ usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
 Expected '--verbose'. Got '-x'
 
 We could express the same logic with the
-:py:func:`@command<dollar_lambda.command>` decorator:
+:py:func:`@command <dollar_lambda.decorators.command>` decorator:
 
 >>> from dollar_lambda import command
 >>> @command(
@@ -95,7 +95,7 @@ We could express the same logic with the
 ...     pass  # do work
 
 This is also a case where you might want to use
-:py:class:`CommandTree<dollar_lambda.CommandTree>`
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
 
 >>> from dollar_lambda import CommandTree
 >>> tree = CommandTree()
@@ -116,18 +116,18 @@ This is also a case where you might want to use
 >>> tree("-x", "1", "-y", "2", "--verbose", "-verbosity", "3")
 invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
-:py:meth:`many<dollar_lambda.Parser.many>`
+:py:meth:`many<dollar_lambda.parser.Parser.many>`
 ------------------------------------------
 
 What if we want to specify verbosity by the number of times that
 ``--verbose`` appears? For this we need
-:py:meth:`Parser.many<dollar_lambda.Parser.many>`. Before showing
-how we could use :py:meth:`.many<dollar_lambda.Parser.many>`
+:py:meth:`Parser.many<dollar_lambda.parser.Parser.many>`. Before showing
+how we could use :py:meth:`.many<dollar_lambda.parser.Parser.many>`
 in this setting, let's look at how it works.
 
-:py:meth:`parser.many<dollar_lambda.Parser.many>` takes ``parser`` and tries to apply it as many times as
-possible. :py:meth:`Parser.many<dollar_lambda.Parser.many>` is a bit like the ``*`` pattern, if you are
-familiar with regexes. :py:meth:`Parser.many<dollar_lambda.Parser.many>` always succeeds:
+:py:meth:`parser.many<dollar_lambda.parser.Parser.many>` takes ``parser`` and tries to apply it as many times as
+possible. :py:meth:`Parser.many<dollar_lambda.parser.Parser.many>` is a bit like the ``*`` pattern, if you are
+familiar with regexes. :py:meth:`Parser.many<dollar_lambda.parser.Parser.many>` always succeeds:
 
 >>> p = flag("verbose").many()
 >>> p.parse_args() # succeeds
@@ -151,7 +151,7 @@ Now returning to the original example:
 >>> verbosity
 2
 
-:py:meth:`many1<dollar_lambda.Parser.many1>`
+:py:meth:`many1<dollar_lambda.parser.Parser.many1>`
 --------------------------------------------
 
 In the previous example, the parse will default to ``verbosity=0`` if no
@@ -160,10 +160,10 @@ about choosing a "quiet" setting? In other words, what if the user
 actually had to provide an explicit ``--quiet`` flag when no
 ``--verbose`` flags were given?
 
-For this, we use :py:meth:`Parser.many1<dollar_lambda.Parser.many1>`. This method is like ``Parser.many``
-except that it fails when on zero successes (recall that :py:meth:`.many<dollar_lambda.Parser.many>`
-always succeeds). So if :py:meth:`Parser.many<dollar_lambda.Parser.many>` is like regex ``*``,
-:py:meth:`Parser.many1<dollar_lambda.Parser.many1>` is like ``+``.
+For this, we use :py:meth:`Parser.many1<dollar_lambda.parser.Parser.many1>`. This method is like ``Parser.many``
+except that it fails when on zero successes (recall that :py:meth:`.many<dollar_lambda.parser.Parser.many>`
+always succeeds). So if :py:meth:`Parser.many<dollar_lambda.parser.Parser.many>` is like regex ``*``,
+:py:meth:`Parser.many1<dollar_lambda.parser.Parser.many1>` is like ``+``.
 Let's take a look:
 
 >>> p = flag("verbose").many()

@@ -1,25 +1,25 @@
-:py:class:`CommandTree<dollar_lambda.CommandTree>` Tutorial
-===========================================================
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` Tutorial
+============================================================
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` has already shown up
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` has already shown up
 in the :ref:`Highlights section<CommandTree for>` and in the
 :doc:`tutorial`. In this section we will give
 a more thorough treatment, exposing some of the underlying logic and
-covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.CommandTree>`
+covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
 offers.
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` draws inspiration from the
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` draws inspiration from the
 `Click <https://click.palletsprojects.com/>`_ library.
-:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` (discussed `here <#commandtreesubcommand>`__)
+:py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>` (discussed `here <#commandtree-subcommand>`__)
 closely approximates the functionality described in the
 `Commands and
 Groups <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__
 section of the `Click <https://click.palletsprojects.com/>`_ documentation.
 
-:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
------------------------------------------------------------------
+:py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
+------------------------------------------------------------------
 
-First let's walk through the use of the :py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
+First let's walk through the use of the :py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
 decorator, one step at a time. First we define the object:
 
 >>> from dollar_lambda import CommandTree
@@ -31,7 +31,7 @@ Now we define at least one child function:
 ... def f1(a: int):
 ...     print(dict(f1=dict(a=a)))
 
-:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>` automatically converts the function arguments
+:py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>` automatically converts the function arguments
 into a parser. We can run the parser and pass its output to our function
 ``f1`` by calling ``tree``:
 
@@ -141,8 +141,8 @@ usage: -a A [-b -d D | -c C]
 
 That comes from the third argument of ``h1``.
 
-:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>`
------------------------------------------------------------------------
+:py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>`
+-------------------------------------------------------------------------
 
 Often we want to explicitly specify which function to execute by naming
 it on the command line. This would implement functionality similar to
@@ -150,7 +150,7 @@ it on the command line. This would implement functionality similar to
 or
 :external:py:class:`click.Group`.
 
-For this we would use the :py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` decorator:
+For this we would use the :py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>` decorator:
 
 >>> tree = CommandTree()
 ...
@@ -182,8 +182,8 @@ And g2 as follows:
 >>> tree("-a", "1", "g2", "-c", "foo")
 {'g2': {'c': 'foo'}}
 
-You can freely mix and match :py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>`
-and :py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`:
+You can freely mix and match :py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>`
+and :py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`:
 
 >>> tree = CommandTree()
 ...

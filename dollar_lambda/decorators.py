@@ -1,6 +1,6 @@
 """
-Defines the :py:func:`@command<dollar_lambda.command>` decorator
-and the :py:class:`CommandTree<dollar_lambda.CommandTree>` class.
+Defines the :py:func:`@command<dollar_lambda.decorators.command>` decorator
+and the :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` class.
 """
 from __future__ import annotations
 
@@ -63,7 +63,8 @@ def command(
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
-    A succinct way to generate a simple :py:meth:`nonpositional` parser. :py:func:`@command<command>` derives the
+    A succinct way to generate a simple :py:meth:`nonpositional <dollar_lambda.parser.nonpositional>`
+    parser. :py:func:`@command<command>` derives the
     component parsers from the function's signature and automatically executes the function with
     the parsed arguments, if parsing succeeds:
 
@@ -310,7 +311,7 @@ class CommandTree:
 
         parsers: Dict[str, Parser]
             A dictionary reserving arguments for custom parsers.
-            See :py:func:`@command<dollar_lambda.command>` for examples.
+            See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
 
         Examples
         --------
@@ -467,7 +468,7 @@ class CommandTree:
 
         parsers: Dict[str, Parser]
             A dictionary reserving arguments for custom parsers.
-            See :py:func:`@command<dollar_lambda.command>` for examples.
+            See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
 
         Examples
         --------

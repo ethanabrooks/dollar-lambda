@@ -45,7 +45,7 @@ Fall back to the value in the config by not providing an argument for ``x``:
 >>> main(**p.parse_args("2"))
 {'x': 1, 'y': 2}
 
-We can also write this with :py:func:`@command<dollar_lambda.command>` syntax:
+We can also write this with :py:func:`@command <dollar_lambda.decorators.command>` syntax:
 
 >>> from dollar_lambda import command
 >>> @command(

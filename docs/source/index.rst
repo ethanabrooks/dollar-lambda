@@ -28,10 +28,10 @@ the expressive capacity of this syntax, the user can also drop down to
 the lower-level syntax that lies behind the sugar, which can handle any
 reasonable amount of logical complexity.
 
-The :py:func:`@command<dollar_lambda.command>` decorator
----------------------------------------------------------
+The :py:func:`@command <dollar_lambda.decorators.command>` decorator
+--------------------------------------------------------------------------
 
-For the vast majority of parsing patterns, :py:class:`@command<dollar_lambda.command>` is the most
+For the vast majority of parsing patterns, :py:class:`@command <dollar_lambda.decorators.command>` is the most
 concise way to define a parser:
 
 >>> from dollar_lambda import command, parser
@@ -83,9 +83,7 @@ usage: -x X [--dev | --prod]
 usage: -x X [--dev | --prod]
 The following arguments are required: --dev
 
-.. _CommandTree for:
-
-:py:class:`CommandTree<dollar_lambda.CommandTree>` for dynamic dispatch
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` for dynamic dispatch
 -----------------------------------------------------------------------
 
 For many programs, a user will want to use one entrypoint for one set of
@@ -129,14 +127,14 @@ Ran base_function with arguments: {'x': 1}
 As with ``main`` in the previous example, you would ordinarily provide
 ``tree`` no arguments and it would get them from the command line.
 
-There are many other ways to use :py:class:`CommandTree<dollar_lambda.CommandTree>`,
+There are many other ways to use :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`,
 including some that make use of the ``base_function``. To learn more, we recommend the
 :doc:`command_tree`.
 
 Lower-level syntax
 ------------------
 
-:py:meth:`@command<dollar_lambda.command>` and :py:class:`CommandTree<dollar_lambda.CommandTree>`
+:py:meth:`@command <dollar_lambda.decorators.command>` and :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
 cover many use cases, but they are both syntactic sugar for a lower-level interface
 that is far more expressive.
 
@@ -148,10 +146,10 @@ tries to parse the input as a variadic sequence of floats:
 >>> p = option("x", type=int) | argument("y", type=float).many()
 
 We go over this syntax in greater detail in the
-`tutorial <#tutorial>`__. For now, suffice to say that :py:func:`argument<dollar_lambda.argument>`.
-defines a positional argument, :py:meth:`many<dollar_lambda.Parser.many>`.
+`tutorial <#tutorial>`__. For now, suffice to say that :py:func:`argument<dollar_lambda.parser.argument>`.
+defines a positional argument, :py:meth:`many<dollar_lambda.parser.Parser.many>`.
 allows parsers to be applied zero or more times, and
-:py:meth:`|<dollar_lambda.Parser.__or__>` expresses alternatives.
+:py:meth:`|<dollar_lambda.parser.Parser.__or__>` expresses alternatives.
 
 Here is the help text:
 
@@ -168,7 +166,7 @@ And this succeeds:
 >>> p.parse_args("1", "2", "3")
 {'y': [1.0, 2.0, 3.0]}
 
-Again, you would ordinarily provide :py:meth:`parse_args<dollar_lambda.Parser.parse_args>`
+Again, you would ordinarily provide :py:meth:`parse_args<dollar_lambda.parser.Parser.parse_args>`
 no arguments and it would get them from the command line:
 
 >>> sys.argv[1:] = ["-x", "1"] # simulate command line input

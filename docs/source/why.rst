@@ -31,9 +31,9 @@ Concise
 
 ``$λ`` provides many syntactic shortcuts for cutting down boilerplate:
 
--  the ``command`` decorator and the :py:class:`CommandTree<dollar_lambda.CommandTree>` object for
+-  the :py:func:`@command <dollar_lambda.decorators.command>` decorator and the :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` object for
    automatically building parsers from function signatures.
--  operators like :py:meth:`>><dollar_lambda.Parser.__rshift__>`, :py:meth:`|<dollar_lambda.Parser.__or__>`, :py:meth:`^<dollar_lambda.Parser.__xor__>`, :py:meth:`+<dollar_lambda.Parser.__add__>`, (and :py:meth:`>=<dollar_lambda.Parser.__ge__>` if you want to get fancy)
+-  operators like :py:meth:`>><dollar_lambda.parser.Parser.__rshift__>`, :py:meth:`|<dollar_lambda.parser.Parser.__or__>`, :py:meth:`^<dollar_lambda.parser.Parser.__xor__>`, :py:meth:`+<dollar_lambda.parser.Parser.__add__>`, (and :py:meth:`>=<dollar_lambda.parser.Parser.__ge__>` if you want to get fancy)
 
 Lightweight
 -----------

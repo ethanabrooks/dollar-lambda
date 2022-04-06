@@ -2,7 +2,8 @@ Nesting output
 ==============
 
 By default introducing a ``.`` character into the name of an
-``argument``, ``option``, or ``flag`` will induce nested output:
+:py:func:`argumnet <dollar_lambda.parser.argument>`, :py:func:`option <dollar_lambda.parser.option>`,
+or :py:func:`flag <dollar_lambda.parser.flag>` will induce nested output:
 
 >>> from dollar_lambda import argument, flag, option
 >>> argument("a.b", type=int).parse_args("1")

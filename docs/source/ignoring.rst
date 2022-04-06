@@ -3,14 +3,15 @@ Ignoring arguments
 
 There may be cases in which a user wants to provide certain arguments on
 the command line that ``$λ`` should ignore (not return in the output of
-``Parser.parse_args`` or pass to the a decorated function). Suppose we
+:py:meth:`Parser.parse_args <dollar_lambda.parser.Parser.parse_args>` or pass to the a decorated function). Suppose we
 wish to ignore any arguments starting with the ``--config-`` prefix:
 
 >>> from dollar_lambda import flag, option
 >>> regex = r"config-\S*"
 >>> config_parsers = flag(regex) | option(regex)
 
-In the case of ordered arguments, we simply use the ``ignore`` method:
+In the case of ordered arguments, we simply use the
+:py:meth`ignore<dollar_lambda.parser.Parser.ignore>` method:
 
 >>> p = flag("x") >> config_parsers.ignore() >> flag("y")
 
@@ -21,12 +22,12 @@ between ``x`` and ``y``:
 {'x': True, 'y': True}
 
 Because of the way we defined ``config_parsers``, this also works with
-:py:func:`option<dollar_lambda.option>`:
+:py:func:`option<dollar_lambda.parser.option>`:
 
 >>> p.parse_args("-x", "-config-bar", "1", "-y")
 {'x': True, 'y': True}
 
-In the case of :py:func:`nonpositional<dollar_lambda.nonpositional>` arguments, use the ``repeated`` keyword:
+In the case of :py:func:`nonpositional<dollar_lambda.parser.nonpositional>` arguments, use the ``repeated`` keyword:
 
 >>> from dollar_lambda import nonpositional
 >>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
@@ -55,7 +56,7 @@ And no matter how many matches are found:
 ... )
 {'y': True, 'x': True}
 
-The same technique can be used with the :py:class:`@command<dollar_lambda.command>` decorator:
+The same technique can be used with the :py:class:`@command <dollar_lambda.decorators.command>` decorator:
 
 >>> from dollar_lambda import command
 >>> @command(repeated=config_parsers.ignore())
@@ -65,4 +66,4 @@ The same technique can be used with the :py:class:`@command<dollar_lambda.comman
 >>> f("-x", "-y", "-config-foo", "-config-bar", "1")
 {'x': True, 'y': True}
 
-and similarly with :py:class:`CommandTree<dollar_lambda.CommandTree>`.
+and similarly with :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`.

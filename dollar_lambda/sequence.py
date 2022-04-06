@@ -1,5 +1,7 @@
 """
-Defines `Sequence`, a strongly-typed immutable list that implements `MonadPlus`.
+Defines :py:class:`Sequence <dollar_lambda.sequence.Sequence>`,
+a strongly-typed immutable list that implements
+`MonadPlus <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24>`_.
 """
 from __future__ import annotations
 
@@ -200,6 +202,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         self: "Sequence[KeyValue[A]]",
     ) -> "Dict[str, A | _Colliding[A]]":
         """
+        >>> from dollar_lambda import Sequence, KeyValue
         >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_colliding_dict()
         {'a': [1, 3], 'b': 2}
         >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_colliding_dict()
@@ -219,11 +222,13 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
 
     def to_dict(self: "Sequence[KeyValue[A]]") -> "Dict[str, A | List[A]]":
         """
-        >>> from dollar_lambda.sequence import Sequence, _TreePath
+        >>> from dollar_lambda import Sequence, KeyValue
         >>> Sequence([KeyValue("a", 1), KeyValue("b", 2), KeyValue("a", 3)]).to_dict()
         {'a': [1, 3], 'b': 2}
+        >>> from dollar_lambda import Sequence, KeyValue
         >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_dict()
         {'a': [[1], [3]], 'b': 2}
+        >>> from dollar_lambda.sequence import _TreePath
         >>> Sequence([KeyValue("a", _TreePath.make("b", leaf="c"))]).to_dict()
         {'a': {'b': 'c'}}
         >>> Sequence(
@@ -271,7 +276,7 @@ A_co_monoid = TypeVar("A_co_monoid", covariant=True, bound=Monoid)
 @dataclass
 class Output(Monoid[A_co_monoid]):
     """
-    This is the wrapper class for the output of :py:class:`Parser<dollar_lambda.Parser>`.
+    This is the wrapper class for the output of :py:class:`Parser<dollar_lambda.parser.Parser>`.
     """
 
     get: A_co_monoid

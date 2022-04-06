@@ -1,5 +1,5 @@
 """
-Defines the `Args` dataclass and associated functions.
+Defines the :py:class:`Args <dollar_lambda.args.Args>` dataclass and associated functions.
 """
 from __future__ import annotations
 
@@ -111,7 +111,7 @@ class _ArgsField:
 @dataclass
 class Args:
     """
-    :py:class:`Args` is sugar for the :py:func:`nonpositional` function and
+    :py:class:`Args` is sugar for the :py:func:`nonpositional <dollar_lambda.parser.nonpositional>` function and
      removes much of the boilerplate from defining parsers with many arguments.
 
     >>> from dataclasses import dataclass
@@ -187,9 +187,9 @@ class Args:
     ) -> Parser[Output]:
         """
         Returns a parser for the dataclass.
-        Converts each field to a parser (:py:func:`option` or
-        :py:func:`flag` depending on its type). Combines these parsers using
-        :py:func:`nonpositional`.
+        Converts each field to a parser (:py:func:`option <dollar_lambda.parser.option>` or
+        :py:func:`flag <dollar_lambda.parser.flag>` depending on its type). Combines these parsers using
+        :py:func:`nonpositional <dollar_lambda.parser.nonpositional>`.
 
         Parameters
         ----------

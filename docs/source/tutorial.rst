@@ -86,17 +86,17 @@ High-Level Parsers
 ------------------
 
 In the de-sugared implementation there are two different parser
-constructors: :py:func:`flag<dollar_lambda.flag>`, which binds a boolean value to a variable, and
-:py:func:`option<dollar_lambda.option>`, which binds an arbitrary value to a variable.
+constructors: :py:func:`flag<dollar_lambda.parser.flag>`, which binds a boolean value to a variable, and
+:py:func:`option<dollar_lambda.parser.option>`, which binds an arbitrary value to a variable.
 
-:py:func:`flag<dollar_lambda.flag>`
+:py:func:`flag<dollar_lambda.parser.flag>`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 >>> p = flag("verbose")
 >>> p.parse_args("--verbose")
 {'verbose': True}
 
-By default :py:func:`flag<dollar_lambda.flag>` fails when it does not receive expected input:
+By default :py:func:`flag<dollar_lambda.parser.flag>` fails when it does not receive expected input:
 
 >>> p.parse_args()
 usage: --verbose
@@ -107,11 +107,11 @@ Alternately, you can set a default value:
 >>> flag("verbose", default=False).parse_args()
 {'verbose': False}
 
-:py:func:`option<dollar_lambda.option>`
+:py:func:`option<dollar_lambda.parser.option>`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:py:func:`option<dollar_lambda.option>` is similar but takes an argument:
-By default, :py:func:`option<dollar_lambda.option>`, expects a single
+:py:func:`option<dollar_lambda.parser.option>` is similar but takes an argument:
+By default, :py:func:`option<dollar_lambda.parser.option>`, expects a single
 ``-`` for single-character variable names (as in
 ``-x``), as opposed to ``--`` for longer names (as in ``--xenophon``):
 
@@ -130,13 +130,13 @@ Parser Combinators
 
 Parser combinators are functions that combine multiple parsers into new,
 more complex parsers. Our example uses two such functions:
-:py:func:`nonpositional<dollar_lambda.nonpositional>` and
-:py:meth:`|<dollar_lambda.Parser.__or__>`.
+:py:func:`nonpositional<dollar_lambda.parser.nonpositional>` and
+:py:meth:`|<dollar_lambda.parser.Parser.__or__>`.
 
-:py:meth:`|<dollar_lambda.Parser.__or__>`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:py:meth:`|<dollar_lambda.parser.Parser.__or__>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :py:meth:`|<dollar_lambda.Parser.__or__>` operator is used for
+The :py:meth:`|<dollar_lambda.parser.Parser.__or__>` operator is used for
 alternatives. Specifically, it will try the first parser, and if that
 fails, try the second:
 
@@ -153,7 +153,7 @@ usage: [--verbose | --quiet]
 The following arguments are required: --verbose
 
 We can permit the omission of both flags by using
-:py:meth:`optional<dollar_lambda.Parser.optional>`, as we
+:py:meth:`optional<dollar_lambda.parser.Parser.optional>`, as we
 saw earlier, or we can supply a default value:
 
 >>> (flag("verbose") | flag("quiet")).optional().parse_args() # flags fail, but that's ok
@@ -165,13 +165,13 @@ In the second example,  ``flag("verbose")`` fails but
 ``flag("quiet", default=False)`` succeeds.
 
 Users should note that unlike logical "or" but like Python ``or``, the
-:py:meth:`|<dollar_lambda.Parser.__or__>` operator is not commutative:
+:py:meth:`|<dollar_lambda.parser.Parser.__or__>` operator is not commutative:
 
 >>> from dollar_lambda import argument
 >>> (flag("verbose") | argument("x")).parse_args("--verbose")
 {'verbose': True}
 
-:py:func:`argument<dollar_lambda.argument>` binds to positional arguments. If it comes first, it will
+:py:func:`argument<dollar_lambda.parser.argument>` binds to positional arguments. If it comes first, it will
 think that ``"--verbose"`` is the expression that we want to bind to
 ``x``:
 
@@ -179,9 +179,9 @@ think that ``"--verbose"`` is the expression that we want to bind to
 >>> (argument("x") | flag("verbose")).parse_args("--verbose")
 {'x': '--verbose'}
 
-:py:func:`nonpositional<dollar_lambda.nonpositional>` and :py:meth:`+<dollar_lambda.Parser.__add__>`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-:py:func:`nonpositional<dollar_lambda.nonpositional>` takes a sequence of parsers as arguments and attempts
+:py:func:`nonpositional<dollar_lambda.parser.nonpositional>` and :py:meth:`+<dollar_lambda.parser.Parser.__add__>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:py:func:`nonpositional<dollar_lambda.parser.nonpositional>` takes a sequence of parsers as arguments and attempts
 all permutations of them, returning the first permutations that is
 successful:
 
@@ -192,7 +192,7 @@ successful:
 {'quiet': True, 'verbose': True}
 
 For just two parsers you can use
-:py:meth:`+<dollar_lambda.Parser.__add__>` instead of :py:func:`nonpositional<dollar_lambda.nonpositional>`:
+:py:meth:`+<dollar_lambda.parser.Parser.__add__>` instead of :py:func:`nonpositional<dollar_lambda.parser.nonpositional>`:
 
 >>> p = flag("verbose") + flag("quiet")
 >>> p.parse_args("--verbose", "--quiet")
@@ -212,7 +212,7 @@ To see why note the implicit parentheses:
 >>> p = (flag("verbose") + flag("quiet")) + option("x")
 
 In order to cover the case where ``-x`` comes between ``--verbose`` and
-``--quiet``, use :py:meth:`nonpositional<dollar_lambda.nonpositional>`
+``--quiet``, use :py:meth:`nonpositional<dollar_lambda.parser.nonpositional>`
 
 >>> p = nonpositional(flag("verbose"), flag("quiet"), option("x"))
 >>> p.parse_args("--verbose", "-x", "1", "--quiet") # works
@@ -238,7 +238,7 @@ on either ``--verbose`` or ``--quiet`` or neither.
 integer, binding that integer to the variable ``"x"``. Similarly for
 ``option("y", type=int)``.
 
-:py:meth:`nonpositional<dollar_lambda.nonpositional>` takes the three parsers:
+:py:meth:`nonpositional<dollar_lambda.parser.nonpositional>` takes the three parsers:
 
 -  ``(flag("verbose") | flag("quiet")).optional()``
 -  ``option("x", type=int)``

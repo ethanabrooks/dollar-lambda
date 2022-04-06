@@ -1,5 +1,7 @@
 """
-Defines parsing functions and the `Parser` class that they instantiate.
+Defines parsing functions and the
+:py:class:`Parser <dollar_lambda.parser.Parser>`
+class that they instantiate.
 """
 # pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
@@ -40,14 +42,17 @@ B = TypeVar("B")
 @dataclass
 class Parse(Generic[A_co]):
     """
-    A `Parse` is the output of parsing.
+    A ``Parse`` is the output of parsing.
+
     Parameters
     ----------
 
     parsed : A
         Component parsed by the parsed
+
     unparsed : Sequence[str]
         Component yet to be parsed
+
     """
 
     parsed: A_co
@@ -97,7 +102,8 @@ class Parser(MonadPlus[A_co]):
         usage: --verbose --debug
         Expected '--verbose'. Got '--debug'
 
-        Note that if more than two arguments are chained together with `+`, some combinations will not parse:
+        Note that if more than two arguments are chained together with
+        :py:meth:`+ <dollar_lambda.parser.Parser.__add__>`, some combinations will not parse:
 
         >>> p = flag("a") + flag("b") + flag("c")
         >>> p.parse_args("-c", "-a", "-b")   # this works
@@ -110,7 +116,8 @@ class Parser(MonadPlus[A_co]):
 
         >>> p = (flag("a") + flag("b")) + flag("c")
 
-        In order to chain together more than two arguments, use `nonpositional`:
+        In order to chain together more than two arguments, use
+        :py:func:`nonpositional <dollar_lambda.parser.nonpositional>`:
 
         >>> from dollar_lambda import nonpositional
         >>> p = nonpositional(flag("a"), flag("b"), flag("c"))
@@ -138,14 +145,15 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("--verbose")
         {'verbose': True}
 
-        Note that by default, `parse_args` adds `>> Parser.done()` to the end of parsers, causing
-        `p` to fail when both arguments are supplied:
+        Note that by default, :py:meth:`Parser.parse_args <dollar_lambda.parser.Parser.parse_args>`
+        adds ``>> Parser.done()`` to the end of parsers, causing
+        ``p`` to fail when both arguments are supplied:
 
         >>> p.parse_args("--verbose", "--option", "x")
         usage: [--option OPTION | --verbose]
         Unrecognized argument: --option
 
-        To disable this behavior, use `allow_unparsed`:
+        To disable this behavior, use ``allow_unparsed``:
 
         >>> p.parse_args("--verbose", "--option", "x", allow_unparsed=True)
         {'verbose': True}
@@ -204,7 +212,8 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[A_monoid]]", other: "Parser[Output[B_monoid]]"
     ) -> "Parser[Output[A_monoid | B_monoid]]":
         """
-        This is the same as `__or__`, but it succeeds only if one of the two parsers fails.
+        This is the same as :py:meth:`| <dollar_lambda.parser.Parser.__or__>`,
+         but it succeeds only if one of the two parsers fails.
 
         >>> p = argument("int", type=int) ^ argument("div", type=lambda x: 1 / float(x))
         >>> p.parse_args("inf")  # succeeds because int("inf") fails
@@ -266,14 +275,14 @@ class Parser(MonadPlus[A_co]):
         :py:meth:`Parser.bind` is one of the functions that makes :py:class:`Parser` a
         `Monad <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16>`_.
         But most users will
-        avoid using it directly, preferring higher level combinators like :py:meth:`>><dollar_lambda.Parser.__rshift__>`,
-        :py:meth:`|<dollar_lambda.Parser.__or__>` and :py:meth:`+<dollar_lambda.Parser.__add__>`.
+        avoid using it directly, preferring higher level combinators like :py:meth:`>><dollar_lambda.parser.Parser.__rshift__>`,
+        :py:meth:`|<dollar_lambda.parser.Parser.__or__>` and :py:meth:`+<dollar_lambda.parser.Parser.__add__>`.
 
-        Note that :py:meth:`>=<dollar_lambda.Parser.__ge__>` as a synonym for :py:meth:`Parser.bind` (as defined in
+        Note that :py:meth:`>= <dollar_lambda.parser.Parser.__ge__>` as a synonym for :py:meth:`bind <dollar_lambda.parser.Parser.bind>` (as defined in
         `pytypeclass <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26>`_)
         and we typically prefer using the infix operator to the spelled out method.
 
-        To demonstrate one use of:py:meth:`Parser.bind` or :py:meth:`>=<dollar_lambda.Parser.__ge__>`,
+        To demonstrate one use of :py:meth:`bind<dollar_lambda.parser.Parser.bind>` or :py:meth:`>=<dollar_lambda.parser.Parser.__ge__>`,
         let's use the :py:func:`matches` parser to write a function that takes the output of a parser and fails unless
         the next argument is the same as the first:
 
@@ -648,11 +657,11 @@ class Parser(MonadPlus[A_co]):
 
         Parameters
         ----------
-        parser : Parser[A]
+        parser : Parser[Monoid]
             The parser to apply.
-        predicate : Callable[[A], bool]
+        predicate : Callable[[Monoid], bool]
             The predicate to apply to the result of ``parser``. :py:meth:`Parser.sat` fails if this predicate returns false.
-        on_fail : Callable[[A], ArgumentError]
+        on_fail : Callable[[Monoid], ArgumentError]
             A function producing an :py:exc:`ArgumentError` to return if the predicate fails.
             Takes the output of ``parser`` as an argument.
         """
@@ -749,11 +758,7 @@ class Parser(MonadPlus[A_co]):
 
 def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
     """
-    A shortcut for
-
-    ::
-
-        item(description).apply(f)
+    A shortcut for ``item(description).apply(f)``.
 
     and spares ``f`` the trouble of outputting a :py:class:`Result` object.
     Here is an example of usage. First we define a simple :py:func:`argument` parser:
@@ -848,7 +853,8 @@ def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
     """
     Useful for assigning default values to arguments.
     It ignore the input and always returns ``kwargs`` converted into a
-    :py:class:`Sequence` of :py:class:`KeyValue` pairs.
+    :py:class:`Sequence <dollar_lambda.sequence.Sequence>` of
+    :py:class:`KeyValue <dollar_lambda.sequence.KeyValue>` pairs.
     :py:func:`defaults` never fails:
 
     >>> from dollar_lambda import defaults
@@ -914,7 +920,7 @@ def flag(
 
     short : bool
         Whether to check for the short form of the flag, which
-        uses a single dash and the first character of `dest`, e.g. ``-f`` for ``foo``.
+        uses a single dash and the first character of ``dest``, e.g. ``-f`` for ``foo``.
 
     string : Optional[str]
         A custom string to use for the flag. Defaults to ``--{dest}``.
@@ -931,7 +937,7 @@ def flag(
     >>> p.parse_args()
     {'verbose': False}
 
-    By default `flag` fails when it does not receive expected input:
+    By default :py:func:`flag <dollar_lambda.parser.flag>` fails when it does not receive expected input:
 
     >>> p = flag("verbose")
     >>> p.parse_args()
@@ -1145,7 +1151,7 @@ def nonpositional(
             The default for this can be increased by either setting ``parser.MAX_MANY`` or
             the environment variable ``DOLLAR_LAMBDA_MAX_MANY``.
 
-        repeated : Optional[Parser[Sequence[A]]]
+        repeated : Optional[Parser[Sequence[Monoid]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
     Examples

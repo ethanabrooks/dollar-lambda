@@ -21,10 +21,10 @@ the lower-level syntax that lies behind the sugar, which can handle any
 reasonable amount of logical complexity.
 
 
-The `dollar_lambda.command` decorator
+The `dollar_lambda.decorators.command` decorator
 -------------------------------------------------------
 
-For the vast majority of parsing patterns, :py:func:`@command<dollar_lambda.command>`` is the most
+For the vast majority of parsing patterns, :py:func:`@command <dollar_lambda.decorators.command>`` is the most
 concise way to define a parser:
 
          @command() ... def main(x: int, dev: bool = False, prod: bool =
@@ -60,7 +60,7 @@ to the ``kwargs`` argument: >>> main("-h") usage: -x X [-dev | -prod]
 "-prod") {'x': 1, 'prod': True} >>> main("-x", "1") usage: -x X [-dev |
 -prod] The following arguments are required: -dev
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` for dynamic dispatch
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` for dynamic dispatch
 ------------------------------------
 
 For many programs, a user will want to use one entrypoint for one set of
@@ -97,14 +97,14 @@ neither ``--prod`` nor ``--dev`` are given:
 As with ``main`` in the previous example, you would ordinarily provide
 ``tree`` no arguments and it would get them from the command line.
 
-There are many other ways to use :py:class:`CommandTree<dollar_lambda.CommandTree>`, including some that
+There are many other ways to use :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`, including some that
 make use of the ``base_function``. To learn more, we recommend the
-`:py:class:`CommandTree<dollar_lambda.CommandTree>` tutorial <#commandtree-tutorial>`__.
+`:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` tutorial <#commandtree-tutorial>`__.
 
 Lower-level syntax
 ------------------
 
-`:py:func:`@command<dollar_lambda.command>`` <#dollar_lambda.command>`__ and :py:class:`CommandTree<dollar_lambda.CommandTree>` cover many
+`:py:func:`@command <dollar_lambda.decorators.command>`` <#dollar_lambda.decorators.command>`__ and :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` cover many
 use cases, but they are both syntactic sugar for a lower-level interface
 that is far more expressive.
 
@@ -116,9 +116,9 @@ tries to parse the input as a variadic sequence of floats:
 
 We go over this syntax in greater detail in the
 `tutorial <#tutorial>`__. For now, suffice to say that ``argument``
-defines a positional argument, ```many`` <#dollar_lambda.Parser.many>`__
+defines a positional argument, ```many`` <#dollar_lambda.parser.Parser.many>`__
 allows parsers to be applied zero or more times, and
-```|`` <#dollar_lambda.Parser.__or__>`__ expresses alternatives.
+```|`` <#dollar_lambda.parser.Parser.__or__>`__ expresses alternatives.
 
 Here is the help text:
 
@@ -248,12 +248,12 @@ Parser Combinators
 
 Parser combinators are functions that combine multiple parsers into new,
 more complex parsers. Our example uses two such functions:
-``nonpositional`` and ```|`` <#dollar_lambda.Parser.__or__>`__.
+``nonpositional`` and ```|`` <#dollar_lambda.parser.Parser.__or__>`__.
 
-```|`` <#dollar_lambda.Parser.__or__>`__
+```|`` <#dollar_lambda.parser.Parser.__or__>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ```|`` <#dollar_lambda.Parser.__or__>`__ operator is used for
+The ```|`` <#dollar_lambda.parser.Parser.__or__>`__ operator is used for
 alternatives. Specifically, it will try the first parser, and if that
 fails, try the second:
 
@@ -274,7 +274,7 @@ saw earlier, or we can supply a default value:
          flag("quiet", default=False) succeeds {'quiet': False}
 
 Users should note that unlike logical "or" but like Python ``or``, the
-```|`` <#dollar_lambda.Parser.__or__>`__ operator is not commutative:
+```|`` <#dollar_lambda.parser.Parser.__or__>`__ operator is not commutative:
 
          (flag("verbose") | argument("x")).parse_args("--verbose")
          {'verbose': True}
@@ -286,7 +286,7 @@ think that ``"--verbose"`` is the expression that we want to bind to
          (argument("x") | flag("verbose")).parse_args("--verbose") {'x':
          '-verbose'}
 
-``nonpositional`` and ```+`` <#dollar_lambda.Parser.__add__>`__
+``nonpositional`` and ```+`` <#dollar_lambda.parser.Parser.__add__>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``nonpositional`` takes a sequence of parsers as arguments and attempts
@@ -299,7 +299,7 @@ successful:
          works {'quiet': True, 'verbose': True}
 
 For just two parsers you can use
-```+`` <#dollar_lambda.Parser.__add__>`__ instead of ``nonpositional``:
+```+`` <#dollar_lambda.parser.Parser.__add__>`__ instead of ``nonpositional``:
 >>> p = flag("verbose") + flag("quiet") >>> p.parse_args("--verbose",
 "--quiet") {'verbose': True, 'quiet': True} >>> p.parse_args("--quiet",
 "--verbose") # reverse order also works {'quiet': True, 'verbose': True}
@@ -370,7 +370,7 @@ What if we wanted to supply ``x`` and ``y`` as positional arguments?
          usage: -x X -y Y [--verbose | --quiet]
 
 This introduces a new parser combinator:
-```>>`` <#dollar_lambda.Parser.__rshift__>`__ which evaluates parsers in
+```>>`` <#dollar_lambda.parser.Parser.__rshift__>`__ which evaluates parsers in
 sequence. In this example, it would first evaluate the
 ``option("x", type=int)`` parser, and if that succeeded, it would hand
 the unparsed remainder on to the ``option("y", type=int)`` parser, and
@@ -385,7 +385,7 @@ any of the parsers fail, the combined parser fails:
          [--verbose | --quiet] Expected '-verbose'. Got '-typo'
 
 Unlike with ``nonpositional`` in the previous section,
-```>>`` <#dollar_lambda.Parser.__rshift__>`__ requires the user to
+```>>`` <#dollar_lambda.parser.Parser.__rshift__>`__ requires the user to
 provide arguments in a fixed order: >>> p.parse_args("-y", "2", "-x",
 "1", "--quiet") # fails usage: -x X -y Y [--verbose | --quiet] Expected
 '-x'. Got '-y'
@@ -409,7 +409,7 @@ sense if the user chooses ``--verbose``?
          type=int)) | flag("quiet")), ... option("x", type=int), ...
          option("y", type=int), ... )
 
-Remember that ```+`` <#dollar_lambda.Parser.__add__>`__ evaluates two
+Remember that ```+`` <#dollar_lambda.parser.Parser.__add__>`__ evaluates two
 parsers in both orders and stopping at the first order that succeeds. So
 this allows us to supply ``--verbose`` and ``--verbosity`` in any order.
 
@@ -427,7 +427,7 @@ We could express the same logic with the ``command`` decorator:
          help=dict(x="the base", y="the exponent"), ... ) ... def main(x:
          int, y: int, \**kwargs): ... pass # do work
 
-This is also a case where you might want to use :py:class:`CommandTree<dollar_lambda.CommandTree>`:
+This is also a case where you might want to use :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`:
 
          tree = CommandTree() ... @tree.command(help=dict(x="the base",
          y="the exponent")) ... def base_function(x: int, y: int): ... pass
@@ -440,7 +440,7 @@ This is also a case where you might want to use :py:class:`CommandTree<dollar_la
          "3") invoked verbose_function with args {'x': 1, 'y': 2,
          'verbose': True, 'verbosity': 3}
 
-```many`` <#dollar_lambda.Parser.many>`__
+```many`` <#dollar_lambda.parser.Parser.many>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 What if we want to specify verbosity by the number of times that
@@ -465,7 +465,7 @@ Now returning to the original example:
          {'x': 1, 'y': 2, 'verbose': [True, True]} verbosity =
          len(args['verbose']) verbosity 2
 
-```many1`` <#dollar_lambda.Parser.many1>`__
+```many1`` <#dollar_lambda.parser.Parser.many1>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the previous example, the parse will default to ``verbosity=0`` if no
@@ -477,7 +477,7 @@ actually had to provide an explicit ``--quiet`` flag when no
 For this, we use ``Parser.many1``. This method is like ``Parser.many``
 except that it fails when on zero successes (recall that ``Parser.many``
 always succeeds). So if ``Parser.many`` is like regex ``*``,
-``Parser.many1`` is like ```+`` <#dollar_lambda.Parser.__add__>`__. Take
+``Parser.many1`` is like ```+`` <#dollar_lambda.parser.Parser.__add__>`__. Take
 a look:
 
          p = flag("verbose").many() p.parse_args() # succeeds {} p =
@@ -500,27 +500,27 @@ p.parse_args("--verbose", "-x", "1", "-y", "2") # this succeeds
 {'verbose': True, 'x': 1, 'y': 2} >>> p.parse_args("--quiet", "-x", "1",
 "-y", "2") # and this succeeds {'quiet': True, 'x': 1, 'y': 2}
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` Tutorial
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` Tutorial
 ========================
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` has already shown up in the `Highlights
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` has already shown up in the `Highlights
 section <#commandtree-for-dynamic-dispatch>`__ and in the
 `tutorial <#variations-on-the-example>`__. In this section we will give
 a more thorough treatment, exposing some of the underlying logic and
-covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.CommandTree>`
+covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
 offers.
 
-:py:class:`CommandTree<dollar_lambda.CommandTree>` draws inspiration from the
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` draws inspiration from the
 ```Click`` <https://click.palletsprojects.com/>`__ library.
-:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` (discussed `here <#commandtreesubcommand>`__)
+:py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>` (discussed `here <#commandtreesubcommand>`__)
 closely approximates the functionality described in the `Commands and
 Groups <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__
 section of the ``Click`` documentation.
 
-:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
+:py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
 -----------------------
 
-First let's walk through the use of the :py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>`
+First let's walk through the use of the :py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
 decorator, one step at a time. First we define the object:
 
          tree = CommandTree()
@@ -530,7 +530,7 @@ Now we define at least one child function:
          @tree.command() ... def f1(a: int): ... return dict(f1=dict(a=a)) #
          this can be whatever
 
-:py:meth:`CommandTree.command<dollar_lambda.CommandTree.command>` automatically converts the function arguments
+:py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>` automatically converts the function arguments
 into a parser. We can run the parser and pass its output to our function
 ``f1`` by calling ``tree``:
 
@@ -616,7 +616,7 @@ pipe:
 
 That comes from the third argument of ``h1``.
 
-:py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>`
+:py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>`
 --------------------------
 
 Often we want to explicitly specify which function to execute by naming
@@ -625,7 +625,7 @@ it on the command line. This would implement functionality similar to
 or
 ```Click.command`` <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__.
 
-For this we would use the :py:meth:`CommandTree.subcommand<dollar_lambda.CommandTree.subcommand>` decorator:
+For this we would use the :py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>` decorator:
 
          tree = CommandTree() ... @tree.command() ... def f1(a: int): ...
          return dict(f1=dict(a=a)) ... @f1.subcommand() # note subcommand,
@@ -690,7 +690,7 @@ main(**p.parse_args("-x", "0", "1")) {'x': 0, 'y': 1}
 Fall back to the value in the config by not providing an argument for
 ``x``: >>> main(**p.parse_args("2")) {'x': 1, 'y': 2}
 
-We can also write this with :py:func:`@command<dollar_lambda.command>`` syntax:
+We can also write this with :py:func:`@command <dollar_lambda.decorators.command>`` syntax:
 
          @command( ... parsers=dict( ... y=argument("y", type=int), ...
          kwargs=option("x", type=int).optional(), ... ) ... ) ... def main(y:
@@ -766,7 +766,7 @@ The same technique can be used with decorators: >>>
 return dict(x=x, y=y) >>> f("-x", "-y", "-config-foo", "-config-bar",
 "1") {'x': True, 'y': True}
 
-And similarly with :py:class:`CommandTree<dollar_lambda.CommandTree>`.
+And similarly with :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`.
 
 Why ``$λ``?
 ===========
@@ -801,13 +801,13 @@ Concise
 
 ``$λ`` provides many syntactic shortcuts for cutting down boilerplate:
 
--  the ``command`` decorator and the :py:class:`CommandTree<dollar_lambda.CommandTree>` object for
+-  the ``command`` decorator and the :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` object for
    automatically building parsers from function signatures.
--  operators like ```>>`` <#dollar_lambda.Parser.__rshift__>`__,
-   ```|`` <#dollar_lambda.Parser.__or__>`__,
-   ```^`` <#dollar_lambda.Parser.__xor__>`__, and
-   ```+`` <#dollar_lambda.Parser.__add__>`__ (and
-   ```>=`` <#dollar_lambda.Parser.__ge__>`__ if you want to get fancy)
+-  operators like ```>>`` <#dollar_lambda.parser.Parser.__rshift__>`__,
+   ```|`` <#dollar_lambda.parser.Parser.__or__>`__,
+   ```^`` <#dollar_lambda.parser.Parser.__xor__>`__, and
+   ```+`` <#dollar_lambda.parser.Parser.__add__>`__ (and
+   ```>=`` <#dollar_lambda.parser.Parser.__ge__>`__ if you want to get fancy)
 
 Lightweight
 -----------
