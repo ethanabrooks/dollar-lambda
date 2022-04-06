@@ -11,7 +11,7 @@ wish to ignore any arguments starting with the ``--config-`` prefix:
 >>> config_parsers = flag(regex) | option(regex)
 
 In the case of ordered arguments, we simply use the
-:py:meth`ignore<dollar_lambda.parsers.Parser.ignore>` method:
+:py:meth:`ignore<dollar_lambda.parsers.Parser.ignore>` method:
 
 >>> p = flag("x") >> config_parsers.ignore() >> flag("y")
 

@@ -213,7 +213,7 @@ class Parser(MonadPlus[A_co]):
     ) -> "Parser[Output[A_monoid | B_monoid]]":
         """
         This is the same as :py:meth:`| <dollar_lambda.parsers.Parser.__or__>`,
-         but it succeeds only if one of the two parsers fails.
+        but it succeeds only if one of the two parsers fails.
 
         >>> p = argument("int", type=int) ^ argument("div", type=lambda x: 1 / float(x))
         >>> p.parse_args("inf")  # succeeds because int("inf") fails
@@ -242,7 +242,7 @@ class Parser(MonadPlus[A_co]):
         >>> p1.parse_args("--hello")
         {'hello': True}
 
-        This will double `p1`'s output:
+        This will double ``p1``'s output:
 
         >>> from dollar_lambda import Result
         >>> p2 = p1.apply(lambda out: Result.return_(out + out))
@@ -320,7 +320,8 @@ class Parser(MonadPlus[A_co]):
         >>> Parser.done().parse_args("arg")
         Unrecognized argument: arg
 
-        Without `done` the parser will not complain about leftover (unparsed) input:
+        Without :py:meth:`Parser.done`
+        the parser will not complain about leftover (unparsed) input:
 
         >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=True)
         {'verbose': True}
@@ -758,7 +759,8 @@ def apply(f: Callable[[str], B_monoid], description: str) -> Parser[B_monoid]:
     """
     A shortcut for ``item(description).apply(f)``.
 
-    and spares ``f`` the trouble of outputting a :py:class:`Result` object.
+    In contrast to :py:meth:`Parser.apply`, this function spares ``f``
+    the trouble of outputting a :py:class:`Result<dollar_lambda.result.Result>` object.
     Here is an example of usage. First we define a simple :py:func:`argument` parser:
 
     >>> p1 = argument("foo")
@@ -793,7 +795,7 @@ def argument(
     type: Optional[Callable[[str], Any]] = None,
 ) -> Parser[Output]:
     """
-    Parses a single word and binds it to `dest`.
+    Parses a single word and binds it to ``dest``.
     Useful for positional arguments.
 
     Parameters
@@ -821,7 +823,7 @@ def argument(
     usage: NAME
     The following arguments are required: name
 
-    Here are some examples that take advantage of `nesting=True`:
+    Here are some examples that take advantage of ``nesting=True``:
 
     >>> argument("config.name").parse_args("-h")
     usage: CONFIG.NAME
@@ -936,7 +938,6 @@ def flag(
     >>> p = flag("verbose", default=False)
     >>> p.parse_args("-h")
     usage: --verbose
-
     >>> p.parse_args()
     {'verbose': False}
 
@@ -966,7 +967,6 @@ def flag(
 
     >>> flag("value", string="v").parse_args("v")  # note that string does not have to start with -
     {'value': True}
-
     >>> flag("config.value").parse_args("--config.value")
     {'config': {'value': True}}
     """
@@ -1279,8 +1279,6 @@ def option(
     >>> p.parse_args("-h")
     usage: --count COUNT
     count: (default: 2)
-
-
     >>> p.parse_args()
     {'count': 2}
 

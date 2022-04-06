@@ -97,8 +97,7 @@ Add custom logic with the ``parsers`` argument:
       >>> from dollar_lambda import nonpositional, option, flag
       ...
       >>> p = nonpositional(
-      ...    option("x", type=int),
-      ...    flag("dev", default=False) | flag("prod", default=False),
+      ...    option("x", type=int), flag("dev") | flag("prod"),
       ... )
       ...
       >>> def main(x: int, **kwargs):
@@ -108,6 +107,13 @@ Add custom logic with the ``parsers`` argument:
       usage: -x X [--dev | --prod]
       >>> main(**p.parse_args("-x", "1", "-dev"))
       {'x': 1, 'dev': True}
+      >>> main(**p.parse_args("-x", "1", "-dev"))
+      {'x': 1, 'dev': True}
+      >>> main(**p.parse_args("-x", "1", "-prod"))
+      {'x': 1, 'prod': True}
+      >>> p.parse_args("-x", "1")
+      usage: -x X [--dev | --prod]
+      The following arguments are required: --dev
 
 .. _DynamicDispatch:
 

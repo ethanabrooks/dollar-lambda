@@ -201,7 +201,8 @@ def parser(
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
-    To do
+    Adds a ``.parser`` attribute to the wrapped function which can then be used in
+    combination with other parsers. For examples, see: :ref:`GroupingWithParser`.
     """
 
     def wrapper(func: Callable) -> Callable:
@@ -407,7 +408,6 @@ class CommandTree:
         ...
         >>> tree("-h")
         usage: -b -n N
-
         >>> tree("-b")
         {'f1': {'b': True}}
 
@@ -427,7 +427,6 @@ class CommandTree:
         ...
         >>> tree("-h")
         usage: -b -n N
-
         >>> tree("f1", "-b")
         usage: -b -n N
         Expected '-b'. Got 'f1'
@@ -563,7 +562,6 @@ class CommandTree:
         ...
         >>> tree("-h")
         usage: f1 -b g1 -n N
-
         >>> tree("f1", "-b")
         {'f1': {'b': True}}
 
@@ -582,7 +580,6 @@ class CommandTree:
         ...
         >>> tree("-h")
         usage: f1 -b g1 -n N
-
         >>> tree("f1", "-b")
         usage: f1 -b g1 -n N
         The following arguments are required: g1

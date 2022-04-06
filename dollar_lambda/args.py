@@ -112,7 +112,7 @@ class _ArgsField:
 class Args:
     """
     :py:class:`Args` is sugar for the :py:func:`nonpositional <dollar_lambda.parsers.nonpositional>` function and
-     removes much of the boilerplate from defining parsers with many arguments.
+    removes much of the boilerplate from defining parsers with many arguments.
 
     >>> from dataclasses import dataclass
     >>> from dollar_lambda import Args

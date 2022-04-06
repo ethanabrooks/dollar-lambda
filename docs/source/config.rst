@@ -35,7 +35,7 @@ and update with any arguments provided on the command line:
 ...     config.update(kwargs)
 ...     print(config)
 
-Override the value in the config by providing an explicit argument:
+Override ``x``'s value in the config by providing an explicit argument:
 
 >>> main(**p.parse_args("-x", "0", "1"))
 {'x': 0, 'y': 1}
@@ -61,7 +61,7 @@ Here is a version written with :py:func:`@command <dollar_lambda.decorators.comm
 ...     config.update(**kwargs, y=y)
 ...     print(config)
 ...
->>> main("-x", "0", "1")  # override config value
+>>> main("-x", "0", "1")  # override config value for x
 {'x': 0, 'y': 1}
->>> main("2")  # fallback to config value
+>>> main("2")  # fallback to config value for x
 {'x': 1, 'y': 2}

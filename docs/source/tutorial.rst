@@ -55,15 +55,18 @@ or neither
 >>> main("-x", "1", "-y", "2")
 {'x': 1, 'y': 2}
 
-Ordinarily , we would not feed ``main`` any arguments, and it would get
-them from the command line:
+.. Note::
 
->>> import sys
->>> sys.argv[1:] = ["-x", "1", "-y", "2"] # simulate command line input
->>> parsers.TESTING = False # unnecessary outside doctests
->>> main()
-{'x': 1, 'y': 2}
->>> parsers.TESTING = True
+   The ``--verbose`` and ``--quiet`` flags are mutually exclusive.
+   Ordinarily , we would not feed ``main`` any arguments, and it would get
+   them from the command line:
+
+   >>> import sys
+   >>> sys.argv[1:] = ["-x", "1", "-y", "2"] # simulate command line input
+   >>> parsers.TESTING = False # unnecessary outside doctests
+   >>> main()
+   {'x': 1, 'y': 2}
+   >>> parsers.TESTING = True
 
 Equivalent in lower-level syntax
 --------------------------------

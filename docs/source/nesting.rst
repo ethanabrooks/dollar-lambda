@@ -6,8 +6,8 @@ Nesting and grouping output
 Nesting output with the ``.`` character
 -----------------------------------------
 
-By default introducing a ``.`` character into the name of an
-:py:func:`argumnet <dollar_lambda.parsers.argument>`, :py:func:`option <dollar_lambda.parsers.option>`,
+By default, introducing a ``.`` character into the name of an
+:py:func:`argument <dollar_lambda.parsers.argument>`, :py:func:`option <dollar_lambda.parsers.option>`,
 or :py:func:`flag <dollar_lambda.parsers.flag>` will induce nested output:
 
 >>> from dollar_lambda import argument, flag, option
@@ -36,6 +36,8 @@ It can also go arbitrarily deep:
 
 This behavior can always be disabled by setting ``nesting=False`` (or
 just not using ``.`` in the name).
+
+.. _GroupingWithParser:
 
 Grouping with the :py:func:`@parser <dollar_lambda.decorators.parser>` decorator
 ------------------------------------------------------------------------------------

@@ -45,39 +45,35 @@ At this point the parser takes a single option ``-a`` that binds an
 >>> tree("-a", "1")
 {'f1': {'a': 1}}
 
-Usually we would call ``tree`` with no arguments, and it would get its
-input from ``sys.argv[1:]``.
+.. note::
 
->>> import sys
->>> sys.argv[1:] = ["-a", "1"] # simulate command line
->>> parsers.TESTING = False # unnecessary outside doctests
->>> tree()
-{'f1': {'a': 1}}
->>> parsers.TESTING = True
+    Usually we would call ``tree`` with no arguments, and it would get its
+    input from ``sys.argv[1:]``.
+
+    >>> import sys
+    >>> sys.argv[1:] = ["-a", "1"] # simulate command line
+    >>> parsers.TESTING = False # unnecessary outside doctests
+    >>> tree()
+    {'f1': {'a': 1}}
+    >>> parsers.TESTING = True
 
 Now let's add a second child function:
 
 >>> @tree.command()
 ... def f2(b: bool):
 ...     print(dict(f2=dict(b=b)))
-
+...
 >>> tree("-h")
 usage: [-a A | -b]
 
 ``tree`` will execute either ``f1`` or ``f2`` based on which of the
-parsers succeeds. This will execute ``f1``:
+parsers succeeds:
 
->>> tree("-a", "1")
+>>> tree("-a", "1")  #  executes ``f1``
 {'f1': {'a': 1}}
-
-This will execute ``f2``:
-
->>> tree("-b")
+>>> tree("-b")  # executes ``f2``
 {'f2': {'b': True}}
-
-This fails:
-
->>> tree()
+>>> tree()  # fails
 usage: [-a A | -b]
 The following arguments are required: -a
 
@@ -172,15 +168,9 @@ arguments:
 
 >>> tree("-h")
 usage: -a A [g1 -b | g2 -c C]
-
-Now we would select g1 as follows:
-
->>> tree("-a", "1", "g1", "-b")
+>>> tree("-a", "1", "g1", "-b")  # select g1
 {'g1': {'b': True}}
-
-And g2 as follows:
-
->>> tree("-a", "1", "g2", "-c", "foo")
+>>> tree("-a", "1", "g2", "-c", "foo")  # select g2
 {'g2': {'c': 'foo'}}
 
 You can freely mix and match :py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>`
