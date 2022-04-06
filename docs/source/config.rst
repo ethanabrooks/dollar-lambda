@@ -45,7 +45,7 @@ Fall back to the value in the config by not providing an argument for ``x``:
 >>> main(**p.parse_args("2"))
 {'x': 1, 'y': 2}
 
-We can also write this with :py:func:`@command <dollar_lambda.decorators.command>` syntax:
+Here is a version written with :py:func:`@command <dollar_lambda.decorators.command>` syntax:
 
 >>> from dollar_lambda import command
 >>> @command(
@@ -61,7 +61,7 @@ We can also write this with :py:func:`@command <dollar_lambda.decorators.command
 ...     config.update(**kwargs, y=y)
 ...     print(config)
 ...
->>> main("-x", "0", "1") # override config value
+>>> main("-x", "0", "1")  # override config value
 {'x': 0, 'y': 1}
->>> main(2) # fall back to config value
+>>> main("2")  # fallback to config value
 {'x': 1, 'y': 2}

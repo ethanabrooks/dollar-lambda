@@ -62,47 +62,65 @@ Variable numbers of arguments
 What if there was a special argument, ``verbosity``, that only makes
 sense if the user chooses ``--verbose``?
 
->>> from dollar_lambda import nonpositional
->>> p = nonpositional(
-...     (flag("verbose") + option("verbosity", type=int)) | flag("quiet"),
-...     option("x", type=int),
-...     option("y", type=int),
-... )
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> from dollar_lambda import nonpositional
+        >>> p = nonpositional(
+        ...     (flag("verbose") + option("verbosity", type=int)) | flag("quiet"),
+        ...     option("x", type=int),
+        ...     option("y", type=int),
+        ... )
+
+    .. tab:: ``@command`` syntax
+
+        >>> from dollar_lambda import command
+        >>> @command(
+        ...     parsers=dict(
+        ...         kwargs=(flag("verbose") + option("verbosity", type=int)) | flag("quiet")
+        ...     )
+        ... )
+        ... def main(x: int, y: int, **kwargs):
+        ...     print(dict(x=x, y=y, **kwargs))
 
 Remember that :py:meth:`+<dollar_lambda.parsers.Parser.__add__>` evaluates two
 parsers in both orders and stopping at the first order that succeeds. So
 this allows us to supply ``--verbose`` and ``--verbosity`` in any order.
 
->>> p.parse_args("-x", "1", "-y", "2", "--quiet")
-{'x': 1, 'y': 2, 'quiet': True}
->>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
-{'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
->>> p.parse_args("-x", "1", "-y", "2", "--verbose")
-usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
-Expected '--verbose'. Got '-x'
+.. tabs::
 
-We could express the same logic with the
-:py:func:`@command <dollar_lambda.decorators.command>` decorator:
+    .. tab:: lower-level syntax
 
->>> from dollar_lambda import command
->>> @command(
-...     parsers=dict(
-...         kwargs=flag("verbose") + option("verbosity", type=int) | flag("quiet")
-...     ),
-...     help=dict(x="the base", y="the exponent"),
-... )
-... def main(x: int, y: int, **kwargs):
-...     pass  # do work
+        >>> p.parse_args("-x", "1", "-y", "2", "--quiet")
+        {'x': 1, 'y': 2, 'quiet': True}
+        >>> p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
+        {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+        >>> p.parse_args("-x", "1", "-y", "2", "--verbose")
+        usage: [--verbose --verbosity VERBOSITY | --quiet] -x X -y Y
+        Expected '--verbose'. Got '-x'
 
-This is also a case where you might want to use
-:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
+    .. tab:: ``@command`` syntax
+
+        >>> main("-x", "1", "-y", "2", "--quiet")
+        {'x': 1, 'y': 2, 'quiet': True}
+        >>> main("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
+        {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+        >>> main("-x", "1", "-y", "2", "--verbose")
+        usage: -x X -y Y [--verbose --verbosity VERBOSITY | --quiet]
+        The following arguments are required: --verbosity
+
+
+This is a case where you might want to use
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`:
 
 >>> from dollar_lambda import CommandTree
 >>> tree = CommandTree()
 ...
 >>> @tree.command(help=dict(x="the base", y="the exponent"))
 ... def base_function(x: int, y: int):
-...     pass # do work
+...     args = dict(x=x, y=y)
+...     print("invoked base_function with args", args)
 ...
 >>> @base_function.command()
 ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
@@ -111,10 +129,15 @@ This is also a case where you might want to use
 ...
 >>> @base_function.command()
 ... def quiet_function(x: int, y: int, quiet: bool):
-...     pass # do work
+...     args = dict(x=x, y=y, quiet=quiet)
+...     print("invoked quiet_function with args", args)
 ...
 >>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
 invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+>>> tree("-x", "1", "-y", "2", "--quiet")
+invoked quiet_function with args {'x': 1, 'y': 2, 'quiet': True}
+>>> tree("-x", "1", "-y", "2")
+invoked base_function with args {'x': 1, 'y': 2}
 
 :py:meth:`many<dollar_lambda.parsers.Parser.many>`
 ----------------------------------------------------
@@ -139,17 +162,32 @@ familiar with regexes. :py:meth:`Parser.many<dollar_lambda.parsers.Parser.many>`
 
 Now returning to the original example:
 
->>> p = nonpositional(
-...     flag("verbose").many(),
-...     option("x", type=int),
-...     option("y", type=int),
-... )
->>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose")
->>> args
-{'x': 1, 'y': 2, 'verbose': [True, True]}
->>> verbosity = len(args['verbose'])
->>> verbosity
-2
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> p = nonpositional(
+        ...     flag("verbose").many(),
+        ...     option("x", type=int),
+        ...     option("y", type=int),
+        ... )
+        >>> args = p.parse_args("-x", "1", "-y", "2", "--verbose", "--verbose")
+        >>> args
+        {'x': 1, 'y': 2, 'verbose': [True, True]}
+        >>> verbosity = len(args['verbose'])
+        >>> verbosity
+        2
+
+    .. tab:: ``@command`` syntax
+
+        >>> from dollar_lambda import command
+        >>> @command(
+        ...     parsers=dict(verbose=flag("verbose").many())
+        ... )
+        ... def main(x: int, y: int, verbose: list):
+        ...     print(dict(x=x, y=y, verbosity=len(verbose)))
+        >>> main("-x", "1", "-y", "2", "--verbose", "--verbose")
+        {'x': 1, 'y': 2, 'verbosity': 2}
 
 :py:meth:`many1<dollar_lambda.parsers.Parser.many1>`
 ------------------------------------------------------
@@ -179,18 +217,45 @@ The following arguments are required: --verbose
 To compel that ``--quiet`` flag from our users, we can do the
 following:
 
->>> p = nonpositional(
-...     ((flag("verbose").many1()) | flag("quiet")),
-...     option("x", type=int),
-...     option("y", type=int),
-... )
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> p = nonpositional(
+        ...     ((flag("verbose").many1()) | flag("quiet")),
+        ...     option("x", type=int),
+        ...     option("y", type=int),
+        ... )
+
+    .. tab:: ``@command`` syntax
+
+        >>> from dollar_lambda import command
+        >>> @command(
+        ...     parsers=dict(verbosity=flag("verbose").many1() | flag("quiet"))
+        ... )
+        ... def main(x: int, y: int, **verbosity):
+        ...     print(dict(x=x, y=y, **verbosity))
 
 Now omitting both ``--verbose`` and ``--quiet`` will fail:
 
->>> p.parse_args("-x", "1", "-y", "2")
-usage: [--verbose [--verbose ...] | --quiet] -x X -y Y
-Expected '--verbose'. Got '-x'
->>> p.parse_args("--verbose", "-x", "1", "-y", "2") # this succeeds
-{'verbose': True, 'x': 1, 'y': 2}
->>> p.parse_args("--quiet", "-x", "1", "-y", "2") # and this succeeds
-{'quiet': True, 'x': 1, 'y': 2}
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> p.parse_args("-x", "1", "-y", "2")
+        usage: [--verbose [--verbose ...] | --quiet] -x X -y Y
+        Expected '--verbose'. Got '-x'
+        >>> p.parse_args("--verbose", "-x", "1", "-y", "2") # this succeeds
+        {'verbose': True, 'x': 1, 'y': 2}
+        >>> p.parse_args("--quiet", "-x", "1", "-y", "2") # and this succeeds
+        {'quiet': True, 'x': 1, 'y': 2}
+
+    .. tab:: ``@command`` syntax
+
+        >>> main("-x", "1", "-y", "2")
+        usage: -x X -y Y [--verbose [--verbose ...] | --quiet]
+        The following arguments are required: --verbose
+        >>> main("--verbose", "-x", "1", "-y", "2") # this succeeds
+        {'x': 1, 'y': 2, 'verbose': True}
+        >>> main("--quiet", "-x", "1", "-y", "2") # and this succeeds
+        {'x': 1, 'y': 2, 'quiet': True}

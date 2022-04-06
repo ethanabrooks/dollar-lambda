@@ -55,7 +55,7 @@ def main(x: int, dev: bool = False, prod: bool = False):
 main("-h")
 # %% [markdown]
 # Ordinarily you provide no arguments to `main` and it would get them from the command line.
-# The explicit arguments in this readme are for demonstration purposes only.
+# The explicit arguments in this Readme are for demonstration purposes only.
 # Here is how the main function handles input:
 # %%
 main("-x", "1", "--dev")

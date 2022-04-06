@@ -41,6 +41,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinxext.opengraph",
     "sphinx_copybutton",
+    "sphinx_tabs.tabs",
 ]
 autodoc_typehints = "none"
 

@@ -34,15 +34,37 @@ The :py:func:`@command <dollar_lambda.decorators.command>` decorator
 For the vast majority of parsing patterns, :py:class:`@command <dollar_lambda.decorators.command>` is the most
 concise way to define a parser:
 
->>> from dollar_lambda import command, parser
->>> @command()
-... def main(x: int, dev: bool = False, prod: bool = False):
-...     print(dict(x=x, dev=dev, prod=prod))
-...
->>> main("-h")
-usage: -x X --dev --prod
->>> main("-x", "1", "-dev")
-{'x': 1, 'dev': True, 'prod': False}
+.. tabs::
+
+  .. tab:: ``@command`` syntax
+
+      >>> from dollar_lambda import command, parser
+      >>> @command()
+      ... def main(x: int, dev: bool = False, prod: bool = False):
+      ...     print(dict(x=x, dev=dev, prod=prod))
+      ...
+      >>> main("-h")
+      usage: -x X --dev --prod
+      >>> main("-x", "1", "-dev")
+      {'x': 1, 'dev': True, 'prod': False}
+
+  .. tab:: lower-level syntax
+
+      >>> from dollar_lambda import nonpositional, option, flag
+      ...
+      >>> p = nonpositional(
+      ...    option("x", type=int),
+      ...    flag("dev", default=False),
+      ...    flag("prod", default=False),
+      ... )
+      ...
+      >>> def main(x: int, dev: bool = False, prod: bool = False):
+      ...    print(dict(x=x, dev=dev, prod=prod))
+      ...
+      >>> p.parse_args("-h")
+      usage: -x X --dev --prod
+      >>> main(**p.parse_args("-x", "1", "-dev"))
+      {'x': 1, 'dev': True, 'prod': False}
 
 .. Note::
 
@@ -51,20 +73,41 @@ usage: -x X --dev --prod
 
 Add custom logic with the ``parsers`` argument:
 
->>> from dollar_lambda import flag
->>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
-... def main(x: int, **kwargs):
-...     print(dict(x=x, **kwargs))
-...
->>> main("-h")
-usage: -x X [--dev | --prod]
->>> main("-x", "1", "-dev")
-{'x': 1, 'dev': True}
->>> main("-x", "1", "-prod")
-{'x': 1, 'prod': True}
->>> main("-x", "1")
-usage: -x X [--dev | --prod]
-The following arguments are required: --dev
+.. tabs::
+
+  .. tab:: ``@command`` syntax
+
+      >>> from dollar_lambda import flag
+      >>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
+      ... def main(x: int, **kwargs):
+      ...     print(dict(x=x, **kwargs))
+      ...
+      >>> main("-h")
+      usage: -x X [--dev | --prod]
+      >>> main("-x", "1", "-dev")
+      {'x': 1, 'dev': True}
+      >>> main("-x", "1", "-prod")
+      {'x': 1, 'prod': True}
+      >>> main("-x", "1")
+      usage: -x X [--dev | --prod]
+      The following arguments are required: --dev
+
+  .. tab:: lower-level syntax
+
+      >>> from dollar_lambda import nonpositional, option, flag
+      ...
+      >>> p = nonpositional(
+      ...    option("x", type=int),
+      ...    flag("dev", default=False) | flag("prod", default=False),
+      ... )
+      ...
+      >>> def main(x: int, **kwargs):
+      ...    print(dict(x=x, **kwargs))
+      ...
+      >>> p.parse_args("-h")
+      usage: -x X [--dev | --prod]
+      >>> main(**p.parse_args("-x", "1", "-dev"))
+      {'x': 1, 'dev': True}
 
 .. _DynamicDispatch:
 

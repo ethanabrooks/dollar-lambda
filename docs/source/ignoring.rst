@@ -27,43 +27,86 @@ Because of the way we defined ``config_parsers``, this also works with
 >>> p.parse_args("-x", "-config-bar", "1", "-y")
 {'x': True, 'y': True}
 
-In the case of :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` arguments, use the ``repeated`` keyword:
+In the case of :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>`,
+:py:func:`@command<dollar_lambda.decorators.command>`,
+:py:func:`@parser<dollar_lambda.decorators.parser>`, and
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`,
+use the ``repeated`` keyword:
 
->>> from dollar_lambda import nonpositional
->>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> from dollar_lambda import nonpositional
+        >>> p = nonpositional(flag("x"), flag("y"), repeated=config_parsers.ignore())
+
+    .. tab:: ``@command`` syntax
+
+        >>> from dollar_lambda import command
+        >>> @command(repeated=config_parsers.ignore())
+        ... def f(x: bool, y: bool):
+        ...     print(dict(x=x, y=y))
 
 Now neither ``config-foo`` nor ``config-bar`` show up in the output:
 
->>> p.parse_args("-x", "-y", "-config-foo", "-config-bar", "1")
-{'x': True, 'y': True}
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> p.parse_args("-x", "-y", "-config-foo", "-config-bar", "1")
+        {'x': True, 'y': True}
+
+    .. tab:: ``@command`` syntax
+
+        >>> f("-x", "-y", "-config-foo", "-config-bar", "1")
+        {'x': True, 'y': True}
 
 This works regardless of order:
 
->>> p.parse_args("-config-baz", "1", "-y", "-config-foz", "-x")
-{'y': True, 'x': True}
+.. tabs::
+
+    .. tab:: lower-level syntax
+
+        >>> p.parse_args("-config-baz", "1", "-y", "-config-foz", "-x")
+        {'y': True, 'x': True}
+
+    .. tab:: ``@command`` syntax
+
+        >>> f("-config-baz", "1", "-y", "-config-foz", "-x")
+        {'x': True, 'y': True}
 
 And no matter how many matches are found:
 
->>> p.parse_args(
-...     "-config-foo",
-...     "1",
-...     "-config-bar",
-...     "-y",
-...     "-config-baz",
-...     "2",
-...     "-x",
-...     "-config-foz",
-... )
-{'y': True, 'x': True}
+.. tabs::
 
-The same technique can be used with the :py:class:`@command <dollar_lambda.decorators.command>` decorator:
+    .. tab:: lower-level syntax
 
->>> from dollar_lambda import command
->>> @command(repeated=config_parsers.ignore())
-... def f(x: bool, y: bool):
-...     print(dict(x=x, y=y))
-...
->>> f("-x", "-y", "-config-foo", "-config-bar", "1")
-{'x': True, 'y': True}
+        >>> p.parse_args(
+        ...     "-config-foo",
+        ...     "1",
+        ...     "-config-bar",
+        ...     "-y",
+        ...     "-config-baz",
+        ...     "2",
+        ...     "-x",
+        ...     "-config-foz",
+        ... )
+        {'y': True, 'x': True}
 
-and similarly with :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`.
+    .. tab:: ``@command`` syntax
+
+        >>> f(
+        ...     "-config-foo",
+        ...     "1",
+        ...     "-config-bar",
+        ...     "-y",
+        ...     "-config-baz",
+        ...     "2",
+        ...     "-x",
+        ...     "-config-foz",
+        ... )
+        {'x': True, 'y': True}
+
+
+:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` also takes a ``repeated`` argument
+that functions in much the same way.
