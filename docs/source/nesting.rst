@@ -44,7 +44,7 @@ A common situation when processing command line arguments is to send one subset 
 arguments to one function, another subset to another, and so on.
 `$λ` provides a convenient syntax for doing this.
 
-Deriving a subset of arguments from a function
+Deriving an argument subset from a function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Suppose ``f`` is the function that will require some subset of our command line arguments:
@@ -77,8 +77,8 @@ This parser can be used to easily feed arguments to ``f`` as follows:
 Running main with {'c': True}
 Running f with: {'a': 1, 'b': 2.0}
 
-Deriving subsets from multiple functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Deriving subsets of arguments from multiple functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Suppose we have a second function, ``f2``:
 
