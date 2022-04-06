@@ -18,7 +18,6 @@
       binary_usage
       defaults
       flag
-      help_parser
       item
       matches
       nonpositional

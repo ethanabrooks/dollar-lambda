@@ -727,9 +727,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("subcommand2", "-h")
         usage: --option2 OPTION2
         """
-        _help_parser: Parser[Output[A_monoid]] = help_parser(self.usage, Output.zero(a))
-
-        p = _help_parser >= (lambda _: self)
+        p = _help_parser(self.usage, Output.zero(a)) >= (lambda _: self)
         return replace(p, usage=self.usage, helps=self.helps)
 
     @classmethod
@@ -995,7 +993,7 @@ def flag(
     return parser if default is None else parser | defaults(**{dest: default})
 
 
-def help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
+def _help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[A_monoid]]:
@@ -1328,6 +1326,20 @@ def peak(
     name: str,
     description: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
+    """
+    Bind the next word to a variable but keep that word in the
+    input (so that other parsers can still see it).
+
+    Parameters
+    ----------
+
+    name : str
+        The name to bind the variable to.
+
+    description : Optional[str]
+        Used for usage message
+    """
+
     def f(
         cs: Sequence[str],
     ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
@@ -1398,6 +1410,11 @@ def sat_peak(
     on_fail: Callable[[str], ArgumentError],
     name: str,
 ) -> Parser[Output[Sequence[KeyValue[str]]]]:
+    """
+    A convenience function that peaks at the next word using :py:func:`peak`
+    and then checks if it satisfies the predicate.
+    """
+
     def _predicate(out: Output[Sequence[KeyValue[str]]]) -> bool:
         *_, (_, v) = map(astuple, out.get)
         return predicate(v)
