@@ -7,7 +7,7 @@ Nesting output with the ``.`` character
 -----------------------------------------
 
 By default introducing a ``.`` character into the name of an
-:py:func:`argumnet <dollar_lambda.parsers.argument>`, :py:func:`option <dollar_lambda.parsers.option>`,
+:py:func:`argument <dollar_lambda.parsers.argument>`, :py:func:`option <dollar_lambda.parsers.option>`,
 or :py:func:`flag <dollar_lambda.parsers.flag>` will induce nested output:
 
 >>> from dollar_lambda import argument, flag, option
