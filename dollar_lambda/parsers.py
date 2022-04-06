@@ -888,6 +888,7 @@ def flag(
     help: Optional[str] = None,
     nesting: bool = True,
     regex: bool = True,
+    replace_dash: bool = True,
     short: bool = True,
     string: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[bool]]]]:
@@ -915,6 +916,10 @@ def flag(
 
     regex : bool
         If ``True``, then the parser will use a regex to match the flag string.
+
+    replace_dash : bool
+        If ``True``, then the parser will replace ``-`` with ``_`` in the dest string in order
+        to make `dest` a valid Python identifier.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -965,6 +970,8 @@ def flag(
     >>> flag("config.value").parse_args("--config.value")
     {'config': {'value': True}}
     """
+    if replace_dash:
+        dest = dest.replace("-", "_")
     if string is None:
         _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
     else:
@@ -1215,6 +1222,7 @@ def option(
     help: Optional[str] = None,
     nesting: bool = True,
     regex: bool = True,
+    replace_dash: bool = True,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -> Parser[Output[Sequence[KeyValue[Any]]]]:
@@ -1241,6 +1249,10 @@ def option(
 
     regex : bool
         If ``True``, then the parser will match the flag string as a regex.
+
+     replace_dash : bool
+        If ``True``, then the parser will replace ``-`` with ``_`` in the dest string in order
+        to make `dest` a valid Python identifier.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1297,7 +1309,8 @@ def option(
     >>> option("config.x").parse_args("--config.x", "a")
     {'config': {'x': 'a'}}
     """
-
+    if replace_dash:
+        dest = dest.replace("-", "_")
     if flag is None:
         _flag = f"--{dest}" if len(dest) > 1 else f"-{dest}"
     else:
