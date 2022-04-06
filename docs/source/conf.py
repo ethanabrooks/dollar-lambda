@@ -42,6 +42,7 @@ extensions = [
     "sphinxext.opengraph",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
+    "sphinx_thebe",
 ]
 
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
@@ -83,6 +84,9 @@ html_theme_options = {
     "repository_url": "https://github.com/ethanabrooks/dollar-lambda",
     "use_repository_button": True,
     "home_page_in_toc": True,
+    "launch_buttons": {
+        "thebe": True,
+    },
 }
 
 html_logo = "../logo.png"

@@ -162,6 +162,12 @@ usage: [-x X | [Y ...]]
 >>> p.parse_args("1", "2", "3")  # execute parser on right side of |
 {'y': [1.0, 2.0, 3.0]}
 
+.. Note::
+
+   Again, :py:meth:`parse_args <dollar_lambda.parsers.Parser.parse_args>`
+   takes arguments from the command line when given no arguments.
+
+
 .. toctree::
    :hidden:
 

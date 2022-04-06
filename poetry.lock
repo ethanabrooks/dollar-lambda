@@ -1447,6 +1447,21 @@ code_style = ["pre-commit (==2.13.0)"]
 testing = ["coverage", "pytest (>=3.6,<4)", "pytest-cov", "pytest-regressions", "pygments", "sphinx-testing", "bs4", "rinohtype"]
 
 [[package]]
+name = "sphinx-thebe"
+version = "0.1.1"
+description = "Integrate interactive code blocks into your documentation with Thebe and Binder."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+sphinx = ">=3.5,<5"
+
+[package.extras]
+sphinx = ["matplotlib", "myst-nb", "sphinx-book-theme", "sphinx-copybutton", "sphinx-panels"]
+testing = ["matplotlib", "pytest", "pytest-regressions", "beautifulsoup4"]
+
+[[package]]
 name = "sphinxcontrib-applehelp"
 version = "1.0.2"
 description = "sphinxcontrib-applehelp is a sphinx extension which outputs Apple help books"
@@ -1738,7 +1753,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4.0"
-content-hash = "ee61b78f260f69b9108dee025801d114a2924e50de46cebb68ab08b322e604ce"
+content-hash = "2b1e910621974b42781e72b97562d4888a895da392f9de49beb06091cf3e963f"
 
 [metadata.files]
 alabaster = [
@@ -2523,6 +2538,10 @@ sphinx-copybutton = [
 sphinx-tabs = [
     {file = "sphinx-tabs-3.3.1.tar.gz", hash = "sha256:d10dd7fb2700329b8e5948ab9f8e3ef54fff30f79d2e42cfd1b0089ae26e8c5e"},
     {file = "sphinx_tabs-3.3.1-py3-none-any.whl", hash = "sha256:73209aa769246501f6de9e33051cfd2d54f5900e0cc28a63367d8e4af4c0db5d"},
+]
+sphinx-thebe = [
+    {file = "sphinx-thebe-0.1.1.tar.gz", hash = "sha256:3f0bee00ca830a6d649b3188de9a95ae92bace16de1e6800f27671b9edb37fd7"},
+    {file = "sphinx_thebe-0.1.1-py3-none-any.whl", hash = "sha256:820768a68d144f30badf922041ce45175e1dc84fda9c1b8703c8ac4692fb2715"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
