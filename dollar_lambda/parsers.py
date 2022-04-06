@@ -1,6 +1,6 @@
 """
 Defines parsing functions and the
-:py:class:`Parser <dollar_lambda.parser.Parser>`
+:py:class:`Parser <dollar_lambda.parsers.Parser>`
 class that they instantiate.
 """
 # pyright: reportGeneralTypeIssues=false
@@ -18,7 +18,7 @@ from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.data_structures import KeyValue, Output, Sequence, _TreePath
-from dollar_lambda.error import (
+from dollar_lambda.errors import (
     ArgumentError,
     BinaryError,
     HelpError,
@@ -103,7 +103,7 @@ class Parser(MonadPlus[A_co]):
         Expected '--verbose'. Got '--debug'
 
         Note that if more than two arguments are chained together with
-        :py:meth:`+ <dollar_lambda.parser.Parser.__add__>`, some combinations will not parse:
+        :py:meth:`+ <dollar_lambda.parsers.Parser.__add__>`, some combinations will not parse:
 
         >>> p = flag("a") + flag("b") + flag("c")
         >>> p.parse_args("-c", "-a", "-b")   # this works
@@ -117,7 +117,7 @@ class Parser(MonadPlus[A_co]):
         >>> p = (flag("a") + flag("b")) + flag("c")
 
         In order to chain together more than two arguments, use
-        :py:func:`nonpositional <dollar_lambda.parser.nonpositional>`:
+        :py:func:`nonpositional <dollar_lambda.parsers.nonpositional>`:
 
         >>> from dollar_lambda import nonpositional
         >>> p = nonpositional(flag("a"), flag("b"), flag("c"))
@@ -145,7 +145,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("--verbose")
         {'verbose': True}
 
-        Note that by default, :py:meth:`Parser.parse_args <dollar_lambda.parser.Parser.parse_args>`
+        Note that by default, :py:meth:`Parser.parse_args <dollar_lambda.parsers.Parser.parse_args>`
         adds ``>> Parser.done()`` to the end of parsers, causing
         ``p`` to fail when both arguments are supplied:
 
@@ -212,7 +212,7 @@ class Parser(MonadPlus[A_co]):
         self: "Parser[Output[A_monoid]]", other: "Parser[Output[B_monoid]]"
     ) -> "Parser[Output[A_monoid | B_monoid]]":
         """
-        This is the same as :py:meth:`| <dollar_lambda.parser.Parser.__or__>`,
+        This is the same as :py:meth:`| <dollar_lambda.parsers.Parser.__or__>`,
          but it succeeds only if one of the two parsers fails.
 
         >>> p = argument("int", type=int) ^ argument("div", type=lambda x: 1 / float(x))
@@ -275,14 +275,14 @@ class Parser(MonadPlus[A_co]):
         :py:meth:`Parser.bind` is one of the functions that makes :py:class:`Parser` a
         `Monad <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L16>`_.
         But most users will
-        avoid using it directly, preferring higher level combinators like :py:meth:`>><dollar_lambda.parser.Parser.__rshift__>`,
-        :py:meth:`|<dollar_lambda.parser.Parser.__or__>` and :py:meth:`+<dollar_lambda.parser.Parser.__add__>`.
+        avoid using it directly, preferring higher level combinators like :py:meth:`>><dollar_lambda.parsers.Parser.__rshift__>`,
+        :py:meth:`|<dollar_lambda.parsers.Parser.__or__>` and :py:meth:`+<dollar_lambda.parsers.Parser.__add__>`.
 
-        Note that :py:meth:`>= <dollar_lambda.parser.Parser.__ge__>` as a synonym for :py:meth:`bind <dollar_lambda.parser.Parser.bind>` (as defined in
+        Note that :py:meth:`>= <dollar_lambda.parsers.Parser.__ge__>` as a synonym for :py:meth:`bind <dollar_lambda.parsers.Parser.bind>` (as defined in
         `pytypeclass <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monad.py#L26>`_)
         and we typically prefer using the infix operator to the spelled out method.
 
-        To demonstrate one use of :py:meth:`bind<dollar_lambda.parser.Parser.bind>` or :py:meth:`>=<dollar_lambda.parser.Parser.__ge__>`,
+        To demonstrate one use of :py:meth:`bind<dollar_lambda.parsers.Parser.bind>` or :py:meth:`>=<dollar_lambda.parsers.Parser.__ge__>`,
         let's use the :py:func:`matches` parser to write a function that takes the output of a parser and fails unless
         the next argument is the same as the first:
 
@@ -935,7 +935,7 @@ def flag(
     >>> p.parse_args()
     {'verbose': False}
 
-    By default :py:func:`flag <dollar_lambda.parser.flag>` fails when it does not receive expected input:
+    By default :py:func:`flag <dollar_lambda.parsers.flag>` fails when it does not receive expected input:
 
     >>> p = flag("verbose")
     >>> p.parse_args()

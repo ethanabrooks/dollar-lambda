@@ -1,6 +1,6 @@
 URLS = [
     "dollar_lambda/index.html",
-    "dollar_lambda/error.html",
+    "dollar_lambda.errors.html",
     "dollar_lambda/sequence.html",
     "dollar_lambda/parser.html",
     "dollar_lambda/result.html",
@@ -290,87 +290,87 @@ INDEX = [
         "func": 1
     },
     {
-        "ref": "dollar_lambda.error",
+        "ref": "dollar_lambda.errors",
         "url": 1,
         "doc": "Defines errors which can be raised by parsers."
     },
     {
-        "ref": "dollar_lambda.error.ArgumentError",
+        "ref": "dollar_lambda.errors.ArgumentError",
         "url": 1,
         "doc": "ArgumentError(usage: str)"
     },
     {
-        "ref": "dollar_lambda.error.ArgumentError.usage",
+        "ref": "dollar_lambda.errors.ArgumentError.usage",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.BinaryError",
+        "ref": "dollar_lambda.errors.BinaryError",
         "url": 1,
-        "doc": "BinaryError(usage: str, error1: dollar_lambda.error.ArgumentError, error2: dollar_lambda.error.ArgumentError)"
+        "doc": "BinaryError(usage: str, error1: dollar_lambda.errors.ArgumentError, error2: dollar_lambda.errors.ArgumentError)"
     },
     {
-        "ref": "dollar_lambda.error.BinaryError.error1",
-        "url": 1,
-        "doc": ""
-    },
-    {
-        "ref": "dollar_lambda.error.BinaryError.error2",
+        "ref": "dollar_lambda.errors.BinaryError.error1",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.ExceptionError",
+        "ref": "dollar_lambda.errors.BinaryError.error2",
+        "url": 1,
+        "doc": ""
+    },
+    {
+        "ref": "dollar_lambda.errors.ExceptionError",
         "url": 1,
         "doc": "ExceptionError(usage: str, exception: Exception)"
     },
     {
-        "ref": "dollar_lambda.error.ExceptionError.exception",
+        "ref": "dollar_lambda.errors.ExceptionError.exception",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.UnequalError",
+        "ref": "dollar_lambda.errors.UnequalError",
         "url": 1,
         "doc": "UnequalError(usage: str, left: ~A, right: ~A)"
     },
     {
-        "ref": "dollar_lambda.error.UnequalError.left",
+        "ref": "dollar_lambda.errors.UnequalError.left",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.UnequalError.right",
+        "ref": "dollar_lambda.errors.UnequalError.right",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.MissingError",
+        "ref": "dollar_lambda.errors.MissingError",
         "url": 1,
         "doc": "MissingError(usage: str, missing: str)"
     },
     {
-        "ref": "dollar_lambda.error.MissingError.missing",
+        "ref": "dollar_lambda.errors.MissingError.missing",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.ZeroError",
+        "ref": "dollar_lambda.errors.ZeroError",
         "url": 1,
         "doc": "ZeroError(usage: str)"
     },
     {
-        "ref": "dollar_lambda.error.UnexpectedError",
+        "ref": "dollar_lambda.errors.UnexpectedError",
         "url": 1,
         "doc": "UnexpectedError(usage: str, unexpected: str)"
     },
     {
-        "ref": "dollar_lambda.error.UnexpectedError.unexpected",
+        "ref": "dollar_lambda.errors.UnexpectedError.unexpected",
         "url": 1,
         "doc": ""
     },
     {
-        "ref": "dollar_lambda.error.HelpError",
+        "ref": "dollar_lambda.errors.HelpError",
         "url": 1,
         "doc": "HelpError(usage: str)"
     },

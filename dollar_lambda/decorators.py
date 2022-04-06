@@ -18,7 +18,7 @@ from pytypeclass.nonempty_list import NonemptyList
 from dollar_lambda import parsers
 from dollar_lambda.args import _ArgsField
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
-from dollar_lambda.error import ArgumentError
+from dollar_lambda.errors import ArgumentError
 from dollar_lambda.parsers import Parse, Parser, matches
 from dollar_lambda.result import Result
 
@@ -32,7 +32,7 @@ def _func_to_parser(
     exclude: Optional[List[str]],
     flip_bools: bool,
     help: Optional[typing.Dict[str, str]],
-    parsers: Optional[typing.Dict[str, Parser[Output]]],
+    parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]],
     repeated: Optional[Parser[Output]],
     prefix: Optional[str] = None,
 ) -> Parser:
@@ -41,30 +41,43 @@ def _func_to_parser(
     _parsers = {} if parsers is None else parsers
 
     types = typing.get_type_hints(func)  # see https://peps.python.org/pep-0563/
-    p = [
-        _parsers.get(
-            k,
-            _ArgsField(
-                name=k if prefix is None else f"{prefix}.{k}",
-                default=None if v.default == Parameter.empty else v.default,
-                help=_help.get(k),
-                type=types.get(k, str),
-            ),
-        )
-        for k, v in signature(func).parameters.items()
-        if k not in _exclude
-    ]
-    return _ArgsField.parser(*p, flip_bools=flip_bools, repeated=repeated)
+
+    def get_parsers():
+        for k, v in signature(func).parameters.items():
+            if k not in _exclude:
+                if k in _parsers:
+                    p = _parsers[k]
+                    if isinstance(p, list):
+                        if len(p) > 1 and v.kind not in (
+                            Parameter.VAR_KEYWORD,
+                            Parameter.VAR_POSITIONAL,
+                        ):
+                            raise RuntimeError(
+                                f"Assigning multiple parsers to a non-variational argument '{v.name}' will result in "
+                                f"binding collisions. "
+                            )
+                        yield from p
+                    else:
+                        yield p
+                else:
+                    yield _ArgsField(
+                        name=k if prefix is None else f"{prefix}.{k}",
+                        default=None if v.default == Parameter.empty else v.default,
+                        help=_help.get(k),
+                        type=types.get(k, str),
+                    )
+
+    return _ArgsField.parser(*get_parsers(), flip_bools=flip_bools, repeated=repeated)
 
 
 def command(
     flip_bools: bool = True,
     help: Optional[typing.Dict[str, str]] = None,
-    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]] = None,
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
     """
-    A succinct way to generate a simple :py:meth:`nonpositional <dollar_lambda.parser.nonpositional>`
+    A succinct way to generate a simple :py:meth:`nonpositional <dollar_lambda.parsers.nonpositional>`
     parser. :py:func:`@command<command>` derives the
     component parsers from the function's signature and automatically executes the function with
     the parsed arguments, if parsing succeeds:
@@ -89,6 +102,10 @@ def command(
 
     help : dict[str, str]
         A dictionary of help strings for the arguments.
+
+    parsers: Dict[str, Parser | List[Parser]]
+        A dictionary reserving arguments for custom parsers. If the value is a list, the
+        key must correspond to a variadic argument.
 
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
@@ -168,22 +185,25 @@ def command(
 
 
 class _Function:
-    def __init__(self, callable: Callable, parser: Parser, key: str):
+    def __init__(self, callable: Callable, parser: Parser):
         self.callable = callable
         self.parser = parser
-        self.parser_dict = {key: parser}
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.callable(*args, **kwds)
 
 
 def parser(
-    prefix: str,
+    prefix: Optional[str] = None,
     flip_bools: bool = True,
     help: Optional[typing.Dict[str, str]] = None,
-    parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+    parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]] = None,
     repeated: Optional[Parser[Output]] = None,
 ) -> Callable[[Callable], Callable]:
+    """
+    To do
+    """
+
     def wrapper(func: Callable) -> Callable:
         p = _func_to_parser(
             func,
@@ -194,7 +214,7 @@ def parser(
             prefix=prefix,
             repeated=repeated,
         )
-        return _Function(func, p, prefix)
+        return _Function(func, p)
 
     return wrapper
 
@@ -276,7 +296,7 @@ class _Node:
     function: Callable
     flip_bools: bool
     help: Optional[typing.Dict[str, str]]
-    parsers: Optional[typing.Dict[str, Parser[Output]]]
+    parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]]
     repeated: Optional[Parser[Output]]
     subcommand: bool
     tree: Optional["CommandTree"]
@@ -316,7 +336,9 @@ class CommandTree:
         can_run: bool = True,
         flip_bools: bool = True,
         help: Optional[typing.Dict[str, str]] = None,
-        parsers: Optional[typing.Dict[str, Parser[Output]]] = None,
+        parsers: Optional[
+            typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]
+        ] = None,
         repeated: Optional[Parser[Output]] = None,
     ) -> Callable:
         """
@@ -337,8 +359,9 @@ class CommandTree:
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
-        parsers: Dict[str, Parser]
-            A dictionary reserving arguments for custom parsers.
+        parsers: Dict[str, Parser | List[Parser]]
+            A dictionary reserving arguments for custom parsers. If the value is a list, the
+            key must correspond to a variadic argument.
             See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
 
         Examples
@@ -494,8 +517,9 @@ class CommandTree:
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
             See :py:func:`nonpositional` for examples.
 
-        parsers: Dict[str, Parser]
-            A dictionary reserving arguments for custom parsers.
+        parsers: Dict[str, Parser | List[Parser]]
+            A dictionary reserving arguments for custom parsers. If the value is a list, the
+            key must correspond to a variadic argument.
             See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
 
         Examples

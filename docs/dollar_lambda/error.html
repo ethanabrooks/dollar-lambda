@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>dollar_lambda.error API documentation</title>
+<title>dollar_lambda.errors API documentation</title>
 <meta name="description" content="Defines errors which can be raised by parsers." />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -34,7 +34,7 @@ white-space: nowrap;
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>dollar_lambda.error</code></h1>
+<h1 class="title">Module <code>dollar_lambda.errors</code></h1>
 <a href="https://github.com/ethanabrooks/dollar-lambda" class="github-corner" aria-label="View source on GitHub">
 <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
 <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
@@ -49,7 +49,7 @@ white-space: nowrap;
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L1-L50" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L1-L50" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
 Defines errors which can be raised by parsers.
@@ -112,7 +112,7 @@ class HelpError(ArgumentError):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="dollar_lambda.error.ArgumentError"><code class="flex name class">
+<dt id="dollar_lambda.errors.ArgumentError"><code class="flex name class">
 <span>class <span class="ident">ArgumentError</span></span>
 <span>(</span><span>usage: str)</span>
 </code></dt>
@@ -121,7 +121,7 @@ class HelpError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L8-L10" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L8-L10" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class ArgumentError(Exception):
@@ -134,33 +134,33 @@ class ArgumentError(Exception):
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.BinaryError" href="#dollar_lambda.error.BinaryError">BinaryError</a></li>
-<li><a title="dollar_lambda.error.ExceptionError" href="#dollar_lambda.error.ExceptionError">ExceptionError</a></li>
-<li><a title="dollar_lambda.error.HelpError" href="#dollar_lambda.error.HelpError">HelpError</a></li>
-<li><a title="dollar_lambda.error.MissingError" href="#dollar_lambda.error.MissingError">MissingError</a></li>
-<li><a title="dollar_lambda.error.UnequalError" href="#dollar_lambda.error.UnequalError">UnequalError</a></li>
-<li><a title="dollar_lambda.error.UnexpectedError" href="#dollar_lambda.error.UnexpectedError">UnexpectedError</a></li>
-<li><a title="dollar_lambda.error.ZeroError" href="#dollar_lambda.error.ZeroError">ZeroError</a></li>
+<li><a title="dollar_lambda.errors.BinaryError" href="#dollar_lambda.errors.BinaryError">BinaryError</a></li>
+<li><a title="dollar_lambda.errors.ExceptionError" href="#dollar_lambda.errors.ExceptionError">ExceptionError</a></li>
+<li><a title="dollar_lambda.errors.HelpError" href="#dollar_lambda.errors.HelpError">HelpError</a></li>
+<li><a title="dollar_lambda.errors.MissingError" href="#dollar_lambda.errors.MissingError">MissingError</a></li>
+<li><a title="dollar_lambda.errors.UnequalError" href="#dollar_lambda.errors.UnequalError">UnequalError</a></li>
+<li><a title="dollar_lambda.errors.UnexpectedError" href="#dollar_lambda.errors.UnexpectedError">UnexpectedError</a></li>
+<li><a title="dollar_lambda.errors.ZeroError" href="#dollar_lambda.errors.ZeroError">ZeroError</a></li>
 <li><a title="dollar_lambda.parser.SuccessError" href="parser.html#dollar_lambda.parser.SuccessError">SuccessError</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.ArgumentError.usage"><code class="name">var <span class="ident">usage</span> : str</code></dt>
+<dt id="dollar_lambda.errors.ArgumentError.usage"><code class="name">var <span class="ident">usage</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.BinaryError"><code class="flex name class">
+<dt id="dollar_lambda.errors.BinaryError"><code class="flex name class">
 <span>class <span class="ident">BinaryError</span></span>
-<span>(</span><span>usage: str, error1: <a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a>, error2: <a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a>)</span>
+<span>(</span><span>usage: str, error1: <a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a>, error2: <a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>BinaryError(usage: str, error1: dollar_lambda.error.ArgumentError, error2: dollar_lambda.error.ArgumentError)</p></div>
+<div class="desc"><p>BinaryError(usage: str, error1: dollar_lambda.errors.ArgumentError, error2: dollar_lambda.errors.ArgumentError)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L16-L19" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L16-L19" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class BinaryError(ArgumentError):
@@ -169,23 +169,23 @@ class BinaryError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.BinaryError.error1"><code class="name">var <span class="ident">error1</span> : <a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></code></dt>
+<dt id="dollar_lambda.errors.BinaryError.error1"><code class="name">var <span class="ident">error1</span> : <a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="dollar_lambda.error.BinaryError.error2"><code class="name">var <span class="ident">error2</span> : <a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></code></dt>
+<dt id="dollar_lambda.errors.BinaryError.error2"><code class="name">var <span class="ident">error2</span> : <a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.ExceptionError"><code class="flex name class">
+<dt id="dollar_lambda.errors.ExceptionError"><code class="flex name class">
 <span>class <span class="ident">ExceptionError</span></span>
 <span>(</span><span>usage: str, exception: Exception)</span>
 </code></dt>
@@ -194,7 +194,7 @@ class BinaryError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L22-L24" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L22-L24" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class ExceptionError(ArgumentError):
@@ -202,19 +202,19 @@ class ExceptionError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.ExceptionError.exception"><code class="name">var <span class="ident">exception</span> : Exception</code></dt>
+<dt id="dollar_lambda.errors.ExceptionError.exception"><code class="name">var <span class="ident">exception</span> : Exception</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.HelpError"><code class="flex name class">
+<dt id="dollar_lambda.errors.HelpError"><code class="flex name class">
 <span>class <span class="ident">HelpError</span></span>
 <span>(</span><span>usage: str)</span>
 </code></dt>
@@ -223,7 +223,7 @@ class ExceptionError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L48-L50" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L48-L50" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class HelpError(ArgumentError):
@@ -231,12 +231,12 @@ class HelpError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
 </dd>
-<dt id="dollar_lambda.error.MissingError"><code class="flex name class">
+<dt id="dollar_lambda.errors.MissingError"><code class="flex name class">
 <span>class <span class="ident">MissingError</span></span>
 <span>(</span><span>usage: str, missing: str)</span>
 </code></dt>
@@ -245,7 +245,7 @@ class HelpError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L33-L35" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L33-L35" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class MissingError(ArgumentError):
@@ -253,19 +253,19 @@ class MissingError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.MissingError.missing"><code class="name">var <span class="ident">missing</span> : str</code></dt>
+<dt id="dollar_lambda.errors.MissingError.missing"><code class="name">var <span class="ident">missing</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.UnequalError"><code class="flex name class">
+<dt id="dollar_lambda.errors.UnequalError"><code class="flex name class">
 <span>class <span class="ident">UnequalError</span></span>
 <span>(</span><span>usage: str, left: ~A, right: ~A)</span>
 </code></dt>
@@ -274,7 +274,7 @@ class MissingError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L27-L30" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L27-L30" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class UnequalError(ArgumentError, Generic[A]):
@@ -283,24 +283,24 @@ class UnequalError(ArgumentError, Generic[A]):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 <li>typing.Generic</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.UnequalError.left"><code class="name">var <span class="ident">left</span> : ~A</code></dt>
+<dt id="dollar_lambda.errors.UnequalError.left"><code class="name">var <span class="ident">left</span> : ~A</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="dollar_lambda.error.UnequalError.right"><code class="name">var <span class="ident">right</span> : ~A</code></dt>
+<dt id="dollar_lambda.errors.UnequalError.right"><code class="name">var <span class="ident">right</span> : ~A</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.UnexpectedError"><code class="flex name class">
+<dt id="dollar_lambda.errors.UnexpectedError"><code class="flex name class">
 <span>class <span class="ident">UnexpectedError</span></span>
 <span>(</span><span>usage: str, unexpected: str)</span>
 </code></dt>
@@ -309,7 +309,7 @@ class UnequalError(ArgumentError, Generic[A]):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L43-L45" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L43-L45" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class UnexpectedError(ArgumentError):
@@ -317,19 +317,19 @@ class UnexpectedError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
-<dt id="dollar_lambda.error.UnexpectedError.unexpected"><code class="name">var <span class="ident">unexpected</span> : str</code></dt>
+<dt id="dollar_lambda.errors.UnexpectedError.unexpected"><code class="name">var <span class="ident">unexpected</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 </dd>
-<dt id="dollar_lambda.error.ZeroError"><code class="flex name class">
+<dt id="dollar_lambda.errors.ZeroError"><code class="flex name class">
 <span>class <span class="ident">ZeroError</span></span>
 <span>(</span><span>usage: str)</span>
 </code></dt>
@@ -338,7 +338,7 @@ class UnexpectedError(ArgumentError):
 <details class="source">
 <summary>
 <span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/error.py#L38-L40" class="git-link">Browse git</a>
+<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda.errors.py#L38-L40" class="git-link">Browse git</a>
 </summary>
 <pre><code class="python">@dataclass
 class ZeroError(ArgumentError):
@@ -346,7 +346,7 @@ class ZeroError(ArgumentError):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+<li><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
@@ -419,48 +419,48 @@ setTimeout(() => input.focus(), 100);
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="dollar_lambda.error.ArgumentError" href="#dollar_lambda.error.ArgumentError">ArgumentError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.ArgumentError" href="#dollar_lambda.errors.ArgumentError">ArgumentError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.ArgumentError.usage" href="#dollar_lambda.error.ArgumentError.usage">usage</a></code></li>
+<li><code><a title="dollar_lambda.errors.ArgumentError.usage" href="#dollar_lambda.errors.ArgumentError.usage">usage</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.BinaryError" href="#dollar_lambda.error.BinaryError">BinaryError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.BinaryError" href="#dollar_lambda.errors.BinaryError">BinaryError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.BinaryError.error1" href="#dollar_lambda.error.BinaryError.error1">error1</a></code></li>
-<li><code><a title="dollar_lambda.error.BinaryError.error2" href="#dollar_lambda.error.BinaryError.error2">error2</a></code></li>
+<li><code><a title="dollar_lambda.errors.BinaryError.error1" href="#dollar_lambda.errors.BinaryError.error1">error1</a></code></li>
+<li><code><a title="dollar_lambda.errors.BinaryError.error2" href="#dollar_lambda.errors.BinaryError.error2">error2</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.ExceptionError" href="#dollar_lambda.error.ExceptionError">ExceptionError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.ExceptionError" href="#dollar_lambda.errors.ExceptionError">ExceptionError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.ExceptionError.exception" href="#dollar_lambda.error.ExceptionError.exception">exception</a></code></li>
+<li><code><a title="dollar_lambda.errors.ExceptionError.exception" href="#dollar_lambda.errors.ExceptionError.exception">exception</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.HelpError" href="#dollar_lambda.error.HelpError">HelpError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.HelpError" href="#dollar_lambda.errors.HelpError">HelpError</a></code></h4>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.MissingError" href="#dollar_lambda.error.MissingError">MissingError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.MissingError" href="#dollar_lambda.errors.MissingError">MissingError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.MissingError.missing" href="#dollar_lambda.error.MissingError.missing">missing</a></code></li>
+<li><code><a title="dollar_lambda.errors.MissingError.missing" href="#dollar_lambda.errors.MissingError.missing">missing</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.UnequalError" href="#dollar_lambda.error.UnequalError">UnequalError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.UnequalError" href="#dollar_lambda.errors.UnequalError">UnequalError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.UnequalError.left" href="#dollar_lambda.error.UnequalError.left">left</a></code></li>
-<li><code><a title="dollar_lambda.error.UnequalError.right" href="#dollar_lambda.error.UnequalError.right">right</a></code></li>
+<li><code><a title="dollar_lambda.errors.UnequalError.left" href="#dollar_lambda.errors.UnequalError.left">left</a></code></li>
+<li><code><a title="dollar_lambda.errors.UnequalError.right" href="#dollar_lambda.errors.UnequalError.right">right</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.UnexpectedError" href="#dollar_lambda.error.UnexpectedError">UnexpectedError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.UnexpectedError" href="#dollar_lambda.errors.UnexpectedError">UnexpectedError</a></code></h4>
 <ul class="">
-<li><code><a title="dollar_lambda.error.UnexpectedError.unexpected" href="#dollar_lambda.error.UnexpectedError.unexpected">unexpected</a></code></li>
+<li><code><a title="dollar_lambda.errors.UnexpectedError.unexpected" href="#dollar_lambda.errors.UnexpectedError.unexpected">unexpected</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="dollar_lambda.error.ZeroError" href="#dollar_lambda.error.ZeroError">ZeroError</a></code></h4>
+<h4><code><a title="dollar_lambda.errors.ZeroError" href="#dollar_lambda.errors.ZeroError">ZeroError</a></code></h4>
 </li>
 </ul>
 </li>

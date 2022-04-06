@@ -1,7 +1,7 @@
 from dollar_lambda.args import Args, field
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
 from dollar_lambda.decorators import CommandTree, command, parser
-from dollar_lambda.error import ArgumentError
+from dollar_lambda.errors import ArgumentError
 from dollar_lambda.parsers import (
     Parser,
     apply,

@@ -111,7 +111,7 @@ class _ArgsField:
 @dataclass
 class Args:
     """
-    :py:class:`Args` is sugar for the :py:func:`nonpositional <dollar_lambda.parser.nonpositional>` function and
+    :py:class:`Args` is sugar for the :py:func:`nonpositional <dollar_lambda.parsers.nonpositional>` function and
      removes much of the boilerplate from defining parsers with many arguments.
 
     >>> from dataclasses import dataclass
@@ -187,9 +187,9 @@ class Args:
     ) -> Parser[Output]:
         """
         Returns a parser for the dataclass.
-        Converts each field to a parser (:py:func:`option <dollar_lambda.parser.option>` or
-        :py:func:`flag <dollar_lambda.parser.flag>` depending on its type). Combines these parsers using
-        :py:func:`nonpositional <dollar_lambda.parser.nonpositional>`.
+        Converts each field to a parser (:py:func:`option <dollar_lambda.parsers.option>` or
+        :py:func:`flag <dollar_lambda.parsers.flag>` depending on its type). Combines these parsers using
+        :py:func:`nonpositional <dollar_lambda.parsers.nonpositional>`.
 
         Parameters
         ----------

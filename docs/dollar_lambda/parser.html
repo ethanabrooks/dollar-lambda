@@ -614,7 +614,7 @@ from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import (
+from dollar_lambda.errors import (
     ArgumentError,
     BinaryError,
     HelpError,
@@ -4930,8 +4930,8 @@ class SuccessError(ArgumentError, Generic[A_monoid]):
                     </details>
                     <h3>Ancestors</h3>
                     <ul class="hlist">
-                        <li><a title="dollar_lambda.error.ArgumentError"
-                                href="error.html#dollar_lambda.error.ArgumentError">ArgumentError</a></li>
+                        <li><a title="dollar_lambda.errors.ArgumentError"
+                                href="error.html#dollar_lambda.errors.ArgumentError">ArgumentError</a></li>
                         <li>builtins.Exception</li>
                         <li>builtins.BaseException</li>
                         <li>typing.Generic</li>

@@ -276,7 +276,7 @@ A_co_monoid = TypeVar("A_co_monoid", covariant=True, bound=Monoid)
 @dataclass
 class Output(Monoid[A_co_monoid]):
     """
-    This is the wrapper class for the output of :py:class:`Parser<dollar_lambda.parser.Parser>`.
+    This is the wrapper class for the output of :py:class:`Parser<dollar_lambda.parsers.Parser>`.
     """
 
     get: A_co_monoid

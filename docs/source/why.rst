@@ -33,7 +33,7 @@ Concise
 
 -  the :py:func:`@command <dollar_lambda.decorators.command>` decorator and the :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` object for
    automatically building parsers from function signatures.
--  operators like :py:meth:`>><dollar_lambda.parser.Parser.__rshift__>`, :py:meth:`|<dollar_lambda.parser.Parser.__or__>`, :py:meth:`^<dollar_lambda.parser.Parser.__xor__>`, :py:meth:`+<dollar_lambda.parser.Parser.__add__>`, (and :py:meth:`>=<dollar_lambda.parser.Parser.__ge__>` if you want to get fancy)
+-  operators like :py:meth:`>><dollar_lambda.parsers.Parser.__rshift__>`, :py:meth:`|<dollar_lambda.parsers.Parser.__or__>`, :py:meth:`^<dollar_lambda.parsers.Parser.__xor__>`, :py:meth:`+<dollar_lambda.parsers.Parser.__add__>`, (and :py:meth:`>=<dollar_lambda.parsers.Parser.__ge__>` if you want to get fancy)
 
 Lightweight
 -----------

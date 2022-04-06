@@ -610,7 +610,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
-from dollar_lambda.error import ArgumentError, BinaryError, HelpError, ZeroError
+from dollar_lambda.errors import ArgumentError, BinaryError, HelpError, ZeroError
 from dollar_lambda.data_structures import Sequence
 
 Monoid_co = TypeVar(&#34;Monoid_co&#34;, covariant=True, bound=Monoid)
@@ -790,7 +790,7 @@ class Result(MonadPlus[A_co]):
                     <h3>Class variables</h3>
                     <dl>
                         <dt id="dollar_lambda.result.Result.get"><code
-                                class="name">var <span class="ident">get</span> : Union[pytypeclass.nonempty_list.NonemptyList[+A_co], <a title="dollar_lambda.error.ArgumentError" href="error.html#dollar_lambda.error.ArgumentError">ArgumentError</a>]</code>
+                                class="name">var <span class="ident">get</span> : Union[pytypeclass.nonempty_list.NonemptyList[+A_co], <a title="dollar_lambda.errors.ArgumentError" href="error.html#dollar_lambda.errors.ArgumentError">ArgumentError</a>]</code>
                         </dt>
                         <dd>
                             <div class="desc"></div>

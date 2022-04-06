@@ -11,7 +11,7 @@ from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
 
 from dollar_lambda.data_structures import Sequence
-from dollar_lambda.error import ArgumentError, BinaryError, HelpError, ZeroError
+from dollar_lambda.errors import ArgumentError, BinaryError, HelpError, ZeroError
 
 Monoid_co = TypeVar("Monoid_co", covariant=True, bound=Monoid)
 Monoid1 = TypeVar("Monoid1", bound=Monoid)

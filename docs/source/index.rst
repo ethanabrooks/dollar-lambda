@@ -149,10 +149,10 @@ tries to parse the input as a variadic sequence of floats:
 >>> p = option("x", type=int) | argument("y", type=float).many()
 
 We go over this syntax in greater detail in the
-`tutorial <#tutorial>`__. For now, suffice to say that :py:func:`argument<dollar_lambda.parser.argument>`.
-defines a positional argument, :py:meth:`many<dollar_lambda.parser.Parser.many>`.
+`tutorial <#tutorial>`__. For now, suffice to say that :py:func:`argument<dollar_lambda.parsers.argument>`.
+defines a positional argument, :py:meth:`many<dollar_lambda.parsers.Parser.many>`.
 allows parsers to be applied zero or more times, and
-:py:meth:`|<dollar_lambda.parser.Parser.__or__>` expresses alternatives.
+:py:meth:`|<dollar_lambda.parsers.Parser.__or__>` expresses alternatives.
 
 Here is the help text:
 
@@ -169,7 +169,7 @@ And this succeeds:
 >>> p.parse_args("1", "2", "3")
 {'y': [1.0, 2.0, 3.0]}
 
-Again, you would ordinarily provide :py:meth:`parse_args<dollar_lambda.parser.Parser.parse_args>`
+Again, you would ordinarily provide :py:meth:`parse_args<dollar_lambda.parsers.Parser.parse_args>`
 no arguments and it would get them from the command line:
 
 >>> sys.argv[1:] = ["-x", "1"] # simulate command line input
