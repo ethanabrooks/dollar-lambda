@@ -7,8 +7,8 @@ from hypothesis import strategies as st
 from pytypeclass import List
 
 from dollar_lambda import argument, defaults, flag, item, matches, option, parser
+from dollar_lambda.data_structures import Sequence
 from dollar_lambda.parser import Parser, nonpositional
-from dollar_lambda.sequence import Sequence
 
 MAX_RANDOM = 5
 MAX_MANY = 3

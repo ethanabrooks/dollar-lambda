@@ -1,9 +1,10 @@
 :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` Tutorial
-============================================================
+========================================================================
 
-:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` has already shown up
-in the :ref:`Highlights section<CommandTree for>` and in the
-:doc:`tutorial`. In this section we will give
+:py:class:`CommandTree <dollar_lambda.decorators.CommandTree>` has already shown up
+in the
+:ref:`Highlights section<DynamicDispatch>`
+and in the :doc:`tutorial`. In this section we will give
 a more thorough treatment, exposing some of the underlying logic and
 covering all the variations in functionality that :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`
 offers.
@@ -17,7 +18,7 @@ Groups <https://click.palletsprojects.com/en/8.1.x/commands/#command>`__
 section of the `Click <https://click.palletsprojects.com/>`_ documentation.
 
 :py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
-------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
 First let's walk through the use of the :py:meth:`CommandTree.command <dollar_lambda.decorators.CommandTree.command>`
 decorator, one step at a time. First we define the object:
@@ -142,7 +143,7 @@ usage: -a A [-b -d D | -c C]
 That comes from the third argument of ``h1``.
 
 :py:meth:`CommandTree.subcommand <dollar_lambda.decorators.CommandTree.subcommand>`
--------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 
 Often we want to explicitly specify which function to execute by naming
 it on the command line. This would implement functionality similar to

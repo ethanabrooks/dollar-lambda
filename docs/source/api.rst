@@ -4,12 +4,12 @@ API
 .. autosummary::
    :toctree: generated
 
-   dollar_lambda.sequence
+   dollar_lambda.data_structures
    dollar_lambda.parser
    dollar_lambda.decorators
    dollar_lambda.args
 
-.. automodule:: dollar_lambda.sequence
+.. automodule:: dollar_lambda.data_structures
    :members:
    :synopsis:
 

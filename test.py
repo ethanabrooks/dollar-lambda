@@ -4,7 +4,7 @@ import unittest
 from abc import ABC, abstractmethod
 
 import dollar_lambda
-from dollar_lambda import args, decorators, parser, result, sequence
+from dollar_lambda import args, data_structures, decorator, parser, result
 
 
 def load_tests(_, tests, __):
@@ -12,10 +12,10 @@ def load_tests(_, tests, __):
     parser.TESTING = True
     for mod in [
         parser,
-        sequence,
+        decorator,
         result,
         args,
-        decorators,
+        data_structures,
         dollar_lambda,
     ]:
         tests.addTests(doctest.DocTestSuite(mod))

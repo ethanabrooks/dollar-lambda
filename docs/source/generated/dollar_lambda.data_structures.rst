@@ -1,7 +1,7 @@
-﻿dollar\_lambda.sequence
-=======================
+﻿dollar\_lambda.data\_structures
+===============================
 
-.. automodule:: dollar_lambda.sequence
+.. automodule:: dollar_lambda.data_structures
 
    
    

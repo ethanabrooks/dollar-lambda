@@ -8,8 +8,8 @@ import typing
 from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
+from dollar_lambda.data_structures import KeyValue, Output, Sequence
 from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
-from dollar_lambda.sequence import KeyValue, Output, Sequence
 
 
 def field(

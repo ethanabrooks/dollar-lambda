@@ -90,7 +90,7 @@ constructors: :py:func:`flag<dollar_lambda.parser.flag>`, which binds a boolean 
 :py:func:`option<dollar_lambda.parser.option>`, which binds an arbitrary value to a variable.
 
 :py:func:`flag<dollar_lambda.parser.flag>`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 >>> p = flag("verbose")
 >>> p.parse_args("--verbose")
@@ -108,7 +108,7 @@ Alternately, you can set a default value:
 {'verbose': False}
 
 :py:func:`option<dollar_lambda.parser.option>`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :py:func:`option<dollar_lambda.parser.option>` is similar but takes an argument:
 By default, :py:func:`option<dollar_lambda.parser.option>`, expects a single
@@ -180,7 +180,7 @@ think that ``"--verbose"`` is the expression that we want to bind to
 {'x': '--verbose'}
 
 :py:func:`nonpositional<dollar_lambda.parser.nonpositional>` and :py:meth:`+<dollar_lambda.parser.Parser.__add__>`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 :py:func:`nonpositional<dollar_lambda.parser.nonpositional>` takes a sequence of parsers as arguments and attempts
 all permutations of them, returning the first permutations that is
 successful:

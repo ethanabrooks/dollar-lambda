@@ -1,5 +1,5 @@
 """
-Defines :py:class:`Sequence <dollar_lambda.sequence.Sequence>`,
+Defines :py:class:`Sequence <dollar_lambda.data_structures.Sequence>`,
 a strongly-typed immutable list that implements
 `MonadPlus <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24>`_.
 """
@@ -59,7 +59,7 @@ class _TreePath(Generic[A]):
         Merge a list of paths into a nested dictionary, handling collisions with
         `Sequence.to_dict` (which uses `Sequence.to_collision_dict`).
 
-        >>> from dollar_lambda.sequence import _TreePath
+        >>> from dollar_lambda.data_structures import _TreePath
         >>> tp1 = _TreePath.make("a", leaf=1)
         >>> tp2 = _TreePath.make("b", leaf=2)
         >>> _TreePath.merge(tp1, tp2)
@@ -124,7 +124,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
     This class combines the functionality of `MonadPlus <https://github.com/ethanabrooks/pytypeclass/blob/fe6813e69c1def160c77dea1752f4235820793df/pytypeclass/monoid.py#L24>`_
     and :external:py:class:`typing.Sequence`
 
-    >>> from dollar_lambda.sequence import Sequence
+    >>> from dollar_lambda.data_structures import Sequence
     >>> s = Sequence([1, 2])
     >>> len(s)
     2
@@ -228,7 +228,7 @@ class Sequence(MonadPlus[A_co], typing.Sequence[A_co]):
         >>> from dollar_lambda import Sequence, KeyValue
         >>> Sequence([KeyValue("a", [1]), KeyValue("b", 2), KeyValue("a", [3])]).to_dict()
         {'a': [[1], [3]], 'b': 2}
-        >>> from dollar_lambda.sequence import _TreePath
+        >>> from dollar_lambda.data_structures import _TreePath
         >>> Sequence([KeyValue("a", _TreePath.make("b", leaf="c"))]).to_dict()
         {'a': {'b': 'c'}}
         >>> Sequence(

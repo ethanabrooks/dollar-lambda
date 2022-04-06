@@ -117,7 +117,7 @@ This is also a case where you might want to use
 invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
 
 :py:meth:`many<dollar_lambda.parser.Parser.many>`
-------------------------------------------
+----------------------------------------------------
 
 What if we want to specify verbosity by the number of times that
 ``--verbose`` appears? For this we need
@@ -152,7 +152,7 @@ Now returning to the original example:
 2
 
 :py:meth:`many1<dollar_lambda.parser.Parser.many1>`
---------------------------------------------
+------------------------------------------------------
 
 In the previous example, the parse will default to ``verbosity=0`` if no
 ``--verbose`` flags are given. What if we wanted users to be explicit

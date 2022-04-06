@@ -5,53 +5,597 @@
 <meta name="generator" content="pdoc 0.10.0" />
 <title>dollar_lambda.args API documentation</title>
 <meta name="description" content="Defines the `Args` dataclass and associated functions." />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}#lunr-search{width:100%;font-size:1em;padding:6px 9px 5px 9px;border:1px solid silver}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
-<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<link rel="preload stylesheet" as="style"
+    href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css"
+    integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="stylesheet preload" as="style"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>
+    :root {
+        --highlight-color: #fe9
+    }
+
+    .flex {
+        display: flex !important
+    }
+
+    body {
+        line-height: 1.5em
+    }
+
+    #content {
+        padding: 20px
+    }
+
+    #sidebar {
+        padding: 30px;
+        overflow: hidden
+    }
+
+    #sidebar>*:last-child {
+        margin-bottom: 2cm
+    }
+
+    #lunr-search {
+        width: 100%;
+        font-size: 1em;
+        padding: 6px 9px 5px 9px;
+        border: 1px solid silver
+    }
+
+    .http-server-breadcrumbs {
+        font-size: 130%;
+        margin: 0 0 15px 0
+    }
+
+    #footer {
+        font-size: .75em;
+        padding: 5px 30px;
+        border-top: 1px solid #ddd;
+        text-align: right
+    }
+
+    #footer p {
+        margin: 0 0 0 1em;
+        display: inline-block
+    }
+
+    #footer p:last-child {
+        margin-right: 30px
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        font-weight: 300
+    }
+
+    h1 {
+        font-size: 2.5em;
+        line-height: 1.1em
+    }
+
+    h2 {
+        font-size: 1.75em;
+        margin: 1em 0 .50em 0
+    }
+
+    h3 {
+        font-size: 1.4em;
+        margin: 25px 0 10px 0
+    }
+
+    h4 {
+        margin: 0;
+        font-size: 105%
+    }
+
+    h1:target,
+    h2:target,
+    h3:target,
+    h4:target,
+    h5:target,
+    h6:target {
+        background: var(--highlight-color);
+        padding: .2em 0
+    }
+
+    a {
+        color: #058;
+        text-decoration: none;
+        transition: color .3s ease-in-out
+    }
+
+    a:hover {
+        color: #e82
+    }
+
+    .title code {
+        font-weight: bold
+    }
+
+    h2[id^="header-"] {
+        margin-top: 2em
+    }
+
+    .ident {
+        color: #900
+    }
+
+    pre code {
+        background: #f8f8f8;
+        font-size: .8em;
+        line-height: 1.4em
+    }
+
+    code {
+        background: #f2f2f1;
+        padding: 1px 4px;
+        overflow-wrap: break-word
+    }
+
+    h1 code {
+        background: transparent
+    }
+
+    pre {
+        background: #f8f8f8;
+        border: 0;
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #ccc;
+        margin: 1em 0;
+        padding: 1ex
+    }
+
+    #http-server-module-list {
+        display: flex;
+        flex-flow: column
+    }
+
+    #http-server-module-list div {
+        display: flex
+    }
+
+    #http-server-module-list dt {
+        min-width: 10%
+    }
+
+    #http-server-module-list p {
+        margin-top: 0
+    }
+
+    .toc ul,
+    #index {
+        list-style-type: none;
+        margin: 0;
+        padding: 0
+    }
+
+    #index code {
+        background: transparent
+    }
+
+    #index h3 {
+        border-bottom: 1px solid #ddd
+    }
+
+    #index ul {
+        padding: 0
+    }
+
+    #index h4 {
+        margin-top: .6em;
+        font-weight: bold
+    }
+
+    @media (min-width:200ex) {
+        #index .two-column {
+            column-count: 2
+        }
+    }
+
+    @media (min-width:300ex) {
+        #index .two-column {
+            column-count: 3
+        }
+    }
+
+    dl {
+        margin-bottom: 2em
+    }
+
+    dl dl:last-child {
+        margin-bottom: 4em
+    }
+
+    dd {
+        margin: 0 0 1em 3em
+    }
+
+    #header-classes+dl>dd {
+        margin-bottom: 3em
+    }
+
+    dd dd {
+        margin-left: 2em
+    }
+
+    dd p {
+        margin: 10px 0
+    }
+
+    .name {
+        background: #eee;
+        font-weight: bold;
+        font-size: .85em;
+        padding: 5px 10px;
+        display: inline-block;
+        min-width: 40%
+    }
+
+    .name:hover {
+        background: #e0e0e0
+    }
+
+    dt:target .name {
+        background: var(--highlight-color)
+    }
+
+    .name>span:first-child {
+        white-space: nowrap
+    }
+
+    .name.class>span:nth-child(2) {
+        margin-left: .4em
+    }
+
+    .inherited {
+        color: #999;
+        border-left: 5px solid #eee;
+        padding-left: 1em
+    }
+
+    .inheritance em {
+        font-style: normal;
+        font-weight: bold
+    }
+
+    .desc h2 {
+        font-weight: 400;
+        font-size: 1.25em
+    }
+
+    .desc h3 {
+        font-size: 1em
+    }
+
+    .desc dt code {
+        background: inherit
+    }
+
+    .source summary,
+    .git-link-div {
+        color: #666;
+        text-align: right;
+        font-weight: 400;
+        font-size: .8em;
+        text-transform: uppercase
+    }
+
+    .source summary>* {
+        white-space: nowrap;
+        cursor: pointer
+    }
+
+    .git-link {
+        color: inherit;
+        margin-left: 1em
+    }
+
+    .source pre {
+        max-height: 500px;
+        overflow: auto;
+        margin: 0
+    }
+
+    .source pre code {
+        font-size: 12px;
+        overflow: visible
+    }
+
+    .hlist {
+        list-style: none
+    }
+
+    .hlist li {
+        display: inline
+    }
+
+    .hlist li:after {
+        content: ',\2002'
+    }
+
+    .hlist li:last-child:after {
+        content: none
+    }
+
+    .hlist .hlist {
+        display: inline;
+        padding-left: 1em
+    }
+
+    img {
+        max-width: 100%
+    }
+
+    td {
+        padding: 0 .5em
+    }
+
+    .admonition {
+        padding: .1em .5em;
+        margin-bottom: 1em
+    }
+
+    .admonition-title {
+        font-weight: bold
+    }
+
+    .admonition.note,
+    .admonition.info,
+    .admonition.important {
+        background: #aef
+    }
+
+    .admonition.todo,
+    .admonition.versionadded,
+    .admonition.tip,
+    .admonition.hint {
+        background: #dfd
+    }
+
+    .admonition.warning,
+    .admonition.versionchanged,
+    .admonition.deprecated {
+        background: #fd4
+    }
+
+    .admonition.error,
+    .admonition.danger,
+    .admonition.caution {
+        background: lightpink
+    }
+</style>
+<style media="screen and (min-width: 700px)">
+    @media screen and (min-width:700px) {
+        #sidebar {
+            width: 30%;
+            height: 100vh;
+            overflow: auto;
+            position: sticky;
+            top: 0
+        }
+
+        #content {
+            width: 70%;
+            max-width: 100ch;
+            padding: 3em 4em;
+            border-left: 1px solid #ddd
+        }
+
+        pre code {
+            font-size: 1em
+        }
+
+        .item .name {
+            font-size: 1em
+        }
+
+        main {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end
+        }
+
+        .toc ul ul,
+        #index ul {
+            padding-left: 1.5em
+        }
+
+        .toc>ul>li {
+            margin-top: .5em
+        }
+    }
+</style>
+<style media="print">
+    @media print {
+        #sidebar h1 {
+            page-break-before: always
+        }
+
+        .source {
+            display: none
+        }
+    }
+
+    @media print {
+        * {
+            background: transparent !important;
+            color: #000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important
+        }
+
+        a[href]:after {
+            content: " ("attr(href) ")";
+            font-size: 90%
+        }
+
+        a[href][title]:after {
+            content: none
+        }
+
+        abbr[title]:after {
+            content: " ("attr(title) ")"
+        }
+
+        .ir a:after,
+        a[href^="javascript:"]:after,
+        a[href^="#"]:after {
+            content: ""
+        }
+
+        pre,
+        blockquote {
+            border: 1px solid #999;
+            page-break-inside: avoid
+        }
+
+        thead {
+            display: table-header-group
+        }
+
+        tr,
+        img {
+            page-break-inside: avoid
+        }
+
+        img {
+            max-width: 100% !important
+        }
+
+        @page {
+            margin: 0.5cm
+        }
+
+        p,
+        h2,
+        h3 {
+            orphans: 3;
+            widows: 3
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            page-break-after: avoid
+        }
+    }
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    rel="stylesheet">
 <style>
-body {
-font-family: 'IBM Plex Sans', sans-serif;
-line-height: 1.45;
-font-size: 15px;
-}
-pre, code {
-font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
-}
-p code {
-white-space: nowrap;
-}
+    body {
+        font-family: 'IBM Plex Sans', sans-serif;
+        line-height: 1.45;
+        font-size: 15px;
+    }
+
+    pre,
+    code {
+        font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
+    }
+
+    p code {
+        white-space: nowrap;
+    }
 </style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"
+    integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
-<style>.homelink{display:block;font-size:2em;font-weight:bold;color:#555;padding-bottom:.5em;border-bottom:1px solid silver}.homelink:hover{color:inherit}.homelink img{max-width:50%;max-height:10em;margin:auto;margin-bottom:.3em}</style>
+<style>
+    .homelink {
+        display: block;
+        font-size: 2em;
+        font-weight: bold;
+        color: #555;
+        padding-bottom: .5em;
+        border-bottom: 1px solid silver
+    }
+
+    .homelink:hover {
+        color: inherit
+    }
+
+    .homelink img {
+        max-width: 50%;
+        max-height: 10em;
+        margin: auto;
+        margin-bottom: .3em
+    }
+</style>
 <link rel="canonical" href="file:///Users/ethanbrooks/monad_argparse/docs/dollar_lambda/index.html">
 <link rel="icon" href="https://ethanabrooks.github.io/dollar-lambda/logo.png">
 <main>
-<article id="content">
-<header>
-<h1 class="title">Module <code>dollar_lambda.args</code></h1>
-<a href="https://github.com/ethanabrooks/dollar-lambda" class="github-corner" aria-label="View source on GitHub">
-<svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
-<path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-<path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
-<path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
-</svg>
-</a>
-<style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
-</header>
-<section id="section-intro">
-<p>Defines the <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> dataclass and associated functions.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L1-L227" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;
+    <article id="content">
+        <header>
+            <h1 class="title">Module <code>dollar_lambda.args</code></h1>
+            <a href="https://github.com/ethanabrooks/dollar-lambda" class="github-corner"
+                aria-label="View source on GitHub">
+                <svg width="80" height="80" viewBox="0 0 250 250"
+                    style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;"
+                    aria-hidden="true">
+                    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+                    <path
+                        d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+                        fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+                    <path
+                        d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+                        fill="currentColor" class="octo-body"></path>
+                </svg>
+            </a>
+            <style>
+                .github-corner:hover .octo-arm {
+                    animation: octocat-wave 560ms ease-in-out
+                }
+
+                @keyframes octocat-wave {
+
+                    0%,
+                    100% {
+                        transform: rotate(0)
+                    }
+
+                    20%,
+                    60% {
+                        transform: rotate(-25deg)
+                    }
+
+                    40%,
+                    80% {
+                        transform: rotate(10deg)
+                    }
+                }
+
+                @media (max-width:500px) {
+                    .github-corner:hover .octo-arm {
+                        animation: none
+                    }
+
+                    .github-corner .octo-arm {
+                        animation: octocat-wave 560ms ease-in-out
+                    }
+                }
+            </style>
+        </header>
+        <section id="section-intro">
+            <p>Defines the <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code>
+                dataclass and associated functions.</p>
+            <details class="source">
+                <summary>
+                    <span>Expand source code</span>
+                    <a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L1-L227"
+                        class="git-link">Browse git</a>
+                </summary>
+                <pre><code class="python">&#34;&#34;&#34;
 Defines the `Args` dataclass and associated functions.
 &#34;&#34;&#34;
 from __future__ import annotations
@@ -62,7 +606,7 @@ from dataclasses import Field, dataclass, fields
 from typing import Any, Callable, Iterator, Optional, Union
 
 from dollar_lambda.parser import Parser, defaults, flag, nonpositional, option
-from dollar_lambda.sequence import KeyValue, Output, Sequence
+from dollar_lambda.data_structures import KeyValue, Output, Sequence
 
 
 def field(
@@ -278,39 +822,52 @@ class Args:
             cls.parser(flip_bools=flip_bools, repeated=repeated)
             &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
         ).parse_args(*args)</code></pre>
-</details>
-</section>
-<section>
-</section>
-<section>
-</section>
-<section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="dollar_lambda.args.field"><code class="name flex">
+            </details>
+        </section>
+        <section>
+        </section>
+        <section>
+        </section>
+        <section>
+            <h2 class="section-title" id="header-functions">Functions</h2>
+            <dl>
+                <dt id="dollar_lambda.args.field"><code class="name flex">
 <span>def <span class="ident">field</span></span>(<span>help: Optional[str] = None, metadata: Optional[dict] = None, parser: Optional[Parser[Output]] = None, **kwargs) <span style="white-space: nowrap;">-></span> dataclasses.Field</span>
 </code></dt>
-<dd>
-<div class="desc"><p>This is a thin wrapper around <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>help</code></strong> :&ensp;<code>str</code></dt>
-<dd>An optional help string for the argument.</dd>
-<dt><strong><code>metadata</code></strong> :&ensp;<code>str</code></dt>
-<dd>Identical to the <code>metadata</code> argument for <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.</dd>
-<dt><strong><code>type</code></strong> :&ensp;<code>Optional[type | Callable[[str], Any]]</code></dt>
-<dd>A function that takes a string and returns a value just like the <code>type</code> argument for
-<a href="https://docs.python.org/3/library/argparse.html#type"><code>ArgumentParser.add_argument</code></a>.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>A <code>dataclasses.Field</code> object that can be used in place of a default argument as
-described in the <a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.Field</code> documentation</a>.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L15-L46" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">def field(
+                <dd>
+                    <div class="desc">
+                        <p>This is a thin wrapper around <a
+                                href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.
+                        </p>
+                        <h2 id="parameters">Parameters</h2>
+                        <dl>
+                            <dt><strong><code>help</code></strong> :&ensp;<code>str</code></dt>
+                            <dd>An optional help string for the argument.</dd>
+                            <dt><strong><code>metadata</code></strong> :&ensp;<code>str</code></dt>
+                            <dd>Identical to the <code>metadata</code> argument for <a
+                                    href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.field</code></a>.
+                            </dd>
+                            <dt><strong><code>type</code></strong>
+                                :&ensp;<code>Optional[type | Callable[[str], Any]]</code></dt>
+                            <dd>A function that takes a string and returns a value just like the <code>type</code>
+                                argument for
+                                <a
+                                    href="https://docs.python.org/3/library/argparse.html#type"><code>ArgumentParser.add_argument</code></a>.
+                            </dd>
+                        </dl>
+                        <h2 id="returns">Returns</h2>
+                        <p>A <code>dataclasses.Field</code> object that can be used in place of a default argument as
+                            described in the <a
+                                href="https://docs.python.org/3/library/dataclasses.html#dataclasses.field"><code>dataclasses.Field</code>
+                                documentation</a>.</p>
+                    </div>
+                    <details class="source">
+                        <summary>
+                            <span>Expand source code</span>
+                            <a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L15-L46"
+                                class="git-link">Browse git</a>
+                        </summary>
+                        <pre><code class="python">def field(
     help: Optional[str] = None,
     metadata: Optional[dict] = None,
     parser: Optional[Parser[Output]] = None,
@@ -342,33 +899,39 @@ described in the <a href="https://docs.python.org/3/library/dataclasses.html#dat
     if help is not None:
         metadata.update(help=help)
     return dataclasses.field(metadata=metadata, **kwargs)</code></pre>
-</details>
-</dd>
-</dl>
-</section>
-<section>
-<h2 class="section-title" id="header-classes">Classes</h2>
-<dl>
-<dt id="dollar_lambda.args.Args"><code class="flex name class">
+                    </details>
+                </dd>
+            </dl>
+        </section>
+        <section>
+            <h2 class="section-title" id="header-classes">Classes</h2>
+            <dl>
+                <dt id="dollar_lambda.args.Args"><code class="flex name class">
 <span>class <span class="ident">Args</span></span>
 </code></dt>
-<dd>
-<div class="desc"><p><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> is sugar for the <code>nonpositional</code> function and removes much of the boilerplate
-from defining parsers with many arguments.</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+                <dd>
+                    <div class="desc">
+                        <p><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> is
+                            sugar for the <code>nonpositional</code> function and removes much of the boilerplate
+                            from defining parsers with many arguments.</p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     verbose: bool
 ...     count: int
 &gt;&gt;&gt; MyArgs.parse_args(&quot;--verbose&quot;, &quot;--count&quot;, &quot;1&quot;)
 {'verbose': True, 'count': 1}
 </code></pre>
-<p><code>MyArgs</code> will accept these arguments in any order:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--count&quot;, &quot;1&quot;, &quot;--verbose&quot;)
+                        <p><code>MyArgs</code> will accept these arguments in any order:</p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--count&quot;, &quot;1&quot;, &quot;--verbose&quot;)
 {'count': 1, 'verbose': True}
 </code></pre>
-<p>Note that when the default value of an argument is <code>True</code>, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> will, by default
-add <code>--no-</code> to the front of the flag (while still assigning the value to the original key):</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+                        <p>Note that when the default value of an argument is <code>True</code>,
+                            <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code>
+                            will, by default
+                            add <code>--no-</code> to the front of the flag (while still assigning the value to the
+                            original key):
+                        </p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     tests: bool = True
 &gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
@@ -376,21 +939,28 @@ add <code>--no-</code> to the front of the flag (while still assigning the value
 &gt;&gt;&gt; MyArgs.parse_args()
 {'tests': True}
 </code></pre>
-<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
+                        <p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
 {'tests': False}
 </code></pre>
-<p>By using the <code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">Args.parser()</a></code> method, <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can take advantage of all the same
-combinators as other parsers:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument
+                        <p>By using the
+                            <code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">Args.parser()</a></code>
+                            method,
+                            <code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code> can
+                            take advantage of all the same
+                            combinators as other parsers:
+                        </p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; from dollar_lambda import argument
 &gt;&gt;&gt; p = MyArgs.parser()
 &gt;&gt;&gt; p1 = p &gt;&gt; argument(&quot;a&quot;)
 &gt;&gt;&gt; p1.parse_args(&quot;--no-tests&quot;, &quot;hello&quot;)
 {'tests': False, 'a': 'hello'}
 </code></pre>
-<p>To supply other metadata, like <code>help</code> text or custom parsers, use <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:
-@dataclass</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+                        <p>To supply other metadata, like <code>help</code> text or custom parsers, use
+                            <code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field()</a></code>:
+                            @dataclass
+                        </p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     x: int = field(default=0, help=&quot;a number&quot;)
 ...     y: int = field(
@@ -402,20 +972,22 @@ usage: -x X -y Y
 x: a number
 y: a number to increment
 </code></pre>
-<p>This supplies defaults for <code>y</code> when omitted:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;-x&quot;, &quot;10&quot;)
+                        <p>This supplies defaults for <code>y</code> when omitted:</p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;-x&quot;, &quot;10&quot;)
 {'x': 10, 'y': 1}
 </code></pre>
-<p>It also applies the custom type to <code>y</code> when <code>"-y"</code> is given</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args()
+                        <p>It also applies the custom type to <code>y</code> when <code>"-y"</code> is given</p>
+                        <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args()
 {'x': 0, 'y': 1}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L108-L227" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">@dataclass
+</code></pre>
+                    </div>
+                    <details class="source">
+                        <summary>
+                            <span>Expand source code</span>
+                            <a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L108-L227"
+                                class="git-link">Browse git</a>
+                        </summary>
+                        <pre><code class="python">@dataclass
 class Args:
     &#34;&#34;&#34;
     `Args` is sugar for the `nonpositional` function and removes much of the boilerplate
@@ -535,20 +1107,23 @@ class Args:
             cls.parser(flip_bools=flip_bools, repeated=repeated)
             &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
         ).parse_args(*args)</code></pre>
-</details>
-<h3>Static methods</h3>
-<dl>
-<dt id="dollar_lambda.args.Args.parse_args"><code class="name flex">
+                    </details>
+                    <h3>Static methods</h3>
+                    <dl>
+                        <dt id="dollar_lambda.args.Args.parse_args"><code class="name flex">
 <span>def <span class="ident">parse_args</span></span>(<span>*args, flip_bools: bool = True, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> Optional[Dict[str, Any]]</span>
 </code></dt>
-<dd>
-<div class="desc"><p>Parses the arguments and returns a dictionary of the parsed values.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L214-L227" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">@classmethod
+                        <dd>
+                            <div class="desc">
+                                <p>Parses the arguments and returns a dictionary of the parsed values.</p>
+                            </div>
+                            <details class="source">
+                                <summary>
+                                    <span>Expand source code</span>
+                                    <a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L214-L227"
+                                        class="git-link">Browse git</a>
+                                </summary>
+                                <pre><code class="python">@classmethod
 def parse_args(
     cls,
     *args,
@@ -562,41 +1137,46 @@ def parse_args(
         cls.parser(flip_bools=flip_bools, repeated=repeated)
         &gt;&gt; Parser[Output[Sequence[KeyValue[Any]]]].done()
     ).parse_args(*args)</code></pre>
-</details>
-</dd>
-<dt id="dollar_lambda.args.Args.parser"><code class="name flex">
-<span>def <span class="ident">parser</span></span>(<span>flip_bools: bool = True, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.sequence.Output" href="sequence.html#dollar_lambda.sequence.Output">Output</a>]</span>
+                            </details>
+                        </dd>
+                        <dt id="dollar_lambda.args.Args.parser"><code class="name flex">
+<span>def <span class="ident">parser</span></span>(<span>flip_bools: bool = True, repeated: Optional[Parser[Output]] = None) <span style="white-space: nowrap;">-></span> <a title="dollar_lambda.parser.Parser" href="parser.html#dollar_lambda.parser.Parser">Parser</a>[<a title="dollar_lambda.data_structures.Output" href="sequence.html#dollar_lambda.data_structures.Output">Output</a>]</span>
 </code></dt>
-<dd>
-<div class="desc"><p>Returns a parser for the dataclass.
-Converts each field to a parser (<code>option</code> or <code>flag</code> depending on its type).
-Combines these parsers using <code>nonpositional</code>.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
-<dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default to <code>True</code>.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
+                        <dd>
+                            <div class="desc">
+                                <p>Returns a parser for the dataclass.
+                                    Converts each field to a parser (<code>option</code> or <code>flag</code> depending
+                                    on its type).
+                                    Combines these parsers using <code>nonpositional</code>.</p>
+                                <h2 id="parameters">Parameters</h2>
+                                <dl>
+                                    <dt><strong><code>flip_bools</code></strong> :&ensp;<code>bool</code></dt>
+                                    <dd>Whether to add <code>--no-&lt;argument&gt;</code> before arguments that default
+                                        to <code>True</code>.</dd>
+                                </dl>
+                                <h2 id="examples">Examples</h2>
+                                <pre><code class="language-python-repl">&gt;&gt;&gt; @dataclass
 ... class MyArgs(Args):
 ...     tests: bool = True
 </code></pre>
-<p>Note the leading <code>--no-</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
+                                <p>Note the leading <code>--no-</code>:</p>
+                                <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--no-tests&quot;)
 {'tests': False}
 &gt;&gt;&gt; MyArgs.parse_args()
 {'tests': True}
 </code></pre>
-<p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
-<pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
+                                <p>To suppress this behavior, set <code>flip_bools=False</code>:</p>
+                                <pre><code class="language-python-repl">&gt;&gt;&gt; MyArgs.parse_args(&quot;--tests&quot;, flip_bools=False)
 {'tests': False}
-</code></pre></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-<a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L171-L212" class="git-link">Browse git</a>
-</summary>
-<pre><code class="python">@classmethod
+</code></pre>
+                            </div>
+                            <details class="source">
+                                <summary>
+                                    <span>Expand source code</span>
+                                    <a href="https://github.com/ethanabrooks/dollar-lambda/blob/0a98f2938df54fd424053561ac0eac92d9580127/dollar_lambda/args.py#L171-L212"
+                                        class="git-link">Browse git</a>
+                                </summary>
+                                <pre><code class="python">@classmethod
 def parser(
     cls,
     flip_bools: bool = True,
@@ -638,95 +1218,115 @@ def parser(
     return _ArgsField.parser(
         *get_fields(), flip_bools=flip_bools, repeated=repeated
     )</code></pre>
-</details>
-</dd>
-</dl>
-</dd>
-</dl>
-</section>
-</article>
-<nav id="sidebar">
-<header>
-<a class="homelink" rel="home" title="dollar-lambda home" href="https://ethanabrooks.github.io/dollar-lambda">
-<img src="https://ethanabrooks.github.io/dollar-lambda/logo.png" alt="">
-</a>
-</header>
-<form>
-<input id="lunr-search" name="q" placeholder="🔎 Search ..." aria-label="Search"
-disabled minlength="2">
-</form>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.css" integrity="sha512-j1u8eUJ4f23xPPxwOrLUPQaCD2dwzNqqmDDcWS4deWsMv2ohLqmXXuP3hU7g8TyzbMSakP/mMqoNBYWj8AEIFg==" crossorigin>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.js" integrity="sha512-plGUER9JkeEWPPqQBE4sdLqBoQug5Ap+BCGMc7bJ8BXkm+VVj6QzkpBz5Yv2yPkkq+cqg9IpkBaGCas6uDbW8g==" crossorigin></script>
-<style>
-.modal-dialog iframe {
-width: 100vw;
-height: calc(100vh - 80px);
-}
-@media screen and (min-width: 700px) {
-.modal-dialog iframe {
-width: 70vw;
-height: 80vh;
-}
-}
-.modal-dialog .tingle-modal-box {width: auto;}
-.modal-dialog .tingle-modal-box__content {padding: 0;}
-</style>
-<script>
-const input = document.getElementById('lunr-search');
-input.disabled = false;
-input.form.addEventListener('submit', (ev) => {
-ev.preventDefault();
-const url = new URL(window.location);
-url.searchParams.set('q', input.value);
-history.replaceState({}, null, url.toString());
-search(input.value);
-});
-const query = new URL(window.location).searchParams.get('q');
-if (query)
-search(query);
-function search(query) {
-const url = '../doc-search.html#' + encodeURIComponent(query);
-new tingle.modal({
-cssClass: ['modal-dialog'],
-onClose: () => {
-const url = new URL(window.location);
-url.searchParams.delete('q');
-history.replaceState({}, null, url.toString());
-setTimeout(() => input.focus(), 100);
-}
-}).setContent('<iframe src="' + url + '"></iframe>').open();
-}
-</script>
-<h1>Index</h1>
-<div class="toc">
-<ul></ul>
-</div>
-<ul id="index">
-<li><h3>Super-module</h3>
-<ul>
-<li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code></h4>
-<ul class="">
-<li><code><a title="dollar_lambda.args.Args.parse_args" href="#dollar_lambda.args.Args.parse_args">parse_args</a></code></li>
-<li><code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">parser</a></code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</nav>
+                            </details>
+                        </dd>
+                    </dl>
+                </dd>
+            </dl>
+        </section>
+    </article>
+    <nav id="sidebar">
+        <header>
+            <a class="homelink" rel="home" title="dollar-lambda home"
+                href="https://ethanabrooks.github.io/dollar-lambda">
+                <img src="https://ethanabrooks.github.io/dollar-lambda/logo.png" alt="">
+            </a>
+        </header>
+        <form>
+            <input id="lunr-search" name="q" placeholder="🔎 Search ..." aria-label="Search" disabled minlength="2">
+        </form>
+        <link rel="preload stylesheet" as="style"
+            href="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.css"
+            integrity="sha512-j1u8eUJ4f23xPPxwOrLUPQaCD2dwzNqqmDDcWS4deWsMv2ohLqmXXuP3hU7g8TyzbMSakP/mMqoNBYWj8AEIFg=="
+            crossorigin>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.15.3/tingle.min.js"
+            integrity="sha512-plGUER9JkeEWPPqQBE4sdLqBoQug5Ap+BCGMc7bJ8BXkm+VVj6QzkpBz5Yv2yPkkq+cqg9IpkBaGCas6uDbW8g=="
+            crossorigin></script>
+        <style>
+            .modal-dialog iframe {
+                width: 100vw;
+                height: calc(100vh - 80px);
+            }
+
+            @media screen and (min-width: 700px) {
+                .modal-dialog iframe {
+                    width: 70vw;
+                    height: 80vh;
+                }
+            }
+
+            .modal-dialog .tingle-modal-box {
+                width: auto;
+            }
+
+            .modal-dialog .tingle-modal-box__content {
+                padding: 0;
+            }
+        </style>
+        <script>
+            const input = document.getElementById('lunr-search');
+            input.disabled = false;
+            input.form.addEventListener('submit', (ev) => {
+                ev.preventDefault();
+                const url = new URL(window.location);
+                url.searchParams.set('q', input.value);
+                history.replaceState({}, null, url.toString());
+                search(input.value);
+            });
+            const query = new URL(window.location).searchParams.get('q');
+            if (query)
+                search(query);
+            function search(query) {
+                const url = '../doc-search.html#' + encodeURIComponent(query);
+                new tingle.modal({
+                    cssClass: ['modal-dialog'],
+                    onClose: () => {
+                        const url = new URL(window.location);
+                        url.searchParams.delete('q');
+                        history.replaceState({}, null, url.toString());
+                        setTimeout(() => input.focus(), 100);
+                    }
+                }).setContent('<iframe src="' + url + '"></iframe>').open();
+            }
+        </script>
+        <h1>Index</h1>
+        <div class="toc">
+            <ul></ul>
+        </div>
+        <ul id="index">
+            <li>
+                <h3>Super-module</h3>
+                <ul>
+                    <li><code><a title="dollar_lambda" href="index.html">dollar_lambda</a></code></li>
+                </ul>
+            </li>
+            <li>
+                <h3><a href="#header-functions">Functions</a></h3>
+                <ul class="">
+                    <li><code><a title="dollar_lambda.args.field" href="#dollar_lambda.args.field">field</a></code></li>
+                </ul>
+            </li>
+            <li>
+                <h3><a href="#header-classes">Classes</a></h3>
+                <ul>
+                    <li>
+                        <h4><code><a title="dollar_lambda.args.Args" href="#dollar_lambda.args.Args">Args</a></code>
+                        </h4>
+                        <ul class="">
+                            <li><code><a title="dollar_lambda.args.Args.parse_args" href="#dollar_lambda.args.Args.parse_args">parse_args</a></code>
+                            </li>
+                            <li><code><a title="dollar_lambda.args.Args.parser" href="#dollar_lambda.args.Args.parser">parser</a></code>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+    <p>Generated by <a href="https://pdoc3.github.io/pdoc"
+            title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
+
 </html>

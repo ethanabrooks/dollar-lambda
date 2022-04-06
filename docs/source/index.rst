@@ -83,8 +83,11 @@ usage: -x X [--dev | --prod]
 usage: -x X [--dev | --prod]
 The following arguments are required: --dev
 
+
+.. _DynamicDispatch:
+
 :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>` for dynamic dispatch
------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
 
 For many programs, a user will want to use one entrypoint for one set of
 arguments, and another for another set of arguments. Returning to our
