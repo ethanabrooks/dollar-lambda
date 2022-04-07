@@ -57,7 +57,6 @@ or neither
 
 .. Note::
 
-   The ``--verbose`` and ``--quiet`` flags are mutually exclusive.
    Ordinarily , we would not feed ``main`` any arguments, and it would get
    them from the command line:
 
@@ -167,20 +166,22 @@ saw earlier, or we can supply a default value:
 In the second example,  ``flag("verbose")`` fails but
 ``flag("quiet", default=False)`` succeeds.
 
-Users should note that unlike logical "or" but like Python ``or``, the
-:py:meth:`|<dollar_lambda.parsers.Parser.__or__>` operator is not commutative:
+.. Note::
+   Unlike logical "or" but like Python ``or``, the
 
->>> from dollar_lambda import argument
->>> (flag("verbose") | argument("x")).parse_args("--verbose")
-{'verbose': True}
+   :py:meth:`|<dollar_lambda.parsers.Parser.__or__>` operator is not commutative:
 
-:py:func:`argument<dollar_lambda.parsers.argument>` binds to positional arguments. If it comes first, it will
-think that ``"--verbose"`` is the expression that we want to bind to
-``x``:
+   >>> from dollar_lambda import argument
+   >>> (flag("verbose") | argument("x")).parse_args("--verbose")
+   {'verbose': True}
 
->>> from dollar_lambda import argument
->>> (argument("x") | flag("verbose")).parse_args("--verbose")
-{'x': '--verbose'}
+   :py:func:`argument<dollar_lambda.parsers.argument>` binds to positional arguments. If it comes first, it will
+   think that ``"--verbose"`` is the expression that we want to bind to
+   ``x``:
+
+   >>> from dollar_lambda import argument
+   >>> (argument("x") | flag("verbose")).parse_args("--verbose")
+   {'x': '--verbose'}
 
 :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` and :py:meth:`+<dollar_lambda.parsers.Parser.__add__>`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

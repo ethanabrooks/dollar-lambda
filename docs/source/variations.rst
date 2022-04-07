@@ -111,33 +111,35 @@ this allows us to supply ``--verbose`` and ``--verbosity`` in any order.
         The following arguments are required: --verbosity
 
 
-This is a case where you might want to use
-:py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`:
+.. hint::
 
->>> from dollar_lambda import CommandTree
->>> tree = CommandTree()
-...
->>> @tree.command(help=dict(x="the base", y="the exponent"))
-... def base_function(x: int, y: int):
-...     args = dict(x=x, y=y)
-...     print("invoked base_function with args", args)
-...
->>> @base_function.command()
-... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
-...     args = dict(x=x, y=y, verbose=verbose, verbosity=verbosity)
-...     print("invoked verbose_function with args", args)
-...
->>> @base_function.command()
-... def quiet_function(x: int, y: int, quiet: bool):
-...     args = dict(x=x, y=y, quiet=quiet)
-...     print("invoked quiet_function with args", args)
-...
->>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
-invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
->>> tree("-x", "1", "-y", "2", "--quiet")
-invoked quiet_function with args {'x': 1, 'y': 2, 'quiet': True}
->>> tree("-x", "1", "-y", "2")
-invoked base_function with args {'x': 1, 'y': 2}
+    This is a case where you might want to use
+    :py:class:`CommandTree<dollar_lambda.decorators.CommandTree>`:
+
+    >>> from dollar_lambda import CommandTree
+    >>> tree = CommandTree()
+    ...
+    >>> @tree.command(help=dict(x="the base", y="the exponent"))
+    ... def base_function(x: int, y: int):
+    ...     args = dict(x=x, y=y)
+    ...     print("invoked base_function with args", args)
+    ...
+    >>> @base_function.command()
+    ... def verbose_function(x: int, y: int, verbose: bool, verbosity: int):
+    ...     args = dict(x=x, y=y, verbose=verbose, verbosity=verbosity)
+    ...     print("invoked verbose_function with args", args)
+    ...
+    >>> @base_function.command()
+    ... def quiet_function(x: int, y: int, quiet: bool):
+    ...     args = dict(x=x, y=y, quiet=quiet)
+    ...     print("invoked quiet_function with args", args)
+    ...
+    >>> tree("-x", "1", "-y", "2", "--verbose", "--verbosity", "3")
+    invoked verbose_function with args {'x': 1, 'y': 2, 'verbose': True, 'verbosity': 3}
+    >>> tree("-x", "1", "-y", "2", "--quiet")
+    invoked quiet_function with args {'x': 1, 'y': 2, 'quiet': True}
+    >>> tree("-x", "1", "-y", "2")
+    invoked base_function with args {'x': 1, 'y': 2}
 
 :py:meth:`many<dollar_lambda.parsers.Parser.many>`
 ----------------------------------------------------

@@ -102,17 +102,21 @@ Running main with {'d': True}
 Running f with: {'a': 1, 'b': 2.0}
 Running f2 with {'c': True}
 
+.. Note::
 
-Note that we can rearrange the order of command line arguments as long as we don't
-break up the function groups:
+    We can rearrange the order of command line arguments as long as we don't
+    break up the function groups:
 
->>> main("-d", "-c", "-a", "1", "-b", "2.0")  # works
-Running main with {'d': True}
-Running f with: {'a': 1, 'b': 2.0}
-Running f2 with {'c': True}
->>> main("-d", "-a", "1", "-c", "-b", "2.0")  # fails because "-c" is between "-a" and "-b"
-usage: -d -a A -b B -c
-Expected '-b'. Got '-c'
+    >>> main("-d", "-c", "-a", "1", "-b", "2.0")  # works
+    Running main with {'d': True}
+    Running f with: {'a': 1, 'b': 2.0}
+    Running f2 with {'c': True}
+
+    This fails because ``-c`` is between ``-a`` and ``-b``:
+
+    >>> main("-d", "-a", "1", "-c", "-b", "2.0")
+    usage: -d -a A -b B -c
+    Expected '-b'. Got '-c'
 
 Nesting :py:func:`@parser <dollar_lambda.decorators.parser>` output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
