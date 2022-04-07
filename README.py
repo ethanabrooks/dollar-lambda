@@ -35,7 +35,7 @@
 # the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 # handle any reasonable amount of logical complexity.
 #
-# ## The `@command`
+# ## The [`@command`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=command#dollar_lambda.decorators.command)
 # decorator
 # For the vast majority of parsing patterns,
 # [`@command`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=command#dollar_lambda.decorators.command)
@@ -90,7 +90,7 @@ main("-x", "1", "--prod")
 main("-x", "1")
 
 # %% [markdown]
-# ## `CommandTree` for dynamic dispatch
+# ## [`CommandTree`](https://dollar-lambda.readthedocs.io/en/latest/commandtree.html) for dynamic dispatch
 # For many programs, a user will want to use one entrypoint for one set of
 # arguments, and another for another set of arguments. Returning to our example,
 # let's say we wanted to execute `prod_function` when the user provides the
