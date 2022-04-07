@@ -38,7 +38,7 @@ concise way to define a parser:
 
   .. tab:: ``@command`` syntax
 
-      >>> from dollar_lambda import command, parser
+      >>> from dollar_lambda import command
       >>> @command()
       ... def main(x: int, dev: bool = False, prod: bool = False):
       ...     print(dict(x=x, dev=dev, prod=prod))
@@ -77,7 +77,6 @@ Add custom logic with the ``parsers`` argument:
 
   .. tab:: ``@command`` syntax
 
-      >>> from dollar_lambda import flag
       >>> @command(parsers=dict(kwargs=(flag("dev") | flag("prod"))))
       ... def main(x: int, **kwargs):
       ...     print(dict(x=x, **kwargs))
@@ -94,8 +93,6 @@ Add custom logic with the ``parsers`` argument:
 
   .. tab:: lower-level syntax
 
-      >>> from dollar_lambda import nonpositional, option, flag
-      ...
       >>> p = nonpositional(
       ...    option("x", type=int), flag("dev") | flag("prod"),
       ... )
@@ -158,7 +155,7 @@ Lower-level syntax
 
 Use lower-level syntax for more complex parsers:
 
->>> from dollar_lambda import option, argument
+>>> from dollar_lambda import argument
 >>> p = option("x", type=int) | argument("y", type=float).many()
 ...
 >>> p.parse_args("-h")
