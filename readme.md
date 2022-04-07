@@ -1,8 +1,8 @@
 <p align="center">
-  <img height="300" src="https://ethanabrooks.github.io/dollar-lambda/logo.png">
+  <img height="300" src="https://dollar-lambda.readthedocs.io/en/latest/_static/logo.png">
 </p>
 
-[$λ](https://ethanabrooks.github.io/dollar-lambda/) provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
+[$λ](https://dollar-lambda.readthedocs.io/) provides an alternative to [`argparse`](https://docs.python.org/3/library/argparse.html)
 based on parser combinators and functional first principles. Arguably, `$λ` is way more expressive than any reasonable
 person would ever need... but even if it's not the parser that we need, it's the parser we deserve.
 
@@ -11,7 +11,7 @@ person would ever need... but even if it's not the parser that we need, it's the
 pip install dollar-lambda
 ```
 
-# [Documentation](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/)
+# [Documentation](https://dollar-lambda.readthedocs.io/)
 
 # Highlights
 `$λ` comes with syntactic sugar that can make building parsers completely boilerplate-free.
@@ -19,9 +19,11 @@ For complex parsing situations that exceed the expressive capacity of this synta
 the user can also drop down to the lower-level syntax that lies behind the sugar, which can
 handle any reasonable amount of logical complexity.
 
-## The [`@command`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.command) decorator
-For the vast majority of parsing patterns, `@command` is the most concise way to
-define a parser:
+## The `@command`
+decorator
+For the vast majority of parsing patterns,
+[`@command`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=command#dollar_lambda.decorators.command)
+is the most concise way to define a parser:
 
 
 ```python
@@ -44,7 +46,7 @@ main("-h")
 
 
 Ordinarily you provide no arguments to `main` and it would get them from the command line.
-The explicit arguments in this readme are for demonstration purposes only.
+The explicit arguments in this Readme are for demonstration purposes only.
 Here is how the main function handles input:
 
 
@@ -171,12 +173,13 @@ tree("-x", "1")
     Ran base_function with arguments: {'x': 1}
 
 
-There are many other ways to use `CommandTree`,
-including some that make use of the `base_function`.
-To learn more, we recommend the [`CommandTree` tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#commandtree-tutorial).
+There are many other ways to use [`CommandTree`](https://dollar-lambda.readthedocs.io/en/latest/commandtree.html).
+To learn more, we recommend the [`CommandTree` tutorial](https://dollar-lambda.readthedocs.io/en/latest/command_tree.html).
 
 ## Lower-level syntax
-[`@command`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.command) and `CommandTree` cover many use cases,
+[`@command`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=command#dollar_lambda.decorators.command)
+and [`CommandTree`](https://dollar-lambda.readthedocs.io/en/latest/api.html#dollar_lambda.decorators.CommandTree)
+cover many use cases,
 but they are both syntactic sugar for a lower-level interface that is far
 more expressive.
 
@@ -192,10 +195,11 @@ from dollar_lambda import argument, option
 p = option("x", type=int) | argument("y", type=float).many()
 ```
 
-We go over this syntax in greater detail in the [tutorial](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#tutorial).
-For now, suffice to say that [`argument`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.argument) defines a positional argument,
-[`many`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.many) allows parsers to be applied
-zero or more times, and [`|`](https://ethanabrooks.github.io/dollar-lambda/dollar_lambda/#dollar_lambda.Parser.__or__) expresses alternatives.
+We go over this syntax in greater detail in the [tutorial](https://dollar-lambda.readthedocs.io/en/latest/tutorial.html).
+For now, suffice to say that [`argument`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=argument#dollar_lambda.parsers.argument)
+ defines a positional argument,
+[`many`](https://dollar-lambda.readthedocs.io/en/latest/variations.html?highlight=many#many) allows parsers to be applied
+zero or more times, and [`|`](https://dollar-lambda.readthedocs.io/en/latest/api.html?highlight=__or__#dollar_lambda.parsers.Parser.__or__) expresses alternatives.
 
 Here is the help text:
 
