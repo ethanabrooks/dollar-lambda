@@ -79,8 +79,16 @@ sugar:
 ...     option("x", type=int, help="the base"),
 ...     option("y", type=int, help="the exponent"),
 ... )
+...
 >>> def main(x, y, **kwargs):
 ...     return dict(x=x, y=y, **kwargs)
+...
+>>> main(**p.parse_args("-x", "1", "-y", "2", "--verbose"))
+{'x': 1, 'y': 2, 'verbose': True}
+>>> main(**p.parse_args("-x", "1", "-y", "2", "--quiet"))
+{'x': 1, 'y': 2, 'quiet': True}
+>>> main(**p.parse_args("-x", "1", "-y", "2"))
+{'x': 1, 'y': 2}
 
 Now let's walk through this step by step.
 
@@ -256,6 +264,7 @@ Applying the syntactic sugar:
 ...     parsers=dict(kwargs=(flag("verbose") | flag("quiet")).optional()),
 ...     help=dict(x="the base", y="the exponent"),
 ... )
+...
 ... def main(x: int, y: int, **kwargs):
 ...     pass # do work
 
