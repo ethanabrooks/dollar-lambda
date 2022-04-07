@@ -24,7 +24,10 @@ copyright = "2022, Ethan Brooks"
 author = "Ethan Brooks"
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.7"
+
+import importlib.metadata
+
+release = importlib.metadata.version("dollar_lambda")
 
 
 # -- General configuration ---------------------------------------------------
