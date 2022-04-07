@@ -110,9 +110,6 @@ def command(
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
-    strings : dict[str, str]
-        This dictionary maps variable names to the strings that the parser will look for in the input.
-
     Examples
     --------
 
@@ -203,6 +200,27 @@ def parser(
     """
     Adds a ``.parser`` attribute to the wrapped function which can then be used in
     combination with other parsers. For examples, see: :ref:`GroupingWithParser`.
+
+    Parameters
+    ----------
+
+    prefix: Optional[str]
+        This causes the variables bound by this parser to nest under the given prefix,
+        as demonstrated in :ref:`GroupingWithParser`.
+
+    flip_bools : bool
+        For boolean arguments that default to true, this changes the flag from ``--{dest}`` to
+        ``--no-{dest}``:
+
+    help : dict[str, str]
+        A dictionary of help strings for the arguments.
+
+    parsers: Dict[str, Parser | List[Parser]]
+        A dictionary reserving arguments for custom parsers. If the value is a list, the
+        key must correspond to a variadic argument.
+
+    repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+        If provided, this parser gets applied repeatedly (zero or more times) at all positions.
     """
 
     def wrapper(func: Callable) -> Callable:
@@ -357,13 +375,13 @@ class CommandTree:
         help: dict
             A dictionary of help strings for the arguments.
 
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
-            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
-
         parsers: Dict[str, Parser | List[Parser]]
             A dictionary reserving arguments for custom parsers. If the value is a list, the
             key must correspond to a variadic argument.
             See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
+
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
 
         Examples
         --------
@@ -512,14 +530,14 @@ class CommandTree:
         help: Dict[str, str]
             A dictionary of help strings for the arguments.
 
-        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
-            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
-            See :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` for examples.
-
         parsers: Dict[str, Parser | List[Parser]]
             A dictionary reserving arguments for custom parsers. If the value is a list, the
             key must correspond to a variadic argument.
             See :py:func:`@command<dollar_lambda.decorators.command>` for examples.
+
+        repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
+            If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+            See :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` for examples.
 
         Examples
         --------
