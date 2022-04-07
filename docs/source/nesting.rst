@@ -10,7 +10,7 @@ By default, introducing a ``.`` character into the name of an
 :py:func:`argument <dollar_lambda.parsers.argument>`, :py:func:`option <dollar_lambda.parsers.option>`,
 or :py:func:`flag <dollar_lambda.parsers.flag>` will induce nested output:
 
->>> from dollar_lambda import argument, flag, option
+>>> from dollar_lambda import argument, option, flag
 >>> argument("a.b", type=int).parse_args("1")
 {'a': {'b': 1}}
 >>> option("a.b", type=int).parse_args("--a.b", "1")
@@ -20,7 +20,6 @@ or :py:func:`flag <dollar_lambda.parsers.flag>` will induce nested output:
 
 This mechanism handles collisions:
 
->>> from dollar_lambda import flag
 >>> (flag("a.b") >> flag("a.c")).parse_args("--a.b", "--a.c")
 {'a': {'b': True, 'c': True}}
 
@@ -70,7 +69,7 @@ However, it now has a ``.parser`` property:
 This parser can be used to easily feed arguments to ``f`` as follows:
 
 >>> from dollar_lambda import command
->>> @command(parsers=dict(kwargs=f.parser))
+>>> @command(parsers=dict(kwargs=f.parser))  # reserves kwargs for output of f.parser
 ... def main(c: bool, **kwargs: dict):
 ...     print("Running main with", dict(c=c))
 ...     f(**kwargs)
@@ -88,7 +87,7 @@ Suppose we have a second function, ``f2``:
 ... def f2(c: bool):
 ...     print("Running f2 with", dict(c=c))
 
-This is how we can bind both the ``f`` arguments and the ``f2`` arguments to the ``kwargs``
+This is one way we can bind both the ``f`` arguments and the ``f2`` arguments to the ``kwargs``
 argument:
 
 >>> @command(parsers=dict(kwargs=[f.parser, f2.parser]))  # note the list
@@ -139,11 +138,13 @@ Now the parser output will be nested:
 This allows us to easily group arguments for multiple functions, even with
 conflicting namespaces:
 
->>> @parser("args2")
+>>> @parser("args2")  # nests f2's arguments under args2
 ... def f2(a: bool):
 ...     print("Running f2 with:", dict(a=a))
 ...
->>> @command(parsers=dict(args=f.parser, args2=f2.parser))
+>>> @command(
+...     parsers=dict(args=f.parser, args2=f2.parser)
+... )  # these keys should match the @parser arguments
 ... def main(args: dict, args2: dict, a: bool):
 ...     print("Running main with", dict(a=a))
 ...     f(**args)

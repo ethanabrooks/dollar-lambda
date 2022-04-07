@@ -45,23 +45,25 @@ Fall back to the value in the config by not providing an argument for ``x``:
 >>> main(**p.parse_args("2"))
 {'x': 1, 'y': 2}
 
-Here is a version written with :py:func:`@command <dollar_lambda.decorators.command>` syntax:
+.. hint::
 
->>> from dollar_lambda import command
->>> @command(
-...     parsers=dict(
-...         y=argument("y", type=int),
-...         kwargs=option("x", type=int).optional(),
-...     )
-... )
-... def main(y: int, **kwargs):
-...     with open("example-config.json") as f:
-...         config = json.load(f)
-...
-...     config.update(**kwargs, y=y)
-...     print(config)
-...
->>> main("-x", "0", "1")  # override config value for x
-{'x': 0, 'y': 1}
->>> main("2")  # fallback to config value for x
-{'x': 1, 'y': 2}
+   Here is a version written with :py:func:`@command <dollar_lambda.decorators.command>` syntax:
+
+   >>> from dollar_lambda import command
+   >>> @command(
+   ...     parsers=dict(
+   ...         y=argument("y", type=int),
+   ...         kwargs=option("x", type=int).optional(),
+   ...     )
+   ... )
+   ... def main(y: int, **kwargs):
+   ...     with open("example-config.json") as f:
+   ...         config = json.load(f)
+   ...
+   ...     config.update(**kwargs, y=y)
+   ...     print(config)
+   ...
+   >>> main("-x", "0", "1")  # override config value for x
+   {'x': 0, 'y': 1}
+   >>> main("2")  # fallback to config value for x
+   {'x': 1, 'y': 2}

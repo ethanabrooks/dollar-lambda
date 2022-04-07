@@ -129,6 +129,7 @@ class Parser(MonadPlus[A_co]):
         return replace(p, usage=usage)
 
     def __ge__(self, f: Callable[[A_co], Monad[B_monoid]]) -> "Parser[B_monoid]":  # type: ignore[override]
+        """Sugar for :py:meth:`Parser.bind <dollar_lambda.parsers.Parser.bind>`."""
         return self.bind(f)
 
     def __or__(  # type: ignore[override]
@@ -320,15 +321,19 @@ class Parser(MonadPlus[A_co]):
         >>> Parser.done().parse_args("arg")
         Unrecognized argument: arg
 
-        Without :py:meth:`Parser.done`
-        the parser will not complain about leftover (unparsed) input:
+        When ``allow_unparsed=False`` (the default), :py:meth:`Parser.parse_args` adds
+        ``>> done()`` to the end of the parser.
+        If you invoke :py:meth:`Parser.parse_args` with ``allow_unparsed=True` and
+        without :py:meth:`Parser.done` the parser will not complain about leftover (unparsed) input:
 
         >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=True)
         {'verbose': True}
-
-        When ``allow_unparsed=False`` (the default), :py:meth:`Parser.parse_args` adds
-        ``>> done()``
-        to the end of the parser:
+        >>> flag("verbose").parse_args("--verbose", "--quiet", allow_unparsed=False)
+        usage: --verbose
+        Unrecognized argument: --quiet
+        >>> (flag("verbose") >> Parser.done()).parse_args("--verbose", "--quiet", allow_unparsed=True)
+        usage: --verbose
+        Unrecognized argument: --quiet
         """
 
         def f(cs: Sequence[str]) -> Result[Parse[Output[Any]]]:
@@ -346,7 +351,7 @@ class Parser(MonadPlus[A_co]):
         cls: Type["Parser[Output[A_monoid]]"], a: Optional[Type[A_monoid]] = None
     ) -> "Parser[Output[A_monoid]]":
         """
-        Always returns ``{}``, no matter the input. Mostly useful for use in :py:func:`nonpositional`.
+        Always returns ``{}``, no matter the input. Used by several other parsers.
 
         >>> Parser.empty().parse_args("any", "arguments", allow_unparsed=True)
         {}
@@ -711,22 +716,23 @@ class Parser(MonadPlus[A_co]):
         If either of the flags is present, returns the usage message for ``parser``.
 
         >>> p = flag("help", help="Print this help message.").wrap_help()
-        >>> p.parse_args("--help")
+        >>> p.parse_args("--help", check_help=False)  # true by default
         usage: --help
         help: Print this help message.
-        >>> p.parse_args("-h")
+        >>> p.parse_args("-h", check_help=False)  # true by default
         usage: --help
         help: Print this help message.
 
         We can use :py:meth:`Parser.wrap_help` to print partial usage messages, e.g. for subcommands:
 
         >>> subcommand1 = matches("subcommand1") >> option("option1").wrap_help()
-        >>> subcommand2 = matches("subcommand2") >> option("option2").wrap_help()
+        >>> subcommand2 = matches("subcommand2") >> option("option2")
         >>> p = subcommand1 | subcommand2
-        >>> p.parse_args("subcommand1", "-h")
+        >>> p.parse_args("subcommand1", "-h", check_help=False)
         usage: --option1 OPTION1
-        >>> p.parse_args("subcommand2", "-h")
-        usage: --option2 OPTION2
+        >>> p.parse_args("subcommand2", "-h", check_help=False)
+        usage: [subcommand1 --option1 OPTION1 | subcommand2 --option2 OPTION2]
+        Expected 'subcommand1'. Got 'subcommand2'
         """
         p = _help_parser(self.usage, Output.zero(a)) >= (lambda _: self)
         return replace(p, usage=self.usage, helps=self.helps)

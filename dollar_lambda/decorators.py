@@ -87,6 +87,9 @@ def command(
     ... def f(a: int = 1, b: bool = False):
     ...     print(dict(a=a, b=b))
     ...
+    >>> f("-h")
+    usage: -a A -b
+    a: something about a (default: 1)
     >>> f("-a", "2", "-b")
     {'a': 2, 'b': True}
 
