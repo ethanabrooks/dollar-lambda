@@ -124,7 +124,7 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("-a", "-c", "-b")
         {'a': True, 'c': True, 'b': True}
         """
-        p = (self >> other) | (other.rshift(self))
+        p = (self >> other) | (other >> self)
         usage = binary_usage(self.usage, " ", other.usage, add_brackets=False)
         return replace(p, usage=usage)
 
@@ -169,11 +169,6 @@ class Parser(MonadPlus[A_co]):
             helps={**self.helps, **other.helps},
         )
 
-    def rshift(
-        self: "Parser[Output[A_monoid]]", p: "Parser[Output[B_monoid]]"
-    ) -> "Parser[Output[A_monoid | B_monoid]]":
-        return self >> p
-
     def __rshift__(
         self: "Parser[Output[A_monoid]]", p: "Parser[Output[B_monoid]]"
     ) -> "Parser[Output[A_monoid | B_monoid]]":
@@ -195,8 +190,6 @@ class Parser(MonadPlus[A_co]):
 
         def f(p1: Output[A_monoid]) -> Parser[Output[A_monoid | B_monoid]]:
             def g(p2: Output[B_monoid]) -> Parser[Output[A_monoid | B_monoid]]:
-                # _p1 = p1 if isinstance(p1, Sequence) else Sequence(p1)
-                # _p2 = p2 if isinstance(p2, Sequence) else Sequence(p2)
                 return Parser.return_(p1 + p2)
 
             return p >= g

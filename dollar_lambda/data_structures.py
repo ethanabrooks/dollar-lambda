@@ -283,14 +283,14 @@ class Output(Monoid[A_co_monoid]):
 
     def __or__(  # type: ignore[override]
         self: Output[A_monoid], other: Output[B_monoid]
-    ) -> Output[A_monoid | B_monoid]:
-        c = cast(A_monoid | B_monoid, self.get | other.get)
+    ) -> Output["A_monoid | B_monoid"]:
+        c = cast("A_monoid | B_monoid", self.get | other.get)
         # cast is necessary because the type-system thinks that c has type Monoid[Unknown]
         return Output(c)
 
     def __add__(  # type: ignore[override]
         self: Output[A_monoid], other: Output[B_monoid]
-    ) -> Output[A_monoid | B_monoid]:
+    ) -> Output["A_monoid | B_monoid"]:
         return self | other
 
     @classmethod
