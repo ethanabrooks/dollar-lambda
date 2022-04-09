@@ -12,7 +12,7 @@ import re
 import sys
 from dataclasses import astuple, dataclass, replace
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -1201,9 +1201,24 @@ def nonpositional(
                 tail = [p for j, p in enumerate(parsers) if j != i]
                 if repeated is not None:
                     head = head >> repeated.many()
-                yield head >> _nonpositional(*tail, max=max)
 
-        return reduce(operator.or_, get_alternatives())
+                def f(
+                    p1: Output[A_monoid], tail: List[Parser[Output[A_monoid]]]
+                ) -> Parser[Output[A_monoid]]:
+                    p = _nonpositional(*tail, max=max)
+
+                    def g(p2: Output[A_monoid]) -> Parser[Output[A_monoid]]:
+                        return Parser.return_(p1 + p2)
+
+                    return p >= g
+
+                yield head >= partial(f, tail=tail)
+
+        return replace(
+            reduce(operator.or_, get_alternatives()),
+            usage=" ".join([p.usage or "" for p in parsers]),
+            helps={k: v for p in parsers for k, v in p.helps.items()},
+        )
 
     parser = _nonpositional(*parsers, max=max)
     if repeated is not None:
