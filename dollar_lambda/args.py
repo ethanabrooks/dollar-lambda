@@ -176,7 +176,7 @@ class Args:
     It also applies the custom type to ``y`` when ``"-y"`` is given
 
     >>> MyArgs.parse_args()
-    {'x': 0, 'y': 1}
+    {'y': 1, 'x': 0}
     """
 
     @classmethod

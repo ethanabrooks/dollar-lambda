@@ -12,7 +12,7 @@ import re
 import sys
 from dataclasses import astuple, dataclass, replace
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Type, TypeVar
 
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -85,7 +85,7 @@ class Parser(MonadPlus[A_co]):
     f: Callable[[Sequence[str]], Result[Parse[A_co]]]
     usage: Optional[str]
     helps: Dict[str, str]
-    nonoptional: Optional["Parser"] = None
+    nonoptional: Optional["Parser[A_co]"] = None
 
     def __add__(
         self: "Parser[Output[A_monoid]]", other: "Parser[Output[B_monoid]]"
@@ -1197,10 +1197,20 @@ def nonpositional(
     usage = sep.join([p.usage or "" for p in _parsers])
 
     def _nonpositional(
-        *parsers: "Parser[Output[A_monoid]]", max: int = MAX_MANY
+        parsers: "Iterable[Parser[Output[A_monoid]]]",
+        optional_parsers: "Iterable[Parser[Output[A_monoid]]]",
+        max: int = MAX_MANY,
     ) -> "Parser[Output[A_monoid]]":
         if not parsers:
-            return Parser[Output[A_monoid]].empty()
+            if optional_parsers:
+                head, *tail = optional_parsers
+                return head >> _nonpositional(
+                    parsers=parsers,
+                    optional_parsers=tail,
+                    max=max,
+                )
+            else:
+                return Parser[Output[A_monoid]].empty()
 
         def get_alternatives():
             for i, head in enumerate(parsers):
@@ -1209,16 +1219,45 @@ def nonpositional(
                     head = head >> repeated.many()
 
                 def f(
-                    p1: Output[A_monoid], tail: List[Parser[Output[A_monoid]]]
+                    p1: Output[A_monoid],
+                    _parsers: List[Parser[Output[A_monoid]]],
+                    _optional_parsers: List[Parser[Output[A_monoid]]],
                 ) -> Parser[Output[A_monoid]]:
-                    p = _nonpositional(*tail, max=max)
+                    p = _nonpositional(
+                        parsers=_parsers,
+                        optional_parsers=_optional_parsers,
+                        max=max,
+                    )
 
                     def g(p2: Output[A_monoid]) -> Parser[Output[A_monoid]]:
                         return Parser.return_(p1 + p2)
 
                     return p >= g
 
-                yield head >= partial(f, tail=tail)
+                # if head.nonoptional is None:
+                #     # head is not optional
+                #     nonoptional = head
+                #     optional = None
+                # else:
+                #     nonoptional = head.nonoptional
+                #     optional = head
+                nonoptional = head if head.nonoptional is None else head.nonoptional
+                parser = nonoptional >= partial(
+                    f,
+                    _parsers=tail,
+                    _optional_parsers=optional_parsers,
+                )
+                if head.nonoptional is not None:
+                    parser = parser | (
+                        nonoptional.fails()
+                        >= partial(
+                            f,
+                            _parsers=tail,
+                            _optional_parsers=[*optional_parsers, head],
+                        )
+                    )
+
+                yield parser
 
         return replace(
             reduce(operator.or_, get_alternatives()),
@@ -1226,7 +1265,11 @@ def nonpositional(
             helps={k: v for p in parsers for k, v in p.helps.items()},
         )
 
-    parser = _nonpositional(*parsers, max=max)
+    parser = _nonpositional(
+        parsers=parsers,
+        optional_parsers=[],
+        max=max,
+    )
     if repeated is not None:
         parser = repeated.many() >> parser
     helps = parser.helps
