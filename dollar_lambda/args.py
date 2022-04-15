@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import dataclasses
 import typing
-from dataclasses import Field, dataclass, fields
-from typing import Any, Callable, Iterator, Optional, Union
+from dataclasses import MISSING, Field, dataclass, fields
+from types import NoneType
+from typing import Any, Callable, Iterator, Optional, Union, get_args
 
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
 from dollar_lambda.parsers import Parser, defaults, flag, nonpositional, option
@@ -52,7 +53,7 @@ def field(
 @dataclass
 class _ArgsField:
     name: str
-    default: Any = None
+    default: Any
     help: Optional[str] = None
     type: Callable[[str], Any] = str
 
@@ -62,18 +63,17 @@ class _ArgsField:
             help_ = field.metadata["help"]
         else:
             help_ = None
-        default = field.default
-        if field.default is dataclasses.MISSING:
-            default = None
         if "parser" in field.metadata:
             parser = field.metadata["parser"]
             assert isinstance(parser, Parser), parser
-            if default is None:
+            if field.default is MISSING:
                 return parser
             else:
-                return parser | defaults(**{field.name: default})
+                return parser | defaults(**{field.name: field.default})
 
-        return _ArgsField(name=field.name, default=default, help=help_, type=field.type)
+        return _ArgsField(
+            name=field.name, default=field.default, help=help_, type=field.type
+        )
 
     @staticmethod
     def parser(
@@ -81,13 +81,43 @@ class _ArgsField:
         flip_bools: bool,
         repeated: Optional[Parser[Output]],
     ) -> Parser[Output]:
+        """
+        >>> from dollar_lambda import Args
+        >>> from dataclasses import dataclass
+        ...
+        >>> @dataclass
+        ... class MyArgs(Args):
+        ...     x: Optional[int]
+        ...     y: Optional[int] = None
+        ...
+        >>> MyArgs.parse_args("-x", "1", "-y", "2")
+        {'x': 1, 'y': 2}
+        >>> MyArgs.parse_args("-x", "1")
+        {'x': 1, 'y': None}
+        >>> MyArgs.parse_args("-y", "2")
+        usage: -x X -y Y
+        y: (default: None)
+        Expected '-x'. Got '-y'
+        >>> MyArgs.parse_args()
+        usage: -x X -y Y
+        y: (default: None)
+        The following arguments are required: -x
+        """
+
         def get_parsers() -> Iterator[Parser[Output]]:
             for field in fields:
                 if isinstance(field, Parser):
                     yield field
                     continue
+                _type = field.type
+                type_args = get_args(_type)
+                try:
+                    _type, none = type_args
+                    assert none == NoneType
+                except (ValueError, AssertionError):
+                    pass
                 string: Optional[str] = None
-                if field.type == bool:
+                if _type == bool:
                     if field.default is True and flip_bools:
                         string = f"--no-{field.name}"
                     yield flag(
@@ -102,7 +132,7 @@ class _ArgsField:
                         default=field.default,
                         flag=string,
                         help=field.help,
-                        type=field.type,
+                        type=_type,
                     )
 
         return nonpositional(*get_parsers(), repeated=repeated)
@@ -165,7 +195,7 @@ class Args:
     ...     )
     >>> MyArgs.parse_args("-h")
     usage: -x X -y Y
-    x: a number
+    x: a number (default: 0)
     y: a number to increment
 
     This supplies defaults for ``y`` when omitted:

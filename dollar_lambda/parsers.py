@@ -6,11 +6,12 @@ class that they instantiate.
 # pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
 
+import dataclasses
 import operator
 import os
 import re
 import sys
-from dataclasses import astuple, dataclass, replace
+from dataclasses import _MISSING_TYPE, MISSING, astuple, dataclass, replace
 from functools import partial, reduce
 from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Type, TypeVar
 
@@ -891,7 +892,7 @@ def defaults(**kwargs: A) -> Parser[Output[Sequence[KeyValue[A]]]]:
 
 def flag(
     dest: str,
-    default: Optional[bool] = None,
+    default: "bool | _MISSING_TYPE" = MISSING,
     help: Optional[str] = None,
     nesting: bool = True,
     regex: bool = True,
@@ -911,7 +912,7 @@ def flag(
     dest : str
         The variable to which the value will be bound.
 
-    default : Optional[bool]
+    default : bool | _MISSING_TYPE
         An optional default value.
 
     help : Optional[str]
@@ -943,6 +944,7 @@ def flag(
     >>> p = flag("verbose", default=False)
     >>> p.parse_args("-h")
     usage: --verbose
+    verbose: (default: False)
     >>> p.parse_args()
     {'verbose': False}
 
@@ -986,7 +988,7 @@ def flag(
         cs: Sequence[str],
         s: str,
     ) -> Result[Parse[Output[Sequence[KeyValue[bool]]]]]:
-        _defaults = defaults(**{dest: not default})
+        _defaults = defaults(**{dest: True if default is MISSING else not default})
         if nesting:
             _defaults = _defaults.nesting()
 
@@ -998,11 +1000,11 @@ def flag(
         short_string = f"-{dest[0]}"
         parser2 = flag(dest, short=False, string=short_string, default=default)
         parser = parser | parser2
-    if default:
+    if default is not MISSING:
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=_string, helps=helps)
-    return parser if default is None else parser.defaults(**{dest: default})
+    return parser if default is MISSING else parser.defaults(**{dest: default})
 
 
 def _help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
@@ -1280,7 +1282,7 @@ def nonpositional(
 
 def option(
     dest: str,
-    default: Any = None,
+    default: Any | _MISSING_TYPE = MISSING,
     flag: Optional[str] = None,
     help: Optional[str] = None,
     nesting: bool = True,
@@ -1297,7 +1299,7 @@ def option(
     dest : str
         The name of variable to bind to:
 
-    default : Optional[Any]
+    default : Any | _MISSING_TYPE
         The default value to bind on failure:
 
     flag : Optional[str]
@@ -1387,13 +1389,13 @@ def option(
 
     parser = Parser(f, usage=None, helps={})
     if flag is None and short and len(dest) > 1:
-        parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=None)
+        parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=MISSING)
         parser = parser | parser2
-    if default:
+    if default is not MISSING:
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
-    return parser if default is None else parser.defaults(**{dest: default})
+    return parser if default is MISSING else parser.defaults(**{dest: default})
 
 
 def peak(

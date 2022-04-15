@@ -7,7 +7,7 @@ from __future__ import annotations
 import operator
 import sys
 import typing
-from dataclasses import dataclass, field, replace
+from dataclasses import MISSING, dataclass, field, replace
 from functools import reduce
 from inspect import Parameter, signature
 from typing import Any, Callable, Iterator, List, Optional, Type, TypeVar
@@ -62,7 +62,7 @@ def _func_to_parser(
                 else:
                     yield _ArgsField(
                         name=k if prefix is None else f"{prefix}.{k}",
-                        default=None if v.default == Parameter.empty else v.default,
+                        default=MISSING if v.default == Parameter.empty else v.default,
                         help=_help.get(k),
                         type=types.get(k, str),
                     )
@@ -90,6 +90,7 @@ def command(
     >>> f("-h")
     usage: -a A -b
     a: something about a (default: 1)
+    b: (default: False)
     >>> f("-a", "2", "-b")
     {'a': 2, 'b': True}
 
