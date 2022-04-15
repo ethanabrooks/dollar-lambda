@@ -85,6 +85,7 @@ class Parser(MonadPlus[A_co]):
     f: Callable[[Sequence[str]], Result[Parse[A_co]]]
     usage: Optional[str]
     helps: Dict[str, str]
+    nonoptional: Optional["Parser"] = None
 
     def __add__(
         self: "Parser[Output[A_monoid]]", other: "Parser[Output[B_monoid]]"
@@ -301,6 +302,11 @@ class Parser(MonadPlus[A_co]):
             return self.parse(cs) >= h
 
         return Parser(g, usage=None, helps=self.helps)
+
+    def defaults(
+        self: "Parser[Output[Sequence[KeyValue[A]]]]", **kwargs
+    ) -> "Parser[Output[Sequence[KeyValue[A]]]]":
+        return replace(self | defaults(**kwargs), nonoptional=self)
 
     @classmethod
     def done(
@@ -556,7 +562,7 @@ class Parser(MonadPlus[A_co]):
         usage: --optional
         Expected '--optional'. Got '--misspelled'
         """
-        return self | self.empty()
+        return replace(self | self.empty(), nonoptional=self)
 
     def parse(self, cs: Sequence[str]) -> Result[Parse[A_co]]:
         """
@@ -996,7 +1002,7 @@ def flag(
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=_string, helps=helps)
-    return parser if default is None else parser | defaults(**{dest: default})
+    return parser if default is None else parser.defaults(**{dest: default})
 
 
 def _help_parser(usage: Optional[str], parsed: A_monoid) -> Parser[A_monoid]:
@@ -1344,7 +1350,7 @@ def option(
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
     parser = replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
-    return parser if default is None else parser | defaults(**{dest: default})
+    return parser if default is None else parser.defaults(**{dest: default})
 
 
 def peak(
