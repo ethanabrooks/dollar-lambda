@@ -188,6 +188,65 @@ class Parser(MonadPlus[A_co]):
         >>> p.parse_args("b")
         usage: FIRST SECOND
         The following arguments are required: second
+
+        This is how this method handles formatting of usage strings:
+
+        >>> long = nonpositional(flag("a"), flag("b"), flag("c"), flag("d"))
+        >>> short = argument("pos")
+        >>> (short >> short >> short).parse_args("-h")
+        usage: POS POS POS
+        >>> (short >> short >> long).parse_args("-h")
+        usage:
+              POS POS
+                -a
+                -b
+                -c
+                -d
+        >>> (short >> (short >> long)).parse_args("-h")
+        usage:
+              POS
+                POS
+                  -a
+                  -b
+                  -c
+                  -d
+        >>> (long >> short >> short).parse_args("-h")
+        usage:
+              -a
+              -b
+              -c
+              -d
+              POS
+              POS
+        >>> (long >> (short >> short)).parse_args("-h")
+        usage:
+              -a
+              -b
+              -c
+              -d
+              POS POS
+        >>> (long >> short >> long).parse_args("-h")
+        usage:
+              -a
+              -b
+              -c
+              -d
+              POS
+              -a
+              -b
+              -c
+              -d
+        >>> (long >> (short >> long)).parse_args("-h")
+        usage:
+              -a
+              -b
+              -c
+              -d
+              POS
+                -a
+                -b
+                -c
+                -d
         """
 
         def f(p1: Output[A_monoid]) -> Parser[Output[A_monoid | B_monoid]]:
@@ -197,12 +256,24 @@ class Parser(MonadPlus[A_co]):
             return p >= g
 
         parser = self >= f
-        # parser = self >= (lambda p1: (p >= (lambda p2: Parser.return_(p1 + p2))))
-        return replace(
-            parser,
-            usage=binary_usage(self.usage, " ", p.usage, add_brackets=False),
-            helps={**self.helps, **p.helps},
-        )
+        op = " "
+        if self.usage is None:
+            prefix = ""
+        else:
+            if "\n" in self.usage:
+                op = f"\n"
+                prefix = ""
+            else:
+                prefix = "  "
+
+        if p.usage is not None and "\n" in p.usage:
+            op = f"\n"
+            p = replace(
+                p, usage="\n".join(prefix + line for line in p.usage.split("\n"))
+            )
+
+        usage = binary_usage(self.usage, op, p.usage, add_brackets=False)
+        return replace(parser, usage=usage, helps={**self.helps, **p.helps})
 
     def __xor__(
         self: "Parser[Output[A_monoid]]", other: "Parser[Output[B_monoid]]"
@@ -385,9 +456,10 @@ class Parser(MonadPlus[A_co]):
 
     def handle_error(self, error: ArgumentError) -> None:
         def print_usage(usage: str):
-            self._print("usage:", end="\n" if "\n" in usage else " ")
+            usage_str = "usage:"
+            self._print(usage_str, end="\n" if "\n" in usage else " ")
             if "\n" in usage:
-                usage = "\n".join(["    " + u for u in usage.split("\n")])
+                usage = "\n".join([" " * len(usage_str) + u for u in usage.split("\n")])
             self._print(usage)
             if self.helps:
                 for k, v in self.helps.items():
@@ -1266,9 +1338,10 @@ def nonpositional(
                 nonoptional = head if head.nonoptional is None else head.nonoptional
                 yield nonoptional >= partial(f, _parsers=tail)
 
+        usage = " ".join([p.usage or "" for p in parsers])
         return replace(
             reduce(operator.or_, get_alternatives()),
-            usage=" ".join([p.usage or "" for p in parsers]),
+            usage=usage,
             helps={k: v for p in parsers for k, v in p.helps.items()},
         )
 
