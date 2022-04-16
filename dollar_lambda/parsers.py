@@ -1193,6 +1193,34 @@ def nonpositional(
     >>> p = nonpositional(flag("y"), repeated=(flag("x") | flag("z")).ignore())
     >>> p.parse_args("-x", "-y", "-z")
     {'y': True}
+
+    Stress test:
+
+    >>> p = nonpositional(
+    ...     flag("a", default=False),
+    ...     flag("b", default=False),
+    ...     flag("c", default=False),
+    ...     flag("d", default=False),
+    ...     flag("e", default=False),
+    ...     flag("f", default=False),
+    ...     flag("g", default=False),
+    ... )
+    >>> p.parse_args("-g", "-f", "-e", "-d", "-c", "-b", "-a")
+    {'g': True, 'f': True, 'e': True, 'd': True, 'c': True, 'b': True, 'a': True}
+    >>> p.parse_args("-f", "-e", "-d", "-c", "-b", "-a")
+    {'f': True, 'e': True, 'd': True, 'c': True, 'b': True, 'a': True, 'g': False}
+    >>> p.parse_args("-e", "-d", "-c", "-b", "-a")
+    {'e': True, 'd': True, 'c': True, 'b': True, 'a': True, 'f': False, 'g': False}
+    >>> p.parse_args("-d", "-c", "-b", "-a")
+    {'d': True, 'c': True, 'b': True, 'a': True, 'e': False, 'f': False, 'g': False}
+    >>> p.parse_args("-c", "-b", "-a")
+    {'c': True, 'b': True, 'a': True, 'd': False, 'e': False, 'f': False, 'g': False}
+    >>> p.parse_args("-b", "-a")
+    {'b': True, 'a': True, 'c': False, 'd': False, 'e': False, 'f': False, 'g': False}
+    >>> p.parse_args("-a")
+    {'a': True, 'b': False, 'c': False, 'd': False, 'e': False, 'f': False, 'g': False}
+    >>> p.parse_args()
+    {'a': False, 'b': False, 'c': False, 'd': False, 'e': False, 'f': False, 'g': False}
     """
     sep = " " if len(parsers) <= 3 else "\n"
     _parsers = [*parsers] if repeated is None else [*parsers, repeated]
