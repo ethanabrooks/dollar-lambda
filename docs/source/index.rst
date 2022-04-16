@@ -45,6 +45,8 @@ concise way to define a parser:
       ...
       >>> main("-h")
       usage: -x X --dev --prod
+      dev: (default: False)
+      prod: (default: False)
       >>> main("-x", "1", "-dev")
       {'x': 1, 'dev': True, 'prod': False}
 
@@ -63,6 +65,8 @@ concise way to define a parser:
       ...
       >>> p.parse_args("-h")
       usage: -x X --dev --prod
+      dev: (default: False)
+      prod: (default: False)
       >>> main(**p.parse_args("-x", "1", "-dev"))
       {'x': 1, 'dev': True, 'prod': False}
 

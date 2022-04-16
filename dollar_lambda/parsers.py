@@ -1200,21 +1200,21 @@ def nonpositional(
 
     def _nonpositional(
         parsers: "Iterable[Parser[Output[A_monoid]]]",
-        optional_parsers: "Iterable[Parser[Output[A_monoid]]]",
         max: int = MAX_MANY,
     ) -> "Parser[Output[A_monoid]]":
         if not parsers:
-            if optional_parsers:
-                head, *tail = optional_parsers
-                return head >> _nonpositional(
-                    parsers=parsers,
-                    optional_parsers=tail,
-                    max=max,
-                )
-            else:
-                return Parser[Output[A_monoid]].empty()
+            return Parser[Output[A_monoid]].empty()
 
         def get_alternatives():
+            nonoptionals = [p.nonoptional for p in parsers]
+            if all(p is not None for p in nonoptionals):
+                yield (
+                    reduce(
+                        operator.rshift,
+                        [p.fails() for p in nonoptionals if p is not None],
+                    )
+                    >> reduce(operator.rshift, parsers)
+                )
             for i, head in enumerate(parsers):
                 tail = [p for j, p in enumerate(parsers) if j != i]
                 if repeated is not None:
@@ -1223,11 +1223,10 @@ def nonpositional(
                 def f(
                     p1: Output[A_monoid],
                     _parsers: List[Parser[Output[A_monoid]]],
-                    _optional_parsers: List[Parser[Output[A_monoid]]],
                 ) -> Parser[Output[A_monoid]]:
+
                     p = _nonpositional(
                         parsers=_parsers,
-                        optional_parsers=_optional_parsers,
                         max=max,
                     )
 
@@ -1236,30 +1235,8 @@ def nonpositional(
 
                     return p >= g
 
-                # if head.nonoptional is None:
-                #     # head is not optional
-                #     nonoptional = head
-                #     optional = None
-                # else:
-                #     nonoptional = head.nonoptional
-                #     optional = head
                 nonoptional = head if head.nonoptional is None else head.nonoptional
-                parser = nonoptional >= partial(
-                    f,
-                    _parsers=tail,
-                    _optional_parsers=optional_parsers,
-                )
-                if head.nonoptional is not None:
-                    parser = parser | (
-                        nonoptional.fails()
-                        >= partial(
-                            f,
-                            _parsers=tail,
-                            _optional_parsers=[*optional_parsers, head],
-                        )
-                    )
-
-                yield parser
+                yield nonoptional >= partial(f, _parsers=tail)
 
         return replace(
             reduce(operator.or_, get_alternatives()),
@@ -1269,7 +1246,6 @@ def nonpositional(
 
     parser = _nonpositional(
         parsers=parsers,
-        optional_parsers=[],
         max=max,
     )
     if repeated is not None:
