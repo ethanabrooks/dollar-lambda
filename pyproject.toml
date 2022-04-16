@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dollar-lambda"
-version = "1.1.0"
+version = "1.1.1"
 description = "An argument parser for Python built from functional first principles"
 readme = "README.md"
 authors = ["Ethan Brooks <ethanabrooks@gmail.com>"]
