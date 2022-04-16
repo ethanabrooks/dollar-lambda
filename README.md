@@ -43,6 +43,8 @@ main("-h")
 ```
 
     usage: -x X --dev --prod
+    dev: (default: False)
+    prod: (default: False)
 
 
 Ordinarily you provide no arguments to `main` and it would get them from the command line.

@@ -6,7 +6,6 @@ from __future__ import annotations
 import dataclasses
 import typing
 from dataclasses import MISSING, Field, dataclass, fields
-from types import NoneType
 from typing import Any, Callable, Iterator, Optional, Union, get_args
 
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
@@ -113,7 +112,7 @@ class _ArgsField:
                 type_args = get_args(_type)
                 try:
                     _type, none = type_args
-                    assert none == NoneType
+                    assert none == type(None)
                 except (ValueError, AssertionError):
                     pass
                 string: Optional[str] = None

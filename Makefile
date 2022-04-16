@@ -8,7 +8,7 @@ test:
 
 .PHONY: readme
 readme: README.py
-	rm -rf README.rst
+	rm -rf README.md
 	jupytext --sync README.py
 	DOLLAR_LAMBDA_TESTING=1 jupyter nbconvert --to markdown --execute README.ipynb
 
