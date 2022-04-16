@@ -14,4 +14,4 @@ readme: README.py
 
 .PHONY: docs
 docs: dollar_lambda/
-	sphinx-build -b html source build
+	sphinx-build -b html docs/source docs/build
