@@ -16,5 +16,6 @@
         "pytypeclass"
     ],
     "python.linting.enabled": false,
-    "esbonio.sphinx.confDir": ""
+    "esbonio.sphinx.confDir": "",
+    "restructuredtext.syntaxHighlighting.disabled": true
 }

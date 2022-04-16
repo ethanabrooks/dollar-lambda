@@ -1448,6 +1448,9 @@ def option(
     {'x': 2}
     >>> option("config.x").parse_args("--config.x", "a")
     {'config': {'x': 'a'}}
+
+    >>> option("window", type=int, default=1).parse_args("-w", "2")
+    {'window': 2}
     """
     if replace_dash:
         dest = dest.replace("-", "_")
@@ -1456,9 +1459,7 @@ def option(
     else:
         _flag = flag
 
-    def f(
-        cs: Sequence[str],
-    ) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
+    def f(cs: Sequence[str]) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
         parser = matches(_flag, regex=regex) >= (
             lambda _: argument(dest, nesting=nesting, type=type)
         )
@@ -1466,7 +1467,9 @@ def option(
 
     parser = Parser(f, usage=None, helps={})
     if flag is None and short and len(dest) > 1:
-        parser2 = option(dest=dest, short=False, flag=f"-{dest[0]}", default=MISSING)
+        parser2 = option(
+            dest=dest, short=False, flag=f"-{dest[0]}", default=MISSING, type=type
+        )
         parser = parser | parser2
     if default is not MISSING:
         help = f"{help + ' ' if help else ''}(default: {default})"
