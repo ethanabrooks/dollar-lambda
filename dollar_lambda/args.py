@@ -79,6 +79,7 @@ class _ArgsField:
         *fields: Union["_ArgsField", Parser[Output]],
         flip_bools: bool,
         repeated: Optional[Parser[Output]],
+        replace_underscores: bool,
     ) -> Parser[Output]:
         """
         >>> from dollar_lambda import Args
@@ -120,17 +121,19 @@ class _ArgsField:
                     if field.default is True and flip_bools:
                         string = f"--no-{field.name}"
                     yield flag(
-                        dest=field.name,
-                        string=string,
                         default=field.default,
+                        dest=field.name,
                         help=field.help,
+                        replace_underscores=replace_underscores,
+                        string=string,
                     )
                 else:
                     yield option(
-                        dest=field.name,
                         default=field.default,
+                        dest=field.name,
                         flag=string,
                         help=field.help,
+                        replace_underscores=replace_underscores,
                         type=_type,
                     )
 
@@ -213,6 +216,7 @@ class Args:
         cls,
         flip_bools: bool = True,
         repeated: Optional[Parser[Output]] = None,
+        replace_underscores: bool = True,
     ) -> Parser[Output]:
         """
         Returns a parser for the dataclass.
@@ -225,6 +229,9 @@ class Args:
 
         flip_bools: bool
              Whether to add ``--no-<argument>`` before arguments that default to ``True``.
+
+        replace_underscores: bool
+            If true, underscores in argument names are replaced with dashes.
 
         Examples
         --------
@@ -253,7 +260,10 @@ class Args:
                 yield _ArgsField.parse(field)
 
         return _ArgsField.parser(
-            *get_fields(), flip_bools=flip_bools, repeated=repeated
+            *get_fields(),
+            flip_bools=flip_bools,
+            repeated=repeated,
+            replace_underscores=replace_underscores,
         )
 
     @classmethod

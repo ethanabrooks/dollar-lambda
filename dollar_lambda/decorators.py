@@ -34,6 +34,7 @@ def _func_to_parser(
     help: Optional[typing.Dict[str, str]],
     parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]],
     repeated: Optional[Parser[Output]],
+    replace_underscores: bool,
     prefix: Optional[str] = None,
 ) -> Parser:
     _exclude = [] if exclude is None else exclude
@@ -67,7 +68,12 @@ def _func_to_parser(
                         type=types.get(k, str),
                     )
 
-    return _ArgsField.parser(*get_parsers(), flip_bools=flip_bools, repeated=repeated)
+    return _ArgsField.parser(
+        *get_parsers(),
+        flip_bools=flip_bools,
+        repeated=repeated,
+        replace_underscores=replace_underscores,
+    )
 
 
 def command(
@@ -75,6 +81,7 @@ def command(
     help: Optional[typing.Dict[str, str]] = None,
     parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]] = None,
     repeated: Optional[Parser[Output]] = None,
+    replace_underscores: bool = True,
 ) -> Callable[[Callable], Callable]:
     """
     A succinct way to generate a simple :py:meth:`nonpositional <dollar_lambda.parsers.nonpositional>`
@@ -113,6 +120,9 @@ def command(
 
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+
+    replace_underscores: bool
+        If true, underscores in argument names are replaced with dashes.
 
     Examples
     --------
@@ -171,6 +181,7 @@ def command(
             help=help,
             parsers=parsers,
             repeated=repeated,
+            replace_underscores=replace_underscores,
         )
         p = p.wrap_help()
 
@@ -200,6 +211,7 @@ def parser(
     help: Optional[typing.Dict[str, str]] = None,
     parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]] = None,
     repeated: Optional[Parser[Output]] = None,
+    replace_underscores: bool = True,
 ) -> Callable[[Callable], Callable]:
     """
     Adds a ``.parser`` attribute to the wrapped function which can then be used in
@@ -225,6 +237,9 @@ def parser(
 
     repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
         If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+
+    replace_underscores: bool
+        If true, underscores in argument names are replaced with dashes.
     """
 
     def wrapper(func: Callable) -> Callable:
@@ -236,6 +251,7 @@ def parser(
             parsers=parsers,
             prefix=prefix,
             repeated=repeated,
+            replace_underscores=replace_underscores,
         )
         return _Function(func, p)
 
@@ -321,6 +337,7 @@ class _Node:
     help: Optional[typing.Dict[str, str]]
     parsers: Optional[typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]]
     repeated: Optional[Parser[Output]]
+    replace_underscores: bool
     subcommand: bool
     tree: Optional["CommandTree"]
 
@@ -337,6 +354,7 @@ class _Node:
             help=self.help,
             parsers=self.parsers,
             repeated=self.repeated,
+            replace_underscores=self.replace_underscores,
         )
         return p1 >> p2
 
@@ -363,6 +381,7 @@ class CommandTree:
             typing.Dict[str, "Parser[Output] | List[Parser[Output]]"]
         ] = None,
         repeated: Optional[Parser[Output]] = None,
+        replace_underscores: bool = True,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -386,6 +405,9 @@ class CommandTree:
 
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
+
+        replace_underscores: bool
+            If true, underscores in argument names are replaced with dashes.
 
         Examples
         --------
@@ -459,6 +481,7 @@ class CommandTree:
             help=help,
             parsers=parsers,
             repeated=repeated,
+            replace_underscores=replace_underscores,
             subcommand=False,
         )
 
@@ -516,6 +539,7 @@ class CommandTree:
         help: Optional[typing.Dict[str, str]] = None,
         parsers: Optional[typing.Dict[str, Optional[Parser[Output]]]] = None,
         repeated: Optional[Parser[Output]] = None,
+        replace_underscores: bool = True,
     ) -> Callable:
         """
         A decorator for adding a function as a child of this tree.
@@ -542,6 +566,9 @@ class CommandTree:
         repeated: Optional[Parser[Sequence[KeyValue[Any]]]]
             If provided, this parser gets applied repeatedly (zero or more times) at all positions.
             See :py:func:`nonpositional<dollar_lambda.parsers.nonpositional>` for examples.
+
+        replace_underscores: bool
+            If true, underscores in argument names are replaced with dashes.
 
         Examples
         --------
@@ -610,7 +637,8 @@ class CommandTree:
             can_run=can_run,
             flip_bools=flip_bools,
             help=help,
-            repeated=repeated,
             parsers=parsers,
+            repeated=repeated,
+            replace_underscores=replace_underscores,
             subcommand=True,
         )

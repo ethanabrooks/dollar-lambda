@@ -969,6 +969,7 @@ def flag(
     nesting: bool = True,
     regex: bool = True,
     replace_dash: bool = True,
+    replace_underscores: bool = True,
     short: bool = True,
     string: Optional[str] = None,
 ) -> Parser[Output[Sequence[KeyValue[bool]]]]:
@@ -1000,6 +1001,9 @@ def flag(
     replace_dash : bool
         If ``True``, then the parser will replace ``-`` with ``_`` in the dest string in order
         to make `dest` a valid Python identifier.
+
+    replace_underscores : bool
+        If ``True``, then the parser will replace ``_`` with ``-`` in the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1034,6 +1038,13 @@ def flag(
     usage: --verbose
     verbose: Turn on verbose output.
 
+    Here is an example using the ``replace_underscores`` parameter:
+
+    >>> p = flag("hello_world", replace_underscores=False).parse_args("-h")
+    usage: --hello_world
+    >>> p = flag("hello_world", replace_underscores=True).parse_args("-h")
+    usage: --hello-world
+
     Here is an example using the ``short`` parameter:
 
     >>> flag("verbose", short=True).parse_args("-v")  # this is the default
@@ -1053,6 +1064,8 @@ def flag(
         dest = dest.replace("-", "_")
     if string is None:
         _string = f"--{dest}" if len(dest) > 1 else f"-{dest}"
+        if replace_underscores:
+            _string = _string.replace("_", "-")
     else:
         _string = string
 
@@ -1365,6 +1378,7 @@ def option(
     nesting: bool = True,
     regex: bool = True,
     replace_dash: bool = True,
+    replace_underscores: bool = True,
     short: bool = True,
     type: Callable[[str], Any] = str,
 ) -> Parser[Output[Sequence[KeyValue[Any]]]]:
@@ -1395,6 +1409,9 @@ def option(
      replace_dash : bool
         If ``True``, then the parser will replace ``-`` with ``_`` in the dest string in order
         to make `dest` a valid Python identifier.
+
+    replace_underscores : bool
+        If ``True``, then the parser will replace ``_`` with ``-`` in the flag string.
 
     short : bool
         Whether to check for the short form of the flag, which
@@ -1430,6 +1447,13 @@ def option(
     usage: --count COUNT
     count: The number we should count to
 
+    Here is an example using the ``replace_underscores`` parameter:
+
+    >>> p = option("hello_world", replace_underscores=False).parse_args("-h")
+    usage: --hello_world HELLO_WORLD
+    >>> p = option("hello_world", replace_underscores=True).parse_args("-h")
+    usage: --hello-world HELLO_WORLD
+
     This example demonstrates the difference between ``short=True`` and ``short=False``:
 
     >>> option("count", short=True).parse_args("-c", "1")
@@ -1456,6 +1480,8 @@ def option(
         dest = dest.replace("-", "_")
     if flag is None:
         _flag = f"--{dest}" if len(dest) > 1 else f"-{dest}"
+        if replace_underscores:
+            _flag = _flag.replace("_", "-")
     else:
         _flag = flag
 
