@@ -1,3 +1,4 @@
 - handle =
 - sugar for nargs="*"
 - sugar for enum
+- store wrapped functions in `.function` attribute
