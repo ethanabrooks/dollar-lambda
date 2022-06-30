@@ -454,6 +454,43 @@ class Parser(MonadPlus[A_co]):
 
         return Parser(g, usage=None, helps=self.helps)
 
+    def findall(
+        self: "Parser[Output[Sequence[KeyValue[str]]]]", pattern: str
+    ) -> "Parser[Output[Sequence[KeyValue[str]]]]":
+        """
+        This method assumes that the most recent output from applying ``self``
+        is a string. It then finds all occurrences of ``pattern`` in this string
+        and binds them to the same key.
+
+        >>> p = item("a").findall(r"[1-2]")
+        >>> p.parse_args("1")
+        {'a': '1'}
+
+        Multiple matches are returned in a list:
+        >>> p.parse_args("123")
+        {'a': ['1', '2']}
+
+        Multiple matches are returned in a list:
+        >>> (item("a") >> item("b")).findall(r"[1-2]").parse_args("bound-to-a", "12")
+        {'a': 'bound-to-a', 'b': ['1', '2']}
+
+        ``findall`` fails when the most recent output is not a string:
+        >>> flag("a").findall(r"[1-2]").parse_args("-a")
+        usage: -a
+        An argument Output(get=Sequence(get=[KeyValue(key='a', value=True)])): raised exception expected string or bytes-like object
+        """
+
+        def f(
+            out: Output[Sequence[KeyValue[str]]],
+        ) -> Result[Output[Sequence[KeyValue[str]]]]:
+            *tail, kv = out.get
+            matches = re.findall(pattern, kv.value)
+            return Result.return_(
+                Output(Sequence(tail + [KeyValue(kv.key, m) for m in matches]))
+            )
+
+        return self.apply(f)
+
     def handle_error(self, error: ArgumentError) -> None:
         def print_usage(usage: str):
             usage_str = "usage:"
