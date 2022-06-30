@@ -171,6 +171,21 @@ def command(
     >>> main("-x", "1")
     usage: -x X [--dev | --prod]
     The following arguments are required: --dev
+
+    The ``Literal`` type can also be used to constrain arguments to a finite set of values:
+    >>> @command()
+    ... def main(x: typing.Literal["a", "b"]):
+    ...     print(dict(x=x))
+
+    This parser requires an argument of value ``"a"`` or ``"b"``:
+    >>> main("-x", "a")
+    {'x': 'a'}
+
+    # >>> main("-x", "b")
+    # {'x': 'b'}
+    # >>> main("-x", "c")
+    # usage: -x X
+    # argument c: raised exception invalid choice: 'c'. Choose from ('a', 'b').
     """
 
     def wrapper(func: Callable) -> Callable:

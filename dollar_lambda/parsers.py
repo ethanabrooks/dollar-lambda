@@ -13,7 +13,18 @@ import re
 import sys
 from dataclasses import _MISSING_TYPE, MISSING, astuple, dataclass, replace
 from functools import partial, reduce
-from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Type, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from pytypeclass import Monad, MonadPlus, Monoid
 from pytypeclass.nonempty_list import NonemptyList
@@ -1436,6 +1447,7 @@ def nonpositional(
 
 def option(
     dest: str,
+    choices: Optional[Collection[Any]] = None,
     default: Any | _MISSING_TYPE = MISSING,
     flag: Optional[str] = None,
     help: Optional[str] = None,
@@ -1454,6 +1466,9 @@ def option(
     ----------
     dest : str
         The name of variable to bind to:
+
+    choices: Optional[List[str]]
+        A list of valid values for the option.
 
     default : Any | _MISSING_TYPE
         The default value to bind on failure:
@@ -1474,7 +1489,7 @@ def option(
     regex : bool
         If ``True``, then the parser will match the flag string as a regex.
 
-     replace_dash : bool
+    replace_dash : bool
         If ``True``, then the parser will replace ``-`` with ``_`` in the dest string in order
         to make `dest` a valid Python identifier.
 
@@ -1548,6 +1563,13 @@ def option(
     The option can receive multiple arguments when ``nargs`` is greater than 1:
     >>> option("x", nargs=2).parse_args("-x", "1", "2")
     {'x': ['1', '2']}
+
+    Outputs can be constrained to a set of values using the ``choices`` parameter:
+    >>> option("x", choices=["a", "b"]).parse_args("-x", "a")
+    {'x': 'a'}
+    >>> option("x", choices=["a", "b"]).parse_args("-x", "c")
+    usage: -x {a,b}
+    argument c: raised exception invalid choice: 'c'. Choose from ['a', 'b'].
     """
     if replace_dash:
         dest = dest.replace("-", "_")
@@ -1564,6 +1586,20 @@ def option(
         )
         if nargs == 1:
             parser = parser | (argument(dest).findall(f"{_flag}=(.*)").type(type))
+
+            if choices is not None:
+
+                def choices_type(x: Any) -> Any:
+                    assert choices is not None  # for mypy
+                    if x not in choices:
+                        raise ArgumentError(
+                            f"invalid choice: '{x}'. Choose from {choices}."
+                        )
+                    return x
+
+                parser = parser.type(choices_type)
+        else:
+            assert choices is None, "choices is not supported for nargs > 1"
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
@@ -1575,7 +1611,12 @@ def option(
     if default is not MISSING:
         help = f"{help + ' ' if help else ''}(default: {default})"
     helps = {dest: help} if help else {}
-    parser = replace(parser, usage=f"{_flag} {dest.upper()}", helps=helps)
+    value_symbol = (
+        dest.upper()
+        if choices is None
+        else "{" + f"{','.join([str(c) for c in choices])}" + "}"
+    )
+    parser = replace(parser, usage=f"{_flag} {value_symbol}", helps=helps)
     return parser if default is MISSING else parser.defaults(**{dest: default})
 
 

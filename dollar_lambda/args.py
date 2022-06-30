@@ -54,7 +54,7 @@ class _ArgsField:
     name: str
     default: Any
     help: Optional[str] = None
-    type: Callable[[str], Any] = str
+    type: "Callable[[str], Any] | type" = str
 
     @staticmethod
     def parse(field: Field) -> Union["_ArgsField", Parser[Output]]:
@@ -111,11 +111,9 @@ class _ArgsField:
                     continue
                 _type = field.type
                 type_args = get_args(_type)
-                try:
-                    _type, none = type_args
-                    assert none == type(None)
-                except (ValueError, AssertionError):
-                    pass
+                if _type == Optional[_type]:
+                    # handle Optional
+                    [_type] = [t for t in type_args if t is not type(None)]
                 string: Optional[str] = None
                 if _type == bool:
                     if field.default is True and flip_bools:
@@ -128,7 +126,19 @@ class _ArgsField:
                         string=string,
                     )
                 else:
+                    origin = typing.get_origin(field.type)
+                    if origin is typing.Literal:
+                        choices = type_args
+                        if type_args:
+                            _type = type(type_args[0])
+                        else:
+                            raise RuntimeError(
+                                f"{field.name} has an empty Literal, which is not permitted."
+                            )
+                    else:
+                        choices = None
                     yield option(
+                        choices=choices,
                         default=field.default,
                         dest=field.name,
                         flag=string,
