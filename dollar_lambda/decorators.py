@@ -185,24 +185,19 @@ def command(
         )
         p = p.wrap_help()
 
-        def wrapped(*args) -> Any:
-            parsed = p.parse_args(*args)
-            if parsed is None:
-                return
-            return func(**parsed)
+        class _Function:
+            def __init__(self):
+                self.function = func
 
-        return wrapped
+            def __call__(self, *args: Any, **kwds: Any) -> Any:
+                parsed = p.parse_args(*args, **kwds)
+                if parsed is None:
+                    return
+                return func(**parsed)
+
+        return _Function()
 
     return wrapper
-
-
-class _Function:
-    def __init__(self, callable: Callable, parser: Parser):
-        self.callable = callable
-        self.parser = parser
-
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return self.callable(*args, **kwds)
 
 
 def parser(
@@ -253,7 +248,16 @@ def parser(
             repeated=repeated,
             replace_underscores=replace_underscores,
         )
-        return _Function(func, p)
+
+        class _Function:
+            def __init__(self):
+                self.function = func
+                self.parser = p
+
+            def __call__(self, *args: Any, **kwds: Any) -> Any:
+                return self.function(*args, **kwds)
+
+        return _Function()
 
     return wrapper
 
