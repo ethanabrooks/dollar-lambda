@@ -633,6 +633,33 @@ class Parser(MonadPlus[A_co]):
 
         return Parser(g, usage=None, helps=self.helps)
 
+    def n_times(self: "Parser[Output[A_monoid]]", n: int) -> "Parser[Output[A_monoid]]":
+        """
+        >>> argument("a").n_times(0).parse_args()
+        {}
+        >>> argument("a").n_times(0).parse_args("b")
+        Unrecognized argument: b
+        >>> argument("a").n_times(1).parse_args()
+        usage: A
+        The following arguments are required: a
+        >>> argument("a").n_times(1).parse_args("b")
+        {'a': 'b'}
+        >>> argument("a").n_times(1).parse_args("b", "c")
+        usage: A
+        Unrecognized argument: c
+        >>> argument("a").n_times(2).parse_args("b")
+        usage: A A
+        The following arguments are required: a
+        >>> argument("a").n_times(2).parse_args("b", "c")
+        {'a': ['b', 'c']}
+        >>> argument("a").n_times(2).parse_args("b", "c", "d")
+        usage: A A
+        Unrecognized argument: d
+        """
+        if n == 0:
+            return self.empty()
+        return self >> self.n_times(n - 1)
+
     def nesting(
         self: "Parser[Output[Sequence[KeyValue[Any]]]]",
     ) -> "Parser[Output[Sequence[KeyValue[Any]]]]":
@@ -1412,6 +1439,7 @@ def option(
     default: Any | _MISSING_TYPE = MISSING,
     flag: Optional[str] = None,
     help: Optional[str] = None,
+    nargs: int = 1,
     nesting: bool = True,
     regex: bool = True,
     replace_dash: bool = True,
@@ -1435,6 +1463,9 @@ def option(
 
     help : Optional[str]
         The help message to display for the option:
+
+    nargs : int
+        The number of space-separated arguments to parse for the option.
 
     nesting : bool
         If ``True``, then the parser will split the parsed output on ``.`` yielding nested output.
@@ -1510,12 +1541,13 @@ def option(
     >>> option("config.x").parse_args("--config.x", "a")
     {'config': {'x': 'a'}}
 
-    >>> option("window", type=int, default=1).parse_args("-w", "2")
-    {'window': 2}
-
     You can optionally use ``=`` as a separator between the flag and the value:
-    >>> option("window", type=int, default=1).parse_args("--window=2")
-    {'window': 2}
+    >>> option("x", type=int, default=1).parse_args("-x=2")
+    {'x': 2}
+
+    The option can receive multiple arguments when ``nargs`` is greater than 1:
+    >>> option("x", nargs=2).parse_args("-x", "1", "2")
+    {'x': ['1', '2']}
     """
     if replace_dash:
         dest = dest.replace("-", "_")
@@ -1527,10 +1559,11 @@ def option(
         _flag = flag
 
     def f(cs: Sequence[str]) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = (
-            matches(_flag, regex=regex)
-            >= (lambda _: argument(dest, nesting=nesting, type=type))
-        ) | (argument(dest).findall(f"{_flag}=(.*)").type(type))
+        parser = matches(_flag, regex=regex) >= (
+            lambda _: argument(dest, nesting=nesting, type=type).n_times(nargs)
+        )
+        if nargs == 1:
+            parser = parser | (argument(dest).findall(f"{_flag}=(.*)").type(type))
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
