@@ -1512,6 +1512,10 @@ def option(
 
     >>> option("window", type=int, default=1).parse_args("-w", "2")
     {'window': 2}
+
+    You can optionally use ``=`` as a separator between the flag and the value:
+    >>> option("window", type=int, default=1).parse_args("--window=2")
+    {'window': 2}
     """
     if replace_dash:
         dest = dest.replace("-", "_")
@@ -1523,9 +1527,10 @@ def option(
         _flag = flag
 
     def f(cs: Sequence[str]) -> Result[Parse[Output[Sequence[KeyValue[str]]]]]:
-        parser = matches(_flag, regex=regex) >= (
-            lambda _: argument(dest, nesting=nesting, type=type)
-        )
+        parser = (
+            matches(_flag, regex=regex)
+            >= (lambda _: argument(dest, nesting=nesting, type=type))
+        ) | (argument(dest).findall(f"{_flag}=(.*)").type(type))
         return parser.parse(cs)
 
     parser = Parser(f, usage=None, helps={})
