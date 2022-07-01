@@ -6,7 +6,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 from dataclasses import MISSING, Field, dataclass, fields
-from typing import Any, Callable, Iterator, Optional, Union, get_args
+from typing import Any, Iterator, Optional, Union, get_args
 
 from dollar_lambda.data_structures import KeyValue, Output, Sequence
 from dollar_lambda.parsers import Parser, defaults, flag, nonpositional, option
@@ -54,7 +54,7 @@ class _ArgsField:
     name: str
     default: Any
     help: Optional[str] = None
-    type: "Callable[[str], Any] | type" = str
+    type: "typing.Callable[[str], Any] | type" = str
 
     @staticmethod
     def parse(field: Field) -> Union["_ArgsField", Parser[Output]]:
